@@ -38,6 +38,12 @@ The `step-by-step-example/` folder contains a complete tutorial:
 ### Checklist
 Full checklist: `step-by-step-example/checklist.md`
 
+## Game Material
+
+`MATERIAL.md` lists every component of San, how many copies of each, and which image in
+`app/src/images` represents it. Images hold one file per design, so the number of copies is only
+recorded there — read it before writing `SanSetup`.
+
 ## Project Structure
 
 ```
