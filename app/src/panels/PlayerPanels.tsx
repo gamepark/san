@@ -1,5 +1,5 @@
 import { css } from '@emotion/react'
-import { PlayerColor } from '@gamepark/game-template/PlayerColor'
+import { PlayerColor } from '@gamepark/san/PlayerColor'
 import { StyledPlayerPanel, usePlayers } from '@gamepark/react-game'
 import { createPortal } from 'react-dom'
 

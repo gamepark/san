@@ -1,7 +1,7 @@
-import { GameTemplateOptionsSpecV2 } from '@gamepark/game-template/GameTemplateOptions'
-import { GameTemplateRules } from '@gamepark/game-template/GameTemplateRules'
-import { GameTemplateSetup } from '@gamepark/game-template/GameTemplateSetup'
 import { GameProvider } from '@gamepark/react-game'
+import { SanOptionsSpecV2 } from '@gamepark/san/SanOptions'
+import { SanRules } from '@gamepark/san/SanRules'
+import { SanSetup } from '@gamepark/san/SanSetup'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { gameAnimations } from './animations/GameAnimations'
@@ -12,10 +12,10 @@ import { Material } from './material/Material'
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <GameProvider
-      game="game-template"
-      Rules={GameTemplateRules}
-      optionsSpec={GameTemplateOptionsSpecV2}
-      GameSetup={GameTemplateSetup}
+      game="san"
+      Rules={SanRules}
+      optionsSpec={SanOptionsSpecV2}
+      GameSetup={SanSetup}
       material={Material}
       locators={Locators}
       animations={gameAnimations}

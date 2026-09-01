@@ -170,7 +170,7 @@ Options are declared in `rules/src/[Game]Options.ts` with `OptionsSpecV2` — **
 and no text**. The platform snapshots it when the bundle is prepared and reads it from its database.
 
 ```typescript
-export const GameTemplateOptionsSpecV2: OptionsSpecV2 = {
+export const SanOptionsSpecV2: OptionsSpecV2 = {
   specVersion: 2,
   players: { min: 2, max: 4 },
   identities: { values: getEnumValues(PlayerColor) }

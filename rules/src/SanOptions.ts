@@ -10,7 +10,7 @@ type PlayerOptions = { id: PlayerColor }
  * This is the type of object that the game receives when a new game is started.
  * The first generic parameter, "{}", can be changed to include game options like variants or expansions.
  */
-export type GameTemplateOptions = {
+export type SanOptions = {
   players: PlayerOptions[]
 }
 
@@ -31,7 +31,7 @@ export type GameTemplateOptions = {
  * `players` must match the range declared for the game on the platform — it is the root that every other
  * range narrows, and a disagreement silently changes which tables exist.
  */
-export const GameTemplateOptionsSpecV2: OptionsSpecV2 = {
+export const SanOptionsSpecV2: OptionsSpecV2 = {
   specVersion: 2,
   players: { min: 2, max: 4 },
   identities: { values: getEnumValues(PlayerColor) }

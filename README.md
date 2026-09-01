@@ -1,6 +1,6 @@
-# Game Park - Board Game Template
+# San
 
-Template to adapt board games for [Game Park](https://game-park.com/).
+Adaptation of the board game San for [Game Park](https://game-park.com/).
 
 ## Documentation
 
@@ -29,14 +29,6 @@ game.monkeyOpponents(true) // Opponents play automatically
 game.undo()               // Undo last move
 ```
 
-## Project Setup
-
-Search and replace in all files:
-
-- `Game Template` → `Your Game Name`
-- `GameTemplate` → `YourGameName`
-- `game-template` → `your-game-name`
-
 ## Deployment
 
 Rules are deployed by the Game Park team.
@@ -46,7 +38,7 @@ To deploy the React app, install [rclone](https://rclone.org/) then configure:
 ```
 rclone config
 > n
-name> game-template
+name> san
 Storage> s3
 provider> Other
 env_auth> false

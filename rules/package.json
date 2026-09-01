@@ -1,7 +1,7 @@
 {
-  "name": "@gamepark/game-template",
+  "name": "@gamepark/san",
   "version": "0.0.0",
-  "description": "The rules of Game Template adapted for Game Park",
+  "description": "The rules of San adapted for Game Park",
   "sideEffects": false,
   "type": "module",
   "main": "dist/index.js",

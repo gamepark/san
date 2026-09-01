@@ -589,61 +589,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gamepark/game-template-app@workspace:app":
-  version: 0.0.0-use.local
-  resolution: "@gamepark/game-template-app@workspace:app"
-  dependencies:
-    "@dnd-kit/core": "npm:~6.3.1"
-    "@emotion/react": "npm:^11.14.0"
-    "@eslint/js": "npm:^10.0.1"
-    "@fortawesome/fontawesome-svg-core": "npm:^7.3.1"
-    "@fortawesome/free-regular-svg-icons": "npm:^7.3.1"
-    "@fortawesome/free-solid-svg-icons": "npm:^7.3.1"
-    "@fortawesome/react-fontawesome": "npm:^3.5.0"
-    "@gamepark/react-game": "npm:~7.7.47"
-    "@gamepark/rules-api": "npm:~7.7.2"
-    "@types/node": "npm:^26.4.0"
-    "@types/react": "npm:^19.2.18"
-    "@types/react-dom": "npm:^19.2.5"
-    "@typescript/native": "npm:typescript@^7.0.2"
-    "@vitejs/plugin-react-swc": "npm:^4.3.3"
-    es-toolkit: "npm:^1.52.0"
-    eslint: "npm:^10.9.1"
-    eslint-plugin-react-hooks: "npm:^7.1.1"
-    eslint-plugin-react-refresh: "npm:^0.5.5"
-    globals: "npm:^17.11.0"
-    i18next: "npm:^26.4.0"
-    react: "npm:^19.2.8"
-    react-dom: "npm:^19.2.8"
-    react-i18next: "npm:^17.0.12"
-    react-redux: "npm:^9.3.0"
-    typescript: "npm:@typescript/typescript6@^6.0.2"
-    typescript-eslint: "npm:^8.68.0"
-    vite: "npm:^8.2.2"
-    vite-imagetools: "npm:^12.0.1"
-    vitest: "npm:^4.1.11"
-  languageName: unknown
-  linkType: soft
-
-"@gamepark/game-template@workspace:rules":
-  version: 0.0.0-use.local
-  resolution: "@gamepark/game-template@workspace:rules"
-  dependencies:
-    "@eslint/js": "npm:^10.0.1"
-    "@gamepark/rules-api": "npm:~7.7.2"
-    "@typescript/native": "npm:typescript@^7.0.2"
-    es-toolkit: "npm:^1.52.0"
-    eslint: "npm:^10.9.1"
-    globals: "npm:^17.11.0"
-    typescript: "npm:@typescript/typescript6@^6.0.2"
-    typescript-eslint: "npm:^8.68.0"
-    vitest: "npm:^4.1.11"
-  peerDependencies:
-    "@gamepark/rules-api": ">=7.7"
-    es-toolkit: ^1.45.1
-  languageName: unknown
-  linkType: soft
-
 "@gamepark/react-client@npm:^7.7.8":
   version: 7.7.8
   resolution: "@gamepark/react-client@npm:7.7.8"
@@ -719,6 +664,61 @@ __metadata:
   checksum: 10c0/6455183d8d2453f1db749c8e473786959ae470698cca541d817d0280aeae2831a38d6685800544520a673b47229372c8bd606a9298465ad62723b223b49e27a9
   languageName: node
   linkType: hard
+
+"@gamepark/san-app@workspace:app":
+  version: 0.0.0-use.local
+  resolution: "@gamepark/san-app@workspace:app"
+  dependencies:
+    "@dnd-kit/core": "npm:~6.3.1"
+    "@emotion/react": "npm:^11.14.0"
+    "@eslint/js": "npm:^10.0.1"
+    "@fortawesome/fontawesome-svg-core": "npm:^7.3.1"
+    "@fortawesome/free-regular-svg-icons": "npm:^7.3.1"
+    "@fortawesome/free-solid-svg-icons": "npm:^7.3.1"
+    "@fortawesome/react-fontawesome": "npm:^3.5.0"
+    "@gamepark/react-game": "npm:~7.7.47"
+    "@gamepark/rules-api": "npm:~7.7.2"
+    "@types/node": "npm:^26.4.0"
+    "@types/react": "npm:^19.2.18"
+    "@types/react-dom": "npm:^19.2.5"
+    "@typescript/native": "npm:typescript@^7.0.2"
+    "@vitejs/plugin-react-swc": "npm:^4.3.3"
+    es-toolkit: "npm:^1.52.0"
+    eslint: "npm:^10.9.1"
+    eslint-plugin-react-hooks: "npm:^7.1.1"
+    eslint-plugin-react-refresh: "npm:^0.5.5"
+    globals: "npm:^17.11.0"
+    i18next: "npm:^26.4.0"
+    react: "npm:^19.2.8"
+    react-dom: "npm:^19.2.8"
+    react-i18next: "npm:^17.0.12"
+    react-redux: "npm:^9.3.0"
+    typescript: "npm:@typescript/typescript6@^6.0.2"
+    typescript-eslint: "npm:^8.68.0"
+    vite: "npm:^8.2.2"
+    vite-imagetools: "npm:^12.0.1"
+    vitest: "npm:^4.1.11"
+  languageName: unknown
+  linkType: soft
+
+"@gamepark/san@workspace:rules":
+  version: 0.0.0-use.local
+  resolution: "@gamepark/san@workspace:rules"
+  dependencies:
+    "@eslint/js": "npm:^10.0.1"
+    "@gamepark/rules-api": "npm:~7.7.2"
+    "@typescript/native": "npm:typescript@^7.0.2"
+    es-toolkit: "npm:^1.52.0"
+    eslint: "npm:^10.9.1"
+    globals: "npm:^17.11.0"
+    typescript: "npm:@typescript/typescript6@^6.0.2"
+    typescript-eslint: "npm:^8.68.0"
+    vitest: "npm:^4.1.11"
+  peerDependencies:
+    "@gamepark/rules-api": ">=7.7"
+    es-toolkit: ^1.45.1
+  languageName: unknown
+  linkType: soft
 
 "@humanfs/core@npm:^0.19.1":
   version: 0.19.1

@@ -1,9 +1,9 @@
 {
-  "name": "@gamepark/game-template-app",
+  "name": "@gamepark/san-app",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "The user interface of Game Template adaptation for Game Park",
+  "description": "The user interface of San adaptation for Game Park",
   "author": "Romain Fromi <romain@game-park.com> (https://game-park.com/)",
   "license": "ISC",
   "scripts": {
@@ -12,8 +12,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "upload-sourcemaps": "datadog-ci sourcemaps upload dist/assets --service=game-template --release-version=$npm_package_version --minified-path-prefix=/assets/",
-    "sync": "npx rimraf dist/assets/*.map && rclone sync dist game-template:game-template.game-park.com --progress --s3-acl=public-read",
+    "upload-sourcemaps": "datadog-ci sourcemaps upload dist/assets --service=san --release-version=$npm_package_version --minified-path-prefix=/assets/",
+    "sync": "npx rimraf dist/assets/*.map && rclone sync dist san:san.game-park.com --progress --s3-acl=public-read",
     "deploy": "yarn build && node -e \"if(process.env.DATADOG_API_KEY){require('child_process').execSync('yarn upload-sourcemaps',{stdio:'inherit'})}\" && yarn sync"
   },
   "dependencies": {
