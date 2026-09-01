@@ -172,8 +172,8 @@ and no text**. The platform snapshots it when the bundle is prepared and reads i
 ```typescript
 export const SanOptionsSpecV2: OptionsSpecV2 = {
   specVersion: 2,
-  players: { min: 2, max: 4 },
-  identities: { values: getEnumValues(PlayerColor) }
+  players: { min: 2, max: 2 },
+  identities: { values: getEnumValues(Corporation) }
 }
 ```
 
@@ -181,7 +181,7 @@ Three things do **not** belong in it:
 
 - **Texts** go to `app/public/options/{locale}.json`, keyed by convention: `option.<option>`,
   `option.<option>.<value>`, `identities.<value>`, plus optional `.help` and `.warn` variants. Values
-  are addressed by value, so `PlayerColor.Blue = 1` gives `identities.1`.
+  are addressed by value, so `Corporation.Moon = 1` gives `identities.1`.
 - **`subscriberRequired`, `competitiveDisabled`, `competitivePlayers`** belong to the platform database.
 - **`validate`** no longer exists. Express constraints as `playerCount` (on an option or a value),
   `requires` on a value, or a `forbidden-combination` rule whose `message` is a key in the options

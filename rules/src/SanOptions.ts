@@ -1,10 +1,10 @@
 import { getEnumValues, OptionsSpecV2 } from '@gamepark/rules-api'
-import { PlayerColor } from './PlayerColor'
+import { Corporation } from './Corporation'
 
 /**
  * This is the options for each player in the game.
  */
-type PlayerOptions = { id: PlayerColor }
+type PlayerOptions = { id: Corporation }
 
 /**
  * This is the type of object that the game receives when a new game is started.
@@ -33,6 +33,6 @@ export type SanOptions = {
  */
 export const SanOptionsSpecV2: OptionsSpecV2 = {
   specVersion: 2,
-  players: { min: 2, max: 4 },
-  identities: { values: getEnumValues(PlayerColor) }
+  players: { min: 2, max: 2 },
+  identities: { values: getEnumValues(Corporation) }
 }

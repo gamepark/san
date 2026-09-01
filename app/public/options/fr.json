@@ -1,7 +1,5 @@
 {
-  "identities": "Couleur",
-  "identities.1": "Bleu",
-  "identities.2": "Rouge",
-  "identities.3": "Vert",
-  "identities.4": "Jaune"
+  "identities": "Corporation",
+  "identities.1": "Lune",
+  "identities.2": "Étoile"
 }

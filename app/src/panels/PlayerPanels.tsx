@@ -1,10 +1,10 @@
 import { css } from '@emotion/react'
-import { PlayerColor } from '@gamepark/san/PlayerColor'
+import { Corporation } from '@gamepark/san/Corporation'
 import { StyledPlayerPanel, usePlayers } from '@gamepark/react-game'
 import { createPortal } from 'react-dom'
 
 export const PlayerPanels = () => {
-  const players = usePlayers<PlayerColor>({ sortFromMe: true })
+  const players = usePlayers<Corporation>({ sortFromMe: true })
   const root = document.getElementById('root')
   if (!root) {
     return null
