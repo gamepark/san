@@ -1,16 +1,11 @@
-import { getRelativePlayerIndex, Locator, MaterialContext } from '@gamepark/react-game'
+import { Locator, MaterialContext } from '@gamepark/react-game'
 import { Location } from '@gamepark/rules-api'
-import { BANNER_Y, side, trackX } from './SanLayout'
+import { BANNER_Y, fixedSide, trackX } from './SanLayout'
 
-/** Position of a Corporation's banner on the Propaganda track (location.x = step 0..6), just off the River on its side. */
+/** Position of a Corporation's banner on the Propaganda track (location.x = step 0..6), just off the River on its permanent side. */
 class PropagandaTrackLocator extends Locator {
-  getCoordinates(location: Location, context: MaterialContext) {
-    const s = side(getRelativePlayerIndex(context, location.player))
-    return { x: trackX(location.x ?? 0), y: BANNER_Y * s }
-  }
-
-  getPositionDependencies(_location: Location, context: MaterialContext) {
-    return { viewer: context.player }
+  getCoordinates(location: Location, _context: MaterialContext) {
+    return { x: trackX(location.x ?? 0), y: BANNER_Y * fixedSide(location.player!) }
   }
 }
 

@@ -1,16 +1,22 @@
 /**
  * Shared table layout constants for San, in cm (100 px = 1 cm, see MATERIAL.md).
  *
- * The table is mirrored between the two Corporations: everything that belongs to a player is placed
- * on their "side", `side(relativeIndex)` giving +1 for the player currently viewing the game (bottom
- * half) and -1 for their opponent (top half).
+ * The table is a fixed diorama: every board zone keeps a permanent side, `fixedSide(corporation)`
+ * giving +1 for Star (bottom half) and -1 for Moon (top half), so switching the viewing player never
+ * rearranges the board. Only the private trio — Hand, Deck and Discard — follows the viewer, with
+ * `side(relativeIndex)` putting the viewing player at the bottom (+1) and the opponent at the top (-1).
  */
+
+import { Corporation } from '@gamepark/san/Corporation'
 
 export const CARD_WIDTH = 6.3
 export const CARD_HEIGHT = 8.8
 
-/** +1 for the viewing player (bottom), -1 for the opponent (top). */
+/** +1 for the viewing player (bottom), -1 for the opponent (top). Used only by the Hand/Deck/Discard. */
 export const side = (relativePlayerIndex: number): number => (relativePlayerIndex === 0 ? 1 : -1)
+
+/** Permanent side of a Corporation's board zones: +1 for Star (bottom half), -1 for Moon (top half). */
+export const fixedSide = (corporation: Corporation): number => (corporation === Corporation.Star ? 1 : -1)
 
 // --- Shared centre: the River (also the board of the Propaganda track) ---
 export const RIVER_Y = 0
