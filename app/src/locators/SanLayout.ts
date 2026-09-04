@@ -1,12 +1,16 @@
 /**
  * Shared table layout constants for San, in cm (100 px = 1 cm, see MATERIAL.md).
  *
- * The table is a fixed diorama: every board zone keeps a permanent side, `fixedSide(corporation)`
- * giving +1 for Star (bottom half) and -1 for Moon (top half), so switching the viewing player never
- * rearranges the board. Only the private trio — Hand, Deck and Discard — follows the viewer, with
- * `side(relativeIndex)` putting the viewing player at the bottom (+1) and the opponent at the top (-1).
+ * The table is drawn as a diorama with Star on the bottom half (`fixedSide` = +1) and Moon on the top
+ * half (-1). That reads well for a Star viewer or a spectator, but a Moon viewer would then face their
+ * own side upside-down, so for that viewer the whole diorama is turned a half-turn: `boardFlip(context)`
+ * is -1 for a Moon viewer and multiplies every x, y and gap of the fixed zones, with 180° added to
+ * each item's Z rotation (`boardFlipRotation`). The private trio — Hand, Deck and Discard — is exempt:
+ * it already follows the viewer with `side(relativeIndex)`, which keeps the viewing player at the
+ * bottom (+1) and the opponent at the top (-1).
  */
 
+import { MaterialContext } from '@gamepark/react-game'
 import { Corporation } from '@gamepark/san/Corporation'
 
 export const CARD_WIDTH = 6.3
@@ -18,6 +22,16 @@ export const side = (relativePlayerIndex: number): number => (relativePlayerInde
 /** Permanent side of a Corporation's board zones: +1 for Star (bottom half), -1 for Moon (top half). */
 export const fixedSide = (corporation: Corporation): number => (corporation === Corporation.Star ? 1 : -1)
 
+/**
+ * Half-turn applied to the whole fixed diorama for the viewing player: -1 turns the board 180° so a
+ * Moon viewer reads their own side from the bottom, +1 (Star viewer or spectator) keeps it as drawn.
+ * Multiply x, y and gaps of every fixed zone by this; the private Hand/Deck/Discard trio is exempt.
+ */
+export const boardFlip = (context: MaterialContext): number => (context.player === Corporation.Moon ? -1 : 1)
+
+/** 180° to add to a fixed zone item's Z rotation when the board is turned for the Moon viewer, else 0. */
+export const boardFlipRotation = (context: MaterialContext): number => (boardFlip(context) === -1 ? 180 : 0)
+
 // --- Shared centre: the River (also the board of the Propaganda track) ---
 export const RIVER_Y = 0
 export const RIVER_GAP = 9
@@ -25,9 +39,15 @@ export const RIVER_SIZE = 6
 /** x of River card number i (0..5), centred on the table. */
 export const riverX = (i: number): number => (i - (RIVER_SIZE - 1) / 2) * RIVER_GAP
 
-/** The Propaganda track has 7 banner positions (0..6): one before the River, one after each card. */
+/**
+ * The Propaganda track has 7 banner positions (0..6): one before the River, one after each card.
+ * It runs opposite to the River's left-to-right numbering: step 0 is the right end of the table
+ * (Moon's home corner, its banner starts top-right) and step 6 the left end (Star's home corner,
+ * its banner starts bottom-left). `PropagandaTrackLocator` then pushes each banner to its
+ * Corporation's half with `BANNER_Y * fixedSide(player)`.
+ */
 export const TRACK_STEPS = 7
-export const trackX = (step: number): number => (step - (TRACK_STEPS - 1) / 2) * RIVER_GAP
+export const trackX = (step: number): number => ((TRACK_STEPS - 1) / 2 - step) * RIVER_GAP
 
 // --- Reserve: left of the River ---
 export const RESERVE_X = -34
