@@ -1,5 +1,8 @@
+import { MaterialType } from '@gamepark/san/material/MaterialType'
 import { SanCard } from '@gamepark/san/material/SanCard'
-import { CardDescription } from '@gamepark/react-game'
+import { RuleId } from '@gamepark/san/rules/RuleId'
+import { CardDescription, ItemContext } from '@gamepark/react-game'
+import { isDeleteItemType, MaterialMove } from '@gamepark/rules-api'
 import back from '../images/cards/CardBack.jpg'
 import moonPropaganda from '../images/cards/start/MoonPropaganda.jpg'
 import moonHacking from '../images/cards/start/MoonHacking.jpg'
@@ -116,6 +119,19 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
     [SanCard.RiverEquipment16]: riverEquipment16,
     [SanCard.RiverEquipment17]: riverEquipment17,
     [SanCard.RiverEquipment18]: riverEquipment18,
+  }
+
+  /**
+   * "Destroy a card" effect ({@link RuleId.DestroyCard}): a short click on a hand card sends it to
+   * the box (a {@link deleteItem} move emitted by {@link DestroyCardRule}). There is no box drop zone
+   * on the table, so the click is the whole interaction. Outside that rule, a click still opens help.
+   */
+  canShortClick(move: MaterialMove, context: ItemContext) {
+    return (
+      context.rules.game.rule?.id === RuleId.DestroyCard &&
+      isDeleteItemType(MaterialType.Card)(move) &&
+      move.itemIndex === context.index
+    )
   }
 }
 

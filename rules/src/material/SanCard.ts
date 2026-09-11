@@ -84,6 +84,9 @@ export const virusCards: Record<Corporation, SanCard[]> = {
   [Corporation.Star]: [SanCard.StarVirus1, SanCard.StarVirus2, SanCard.StarVirus3, SanCard.StarVirus4, SanCard.StarVirus5]
 }
 
+/** The number printed on a Virus card (1 → 5, the count of viruses still to come). Only valid for Virus cards. */
+export const virusNumber = (card: SanCard): number => ((card - SanCard.MoonVirus1) % 5) + 1
+
 /** The 33 River card designs (48 physical cards once {@link cardCopies} is applied). */
 export const riverCards: SanCard[] = [
   SanCard.RiverPropaganda1, SanCard.RiverPropaganda2, SanCard.RiverPropaganda3, SanCard.RiverPropaganda4, SanCard.RiverPropaganda5,

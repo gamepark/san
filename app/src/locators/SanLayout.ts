@@ -56,10 +56,8 @@ export const RESERVE_Y = 0
 // --- Virus track: far left, laid out vertically around the Central Port ---
 export const VIRUS_TRACK_X = 35
 export const CENTRAL_PORT_Y = 0
-/** y of a Corporation's Virus pile, measured from the Central Port, on its side. */
+/** y of a Corporation's Virus pile (and of its current top Virus card), measured from the Central Port. */
 export const VIRUS_PILE_Y = 7
-/** y travelled per step of the Virus pawn along the track. */
-export const VIRUS_STEP_Y = 4
 
 // --- Per-player bands (multiplied by side()) ---
 export const BANNER_Y = 6.5

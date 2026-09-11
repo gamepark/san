@@ -1,1 +1,29 @@
-{}
+{
+  "header.play.you": "Jouez une ou plusieurs cartes, puis dépensez vos ressources. <end>Terminer</end>",
+  "header.play.player": "{player} joue des cartes.",
+  "header.buy.you": "Achetez des cartes de la Rivière avec votre revenu. <end>Terminer</end>",
+  "header.buy.player": "{player} achète des cartes.",
+  "header.destroy.you": "Détruisez une carte de votre main (cliquez-la). <pass>Passer</pass>",
+  "header.destroy.player": "{player} peut détruire une carte.",
+  "header.play-discard.you": "Jouez une carte de votre défausse. <pass>Passer</pass>",
+  "header.play-discard.player": "{player} peut jouer une carte de sa défausse.",
+  "header.corrupt-hand.you": "Corrompez une carte de votre main. <pass>Passer</pass>",
+  "header.corrupt-hand.player": "{player} peut corrompre une carte de sa main.",
+  "header.choose-effect.you": "Choisissez l’effet à appliquer :",
+  "header.choose-effect.player": "{player} choisit un effet.",
+  "header.copy-river.you": "Copiez une carte de la Rivière :",
+  "header.copy-river.player": "{player} copie une carte de la Rivière.",
+
+  "effect.corruption": "Corruption +{value}",
+  "effect.propaganda": "Propagande +{value}",
+  "effect.virus": "Hacking +{value}",
+  "effect.draw": "Piocher {value}",
+  "effect.any": "Effet",
+
+  "card.type.1": "Propagande",
+  "card.type.2": "Hacking",
+  "card.type.3": "Corruption",
+  "card.type.4": "Matériel",
+
+  "pass": "Passer"
+}
