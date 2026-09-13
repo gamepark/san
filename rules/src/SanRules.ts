@@ -1,4 +1,5 @@
 import {
+  CompetitiveRank,
   FillGapStrategy,
   hideItemId,
   hideItemIdToOthers,
@@ -24,6 +25,7 @@ import { DestroyCardRule } from './rules/actions/DestroyCardRule'
 import { DrawCardsRule } from './rules/actions/DrawCardsRule'
 import { EndTurnRule } from './rules/EndTurnRule'
 import { propagandaDirection } from './rules/helper/directions'
+import { victoryOutcome } from './rules/helper/victory'
 import { PlayCardsRule } from './rules/PlayCardsRule'
 import { PlayFromDiscardRule } from './rules/actions/PlayFromDiscardRule'
 import { ResolveEffectsRule } from './rules/ResolveEffectsRule'
@@ -35,7 +37,9 @@ import { RuleId } from './rules/RuleId'
  */
 export class SanRules
   extends SecretMaterialRules<Corporation, MaterialType, LocationType>
-  implements TimeLimit<MaterialGame<Corporation, MaterialType, LocationType>, MaterialMove<Corporation, MaterialType, LocationType>, Corporation>
+  implements
+    TimeLimit<MaterialGame<Corporation, MaterialType, LocationType>, MaterialMove<Corporation, MaterialType, LocationType>, Corporation>,
+    CompetitiveRank<MaterialGame<Corporation, MaterialType, LocationType>, MaterialMove<Corporation, MaterialType, LocationType>, Corporation>
 {
   rules = {
     [RuleId.PlayCards]: PlayCardsRule,
@@ -99,6 +103,17 @@ export class SanRules
     }
 
     return super.afterItemMove(move)
+  }
+
+  /**
+   * Who wins is derived from the final board state (rules p.22), not memorized — see {@link
+   * import('./rules/helper/victory').victoryOutcome}.
+   */
+  rankPlayers(playerA: Corporation, playerB: Corporation): number {
+    const { winner } = victoryOutcome(this)
+    if (winner === playerA) return -1
+    if (winner === playerB) return 1
+    return 0
   }
 
   giveTime(): number {

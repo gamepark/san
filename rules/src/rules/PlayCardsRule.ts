@@ -190,7 +190,8 @@ export class PlayCardsRule extends SanRule {
       }
       if (move.location.type === LocationType.CorruptionZone) {
         this.spendResource(Memory.CorruptionPoints, CORRUPTION_GROUP)
-        return this.reserve.length ? [this.reserve.deck().dealOne({ type: LocationType.River })] : []
+        // Refill the emptied River slot; an empty Reserve ends the game (rules, p.22).
+        return this.reserve.length ? [this.reserve.deck().dealOne({ type: LocationType.River })] : [this.endGame()]
       }
     }
     if (isMoveItemType(MaterialType.Banner)(move) && move.location.type === LocationType.PropagandaTrack) {

@@ -1,5 +1,5 @@
 import { MaterialMove, PlayerTurnRule } from '@gamepark/rules-api'
-import { Corporation } from '../Corporation'
+import { Corporation, otherCorporation } from '../Corporation'
 import { LocationType } from '../material/LocationType'
 import { MaterialType } from '../material/MaterialType'
 import { CardEffect, EffectType, getCardData, isMercenaryType } from '../material/CardsData'
@@ -41,7 +41,7 @@ export abstract class SanRule extends PlayerTurnRule<Corporation, MaterialType, 
 
   /** The other Corporation (the one the active player attacks along the Virus track). */
   get virusOpponent(): Corporation {
-    return this.player === Corporation.Moon ? Corporation.Star : Corporation.Moon
+    return otherCorporation(this.player)
   }
 
   /** Highest Virus number still on a Corporation's pile (5 at setup, 0 once every card is driven off). */

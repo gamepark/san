@@ -14,6 +14,16 @@
   "header.copy-river.you": "Copiez une carte de la Rivière :",
   "header.copy-river.player": "{player} copie une carte de la Rivière.",
 
+  "header.game-over.tie": "Égalité !",
+  "header.game-over.you.corruption": "Vous remportez la partie par Corruption !",
+  "header.game-over.you.propaganda": "Vous remportez la partie par Propagande !",
+  "header.game-over.you.hacking": "Vous remportez la partie par Hacking !",
+  "header.game-over.you.reserve": "Vous remportez la partie !",
+  "header.game-over.player.corruption": "{player} remporte la partie par Corruption !",
+  "header.game-over.player.propaganda": "{player} remporte la partie par Propagande !",
+  "header.game-over.player.hacking": "{player} remporte la partie par Hacking !",
+  "header.game-over.player.reserve": "{player} remporte la partie !",
+
   "effect.corruption": "Corruption +{value}",
   "effect.propaganda": "Propagande +{value}",
   "effect.virus": "Hacking +{value}",
