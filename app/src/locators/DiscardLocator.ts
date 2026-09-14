@@ -1,18 +1,13 @@
-import { DeckLocator, getRelativePlayerIndex, MaterialContext } from '@gamepark/react-game'
+import { DeckLocator } from '@gamepark/react-game'
 import { Location } from '@gamepark/rules-api'
-import { DISCARD_X, DISCARD_Y, side } from './SanLayout'
+import { cornerSide, DISCARD_X, DISCARD_Y } from './SanLayout'
 
-/** A Corporation's face-up discard pile, next to its draw pile. */
+/** A Corporation's face-up discard pile, next to its draw pile, in its personal corner below the River. */
 class DiscardLocator extends DeckLocator {
   limit = 30
 
-  getCoordinates(location: Location, context: MaterialContext) {
-    const s = side(getRelativePlayerIndex(context, location.player))
-    return { x: DISCARD_X, y: DISCARD_Y * s }
-  }
-
-  getPositionDependencies(_location: Location, context: MaterialContext) {
-    return { viewer: context.player }
+  getCoordinates(location: Location) {
+    return { x: cornerSide(location.player!) * DISCARD_X, y: DISCARD_Y }
   }
 }
 

@@ -1,21 +1,16 @@
-import { ListLocator, MaterialContext } from '@gamepark/react-game'
+import { ListLocator } from '@gamepark/react-game'
 import { Location } from '@gamepark/rules-api'
-import { boardFlip, boardFlipRotation, fixedSide, VIRUS_PILE_Y, VIRUS_TRACK_X } from './SanLayout'
+import { cornerSide, VIRUS_PILE_X, VIRUS_TRACK_Y } from './SanLayout'
 
-/** A Corporation's stack of its 5 Virus cards, on its permanent side of the Central Port, slightly fanned so every number shows. */
+/** A Corporation's stack of its 5 Virus cards, on its side of the Central Port — Star's pile on the left, Moon's on the right — slightly fanned so every number shows. */
 class VirusPileLocator extends ListLocator {
 
-  getRotateZ(location: Location, context: MaterialContext): number {
-    return ((fixedSide(location.player!) === 1 ? 180 : 0) + boardFlipRotation(context)) % 360
+  getRotateZ(location: Location): number {
+    return (cornerSide(location.player!) === -1 ? 180 : 0) + 90
   }
 
-  getCoordinates(location: Location, context: MaterialContext) {
-    const f = boardFlip(context)
-    return { x: VIRUS_TRACK_X * f, y: VIRUS_PILE_Y * fixedSide(location.player!) * f }
-  }
-
-  getPositionDependencies(location: Location, context: MaterialContext) {
-    return { count: this.countItems(location, context), viewer: context.player }
+  getCoordinates(location: Location) {
+    return { x: cornerSide(location.player!) * VIRUS_PILE_X, y: VIRUS_TRACK_Y }
   }
 }
 

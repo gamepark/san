@@ -1,43 +1,46 @@
 /**
  * Shared table layout constants for San, in cm (100 px = 1 cm, see MATERIAL.md).
  *
- * The table is drawn as a diorama with Star on the bottom half (`fixedSide` = +1) and Moon on the top
- * half (-1). That reads well for a Star viewer or a spectator, but a Moon viewer would then face their
- * own side upside-down, so for that viewer the whole diorama is turned a half-turn: `boardFlip(context)`
- * is -1 for a Moon viewer and multiplies every x, y and gap of the fixed zones, with 180° added to
- * each item's Z rotation (`boardFlipRotation`). The private trio — Hand, Deck and Discard — is exempt:
- * it already follows the viewer with `side(relativeIndex)`, which keeps the viewing player at the
- * bottom (+1) and the opponent at the top (-1).
+ * The River (and the Propaganda track printed along it) stays centred on the table, unrotated, the
+ * same for every viewer. Each Corporation's personal area (Deck, Discard, Hand, PlayArea, collected
+ * PlayerHandBonus tokens) sits in its own corner below the River — Star's bottom-left, Moon's
+ * bottom-right (`cornerSide`) — while its CorruptionZone, Banner and Hand Bonus tokens stay on the
+ * shared centre line (`fixedSide`): the CorruptionZone above the River for Moon and below it for
+ * Star, each slot in the same column as the River card it corrupts, next to the Banner and Hand
+ * Bonus tokens riding the track shared with the opponent.
  */
 
-import { MaterialContext } from '@gamepark/react-game'
 import { Corporation } from '@gamepark/san/Corporation'
 
 export const CARD_WIDTH = 6.3
 export const CARD_HEIGHT = 8.8
 
-/** +1 for the viewing player (bottom), -1 for the opponent (top). Used only by the Hand/Deck/Discard. */
-export const side = (relativePlayerIndex: number): number => (relativePlayerIndex === 0 ? 1 : -1)
-
-/** Permanent side of a Corporation's board zones: +1 for Star (bottom half), -1 for Moon (top half). */
+/** Side of the shared centre line a Corporation's track-bound material sits on: +1 for Star (bottom), -1 for Moon (top). */
 export const fixedSide = (corporation: Corporation): number => (corporation === Corporation.Star ? 1 : -1)
 
-/**
- * Half-turn applied to the whole fixed diorama for the viewing player: -1 turns the board 180° so a
- * Moon viewer reads their own side from the bottom, +1 (Star viewer or spectator) keeps it as drawn.
- * Multiply x, y and gaps of every fixed zone by this; the private Hand/Deck/Discard trio is exempt.
- */
-export const boardFlip = (context: MaterialContext): number => (context.player === Corporation.Moon ? -1 : 1)
+/** Horizontal side of a Corporation's personal corner, below the River: -1 for Star (bottom-left), +1 for Moon (bottom-right). */
+export const cornerSide = (corporation: Corporation): number => (corporation === Corporation.Star ? -1 : 1)
 
-/** 180° to add to a fixed zone item's Z rotation when the board is turned for the Moon viewer, else 0. */
-export const boardFlipRotation = (context: MaterialContext): number => (boardFlip(context) === -1 ? 180 : 0)
+/**
+ * Vertical shift applied to the whole shared centre block — River, Reserve, Propaganda track (Banner,
+ * HandBonusSpot) and CorruptionZone — moving it up near the top edge of the table, away from the
+ * personal corners below (which stay put; their Y values are not relative to this).
+ */
+export const CENTRE_Y = -20
+
+/**
+ * Horizontal shift applied to the whole shared centre block — Reserve, River/Propaganda track and
+ * CorruptionZone (which follow the River's columns) — nudging it left, away from the Virus track and
+ * personal corners (which stay put; their X values are not relative to this).
+ */
+export const CENTRE_X = 6
 
 // --- Shared centre: the River (also the board of the Propaganda track) ---
-export const RIVER_Y = 0
+export const RIVER_Y = CENTRE_Y
 export const RIVER_GAP = 9
 export const RIVER_SIZE = 6
 /** x of River card number i (0..5), centred on the table. */
-export const riverX = (i: number): number => (i - (RIVER_SIZE - 1) / 2) * RIVER_GAP
+export const riverX = (i: number): number => CENTRE_X + (i - (RIVER_SIZE - 1) / 2) * RIVER_GAP
 
 /**
  * The Propaganda track has 7 banner positions (0..6): one before the River, one after each card.
@@ -47,40 +50,42 @@ export const riverX = (i: number): number => (i - (RIVER_SIZE - 1) / 2) * RIVER_
  * Corporation's half with `BANNER_Y * fixedSide(player)`.
  */
 export const TRACK_STEPS = 7
-export const trackX = (step: number): number => ((TRACK_STEPS - 1) / 2 - step) * RIVER_GAP
+export const trackX = (step: number): number => CENTRE_X + ((TRACK_STEPS - 1) / 2 - step) * RIVER_GAP
 
 // --- Reserve: left of the River ---
-export const RESERVE_X = -34
-export const RESERVE_Y = 0
+export const RESERVE_X = CENTRE_X - 34
+export const RESERVE_Y = CENTRE_Y
 
-// --- Virus track: far left, laid out vertically around the Central Port ---
-export const VIRUS_TRACK_X = 35
-export const CENTRAL_PORT_Y = 0
-/** y of a Corporation's Virus pile (and of its current top Virus card), measured from the Central Port. */
-export const VIRUS_PILE_Y = 7
+// --- Virus track: centred in x, between the two players, laid out horizontally around the Central
+// Port (rotated 90°) — Star's pile on the left, Moon's on the right (cornerSide). ---
+export const CENTRAL_PORT_X = 0
+// Sits between the two players' personal corners, level with PlayArea (y=0) and Deck/Hand (y=18).
+export const VIRUS_TRACK_Y = 8
+/** x of a Corporation's Virus pile (and of its current top Virus card), measured from the Central Port. */
+export const VIRUS_PILE_X = 7
 
-// --- Per-player bands (multiplied by side()) ---
-export const BANNER_Y = 6.5
-export const HAND_BONUS_SPOT_Y = 2
-export const CORRUPTION_Y = 15
-export const CORRUPTION_SLOT_GAP = 8
+// --- CorruptionZone: each slot in the same column as the River card it corrupts, multiplied by fixedSide() ---
+export const CORRUPTION_Y = 10
 export const CORRUPTION_STACK_GAP = 1.4
-export const CORRUPTION_SLOTS = 6
-export const corruptionSlotX = (slot: number): number => (slot - (CORRUPTION_SLOTS - 1) / 2) * CORRUPTION_SLOT_GAP
 
-export const PLAY_AREA_Y = 26
+// --- Banner and Hand Bonus tokens: on the shared centre line, multiplied by fixedSide() ---
+export const BANNER_Y = 3
+export const HAND_BONUS_SPOT_Y = 2
+
+// --- Personal corner (multiplied by cornerSide()): Deck, Discard, Hand, PlayArea, collected
+// PlayerHandBonus tokens. Below the River — Star's corner on the left, Moon's on the right.
+// Deck/Discard/Hand sit almost against the bottom edge, with PlayArea just above the Deck. ---
+export const PLAY_AREA_Y = 0
 export const PLAY_AREA_GAP = 7
 
-export const HAND_X = -48
-export const HAND_Y = 5
+export const HAND_X = 38
+export const HAND_Y = 11
 export const HAND_RADIUS = 26
 
-export const DECK_X = -60
-export const DECK_Y = 5
-export const DISCARD_X = -70
-export const DISCARD_Y = 5
-export const PLAYER_HAND_BONUS_X = 33
-export const PLAYER_HAND_BONUS_Y = 22
+export const DECK_X = 50
+export const DECK_Y = 11
+export const DISCARD_X = 60
+export const DISCARD_Y = 11
 export const PLAYER_HAND_BONUS_GAP = 4.6
 
 // --- Box: cards removed from the game, parked off to the side ---

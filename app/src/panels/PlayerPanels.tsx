@@ -16,7 +16,7 @@ export const PlayerPanels = () => {
 
   return createPortal(
     <>
-      {players.map((player, index) => {
+      {players.map((player) => {
         // "Any resource" points count towards every resource at once.
         const flex = rules.remind<number>(Memory.FlexPoints, player.id) ?? 0
         const counters = [
@@ -25,16 +25,46 @@ export const PlayerPanels = () => {
           { image: virusIcon, value: (rules.remind<number>(Memory.VirusPoints, player.id) ?? 0) + flex },
           { image: coinIcon, value: rules.remind<number>(Memory.Coins, player.id) ?? 0 }
         ]
-        return <StyledPlayerPanel key={player.id} player={player} css={panelPosition(index)} activeRing counters={counters} countersPerLine={4} />
+        return (
+          <StyledPlayerPanel
+            key={player.id}
+            player={player}
+            css={[panelPosition(player.id), panelColor(player.id)]}
+            activeRing
+            counters={counters}
+            countersPerLine={4}
+          />
+        )
       })}
     </>,
     root
   )
 }
 
-const panelPosition = (index: number) => css`
+/**
+ * Star's panel top-left, Moon's top-right — matching each Corporation's home corner on the table.
+ * `top: 8em` clears the header bar (buttons/title fixed at the very top). The zoom buttons
+ * ({@link GameTableNavigation}, in `GameDisplay.tsx`) are pushed right of the Star panel instead of
+ * the other way around.
+ */
+const panelPosition = (corporation: Corporation) => css`
   position: absolute;
-  right: 1em;
-  top: ${8.5 + index * 16}em;
+  top: 8em;
+  ${corporation === Corporation.Star ? 'left' : 'right'}: 1em;
   width: 28em;
 `
+
+/**
+ * Background colour matching each Corporation's Banner standee: Star's is light plastic, Moon's is
+ * dark. `!important` guards against the panel's own default white background, whose stylesheet rule
+ * may otherwise be inserted after this one and win the equal-specificity tie.
+ */
+const panelColor = (corporation: Corporation) =>
+  corporation === Corporation.Star
+    ? css`
+        background-color: #f0f0ee !important;
+      `
+    : css`
+        background-color: #1c1c1e !important;
+        color: white !important;
+      `

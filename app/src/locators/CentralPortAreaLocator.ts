@@ -1,20 +1,15 @@
-import { Locator, MaterialContext } from '@gamepark/react-game'
-import { Location } from '@gamepark/rules-api'
-import { boardFlip, boardFlipRotation, CENTRAL_PORT_Y, VIRUS_TRACK_X } from './SanLayout'
+import { Locator } from '@gamepark/react-game'
+import { CENTRAL_PORT_X, VIRUS_TRACK_Y } from './SanLayout'
 
-/** The Central Port tile, at the middle of the Virus track. */
+/** The Central Port tile, centred between the two players, in the middle of the Virus track. */
 class CentralPortAreaLocator extends Locator {
-  getCoordinates(_location: Location, context: MaterialContext) {
-    const f = boardFlip(context)
-    return { x: VIRUS_TRACK_X * f, y: CENTRAL_PORT_Y * f }
+  getCoordinates() {
+    return { x: CENTRAL_PORT_X, y: VIRUS_TRACK_Y }
   }
 
-  getRotateZ(_location: Location, context: MaterialContext) {
-    return boardFlipRotation(context)
-  }
-
-  getPositionDependencies(_location: Location, context: MaterialContext) {
-    return { viewer: context.player }
+  /** The tile's long side follows the Virus track, now running left-to-right between the players. */
+  getRotateZ() {
+    return 90
   }
 }
 
