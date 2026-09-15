@@ -6,6 +6,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { gameAnimations } from './animations/GameAnimations'
 import { App } from './App'
+import { SanLogDescription } from './logs/SanLogDescription'
 import { Locators } from './locators/Locators'
 import { Material } from './material/Material'
 import { Scoring } from './Scoring'
@@ -20,6 +21,7 @@ createRoot(document.getElementById('root')!).render(
       GameSetup={SanSetup}
       material={Material}
       locators={Locators}
+      logs={new SanLogDescription()}
       animations={gameAnimations}
       scoring={Scoring}
       theme={theme}
