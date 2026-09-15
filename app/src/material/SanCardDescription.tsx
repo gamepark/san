@@ -1,10 +1,14 @@
+import { faDollarSign } from '@fortawesome/free-solid-svg-icons/faDollarSign'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { LocationType } from '@gamepark/san/material/LocationType'
 import { MaterialType } from '@gamepark/san/material/MaterialType'
 import { SanCard } from '@gamepark/san/material/SanCard'
 import { RuleId } from '@gamepark/san/rules/RuleId'
-import { CardDescription, ItemContext, MaterialContentProps } from '@gamepark/react-game'
-import { isDeleteItemType, isMoveItemType, MaterialMove } from '@gamepark/rules-api'
+import { CardDescription, ItemContext, ItemMenuButton, MaterialContentProps } from '@gamepark/react-game'
+import { isDeleteItemType, isMoveItemType, MaterialItem, MaterialMove } from '@gamepark/rules-api'
+import { Trans } from 'react-i18next'
 import { CrossingCostBadge } from './CrossingCostBadge'
+import { SanCardHelp } from './help/SanCardHelp'
 import back from '../images/cards/CardBack.jpg'
 import moonPropaganda from '../images/cards/start/MoonPropaganda.jpg'
 import moonHacking from '../images/cards/start/MoonHacking.jpg'
@@ -66,6 +70,7 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
   width = 6.3
   height = 8.8
   borderRadius = 0.3
+  help = SanCardHelp
 
   backImage = back
 
@@ -126,14 +131,14 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
   /**
    * A short click on a card triggers its one obvious move for the phase currently running, instead of
    * requiring a drag: playing a hand card ({@link RuleId.PlayCards} to PlayArea, or Discard for a
-   * Virus card, and {@link RuleId.PlayFromDiscard}), buying a River card ({@link RuleId.BuyCards} to
-   * Discard), corrupting a River or hand card ({@link RuleId.PlayCards} and
-   * {@link RuleId.CorruptFromHand}, both to CorruptionZone), and destroying a hand card
-   * ({@link RuleId.DestroyCard}, a {@link deleteItem} move — there is no box drop zone on the table,
-   * so the click is the whole interaction). When a card has more than one legal target (e.g. several
-   * free CorruptionZone slots), the framework only short-clicks a move that is unique for that card,
-   * so this can stay this permissive without picking the target itself. Outside these rules, or when
-   * ambiguous, a click still just opens help.
+   * Virus card, and {@link RuleId.PlayFromDiscard}), corrupting a River or hand card
+   * ({@link RuleId.PlayCards} and {@link RuleId.CorruptFromHand}, both to CorruptionZone), and
+   * destroying a hand card ({@link RuleId.DestroyCard}, a {@link deleteItem} move — there is no box
+   * drop zone on the table, so the click is the whole interaction). Buying ({@link RuleId.BuyCards})
+   * is deliberately not here: it gets its own "Acheter" button instead — see {@link getItemMenu}. When
+   * a card has more than one legal target (e.g. several free CorruptionZone slots), the framework only
+   * short-clicks a move that is unique for that card, so this can stay this permissive without picking
+   * the target itself. Outside these rules, or when ambiguous, a click still just opens help.
    */
   canShortClick(move: MaterialMove, context: ItemContext) {
     const ruleId = context.rules.game.rule?.id
@@ -150,13 +155,31 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
         )
       case RuleId.PlayFromDiscard:
         return move.location.type === LocationType.PlayArea
-      case RuleId.BuyCards:
-        return move.location.type === LocationType.Discard
       case RuleId.CorruptFromHand:
         return move.location.type === LocationType.CorruptionZone
       default:
         return false
     }
+  }
+
+  // Buttons are always shown (rather than only on hover/selection) so "Acheter" stays reachable on
+  // touch devices, same convention as rival-cities' AllianceCardDescription.
+  menuAlwaysVisible = true
+
+  /** "Acheter" button on every River card the current buying income can afford ({@link RuleId.BuyCards}, to Discard). */
+  getItemMenu(item: MaterialItem, context: ItemContext, legalMoves: MaterialMove[]) {
+    if (context.rules.game.rule?.id !== RuleId.BuyCards || item.location.type !== LocationType.River) return
+    const buy = legalMoves.find(
+      (move) => isMoveItemType(MaterialType.Card)(move) && move.itemIndex === context.index && move.location.type === LocationType.Discard
+    )
+    if (!buy) return
+    // Top-right corner of the card (width 6.3 / height 8.8, so half-width 3.15 / half-height 4.4),
+    // inset a bit so it doesn't hang off the edge.
+    return (
+      <ItemMenuButton label={<Trans i18nKey="button.buy" />} x={2.3} y={-5} move={buy}>
+        <FontAwesomeIcon icon={faDollarSign} />
+      </ItemMenuButton>
+    )
   }
 
   /** Crossing-cost badges, only meaningful (and only rendered) while the card sits in the River. */

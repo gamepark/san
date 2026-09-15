@@ -2,7 +2,7 @@ import { Corporation } from '@gamepark/san/Corporation'
 import { MaterialType } from '@gamepark/san/material/MaterialType'
 import { RuleId } from '@gamepark/san/rules/RuleId'
 import { ItemContext, TokenDescription } from '@gamepark/react-game'
-import { isMoveItemType, MaterialMove } from '@gamepark/rules-api'
+import { isMoveItemType, MaterialItem, MaterialMove } from '@gamepark/rules-api'
 import moonBanner from '../images/pawns/MoonBanner.png'
 import starBanner from '../images/pawns/StarBanner.png'
 
@@ -28,6 +28,11 @@ class BannerDescription extends TokenDescription<number, number, number, Corpora
       isMoveItemType(MaterialType.Banner)(move) &&
       move.itemIndex === context.index
     )
+  }
+
+  /** No help dialog for the banner: it carries no printed text worth explaining, only its own move. */
+  displayHelp(_item: MaterialItem, _context: ItemContext) {
+    return undefined
   }
 }
 

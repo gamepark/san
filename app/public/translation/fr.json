@@ -29,11 +29,50 @@
   "effect.virus": "Hacking +{value}",
   "effect.draw": "Piocher {value}",
   "effect.any": "Effet",
+  "effect.multiplier": "Multiplicateur : vous gagnez autant de fois {gain} que de cartes {per} jouées lors de ce tour. La carte qui produit l’effet est comptabilisée. Deux cartes qui produisent l’effet Multiplicateur se cumulent.",
+  "effect.single-use": "Utilisation unique (ne peut pas être ignoré) : à la fin du tour où la carte a été jouée, remettez-la dans la boîte.",
+  "effect.copy-played": "Copier une carte jouée : vous copiez le type et les effets d’une carte jouée lors de ce tour. Le cas échéant, l’effet Utilisation Unique s’applique à la carte qui copie.",
+  "effect.copy-river": "Copier une carte de la Rivière : vous copiez le type et les effets d’une carte de la Rivière. La restriction d’un seul type de carte Mercenaire joué par tour s’applique. Le cas échéant, l’effet Utilisation Unique s’applique à la carte qui copie.",
+  "effect.destroy": "Détruire {value} carte(s) de votre main : vous les remettez dans la boîte.",
+  "effect.play-from-discard": "Jouer une carte de votre défausse : vous pouvez choisir une carte de votre défausse et la jouer. La restriction d’un seul type de carte Mercenaire par tour s’applique.",
+  "effect.all-types": "Jouer tous les types de votre choix : vous pouvez jouer tous les types de cartes Mercenaire que vous souhaitez lors de ce tour.",
+  "effect.corrupt-from-hand": "Corrompre une carte de votre main : vous pouvez corrompre n’importe quelle carte de votre main, sans le coût de 3 ressources habituel.",
+  "effect.either": "Utilisez l’effet placé avant OU après le « / » :",
+
+  "resource.corruption": "Corruption",
+  "resource.propaganda": "Propagande",
+  "resource.virus": "Hacking",
 
   "card.type.1": "Propagande",
   "card.type.2": "Hacking",
   "card.type.3": "Corruption",
   "card.type.4": "Matériel",
 
-  "pass": "Passer"
+  "help.card.mercenary": "Elles vous procurent des effets et/ou du Revenu. À votre tour, vous ne pouvez jouer qu’un seul type de cartes Mercenaire.",
+  "help.card.equipment": "Elles vous procurent des effets et/ou du Revenu. Elles peuvent être jouées seules ou avec des cartes Mercenaire de n’importe quel type (Propagande, Hacking, Corruption).",
+  "help.card.effects": "Effets",
+  "help.card.revenue": "Revenu : {value}",
+  "help.card.cost": "Coût pour l’acheter : {value}",
+  "help.card.crossing-cost": "Coût de traversée sur la piste Propagande : {value}",
+
+  "help.card.virus.title": "Carte Virus",
+  "help.card.virus.desc": "Les cartes Virus n’ont pas d’effets ni de coût. À votre tour, les cartes Virus peuvent être jouées de votre main : elles sont alors placées directement dans votre défausse, sans effet.",
+  "help.card.virus.chips": "Nombre de cases d’avancement sur la piste Virus : {value}",
+  "help.card.virus.number": "Numéro de la carte : {value}",
+
+  "help.hand-bonus-token.title": "Jeton Bonus de main",
+  "help.hand-bonus-token.desc": "Lorsque votre bannière arrive à l’emplacement d’un jeton Bonus de main, vous gagnez celui-ci et le placez à côté de votre pioche.",
+  "help.hand-bonus-token.effect": "Augmente la taille de votre main d’une carte : à chaque phase Recomposer votre main, vous la recomposerez avec une carte de plus.",
+
+  "help.central-port.title": "Port Central",
+  "help.central-port.desc": "Sépare, au centre de la piste Virus, la carte Virus de chaque Corporation.",
+  "help.central-port.advance": "Faire franchir le Port Central au pion Virus depuis la carte Virus adverse la fait basculer, face cachée, sur la pioche de son propriétaire. Si vous faites basculer la dernière carte de votre adversaire, vous fait remporter la partie par Hacking.",
+  "help.central-port.retreat": "Faire franchir le Port Central au pion Virus en le reculant sur votre propre carte Virus n’a aucun effet.",
+
+  "pass": "Passer",
+  "button.buy": "Acheter",
+  "help.button.buy": "Acheter cette carte",
+  "help.button.play": "Jouer cette carte",
+  "help.button.corrupt": "Corrompre cette carte",
+  "help.button.destroy": "Détruire cette carte"
 }

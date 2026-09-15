@@ -1,5 +1,6 @@
 import { Corporation } from '@gamepark/san/Corporation'
 import { TokenDescription } from '@gamepark/react-game'
+import { HandBonusTokenHelp } from './help/HandBonusTokenHelp'
 import moonHandBonus from '../images/tokens/MoonHandBonus.png'
 import starHandBonus from '../images/tokens/StarHandBonus.png'
 
@@ -9,6 +10,7 @@ class HandBonusTokenDescription extends TokenDescription<number, number, number,
   height = 2.7
   borderRadius = 0.3
   transparency = true
+  help = HandBonusTokenHelp
 
   images = {
     [Corporation.Moon]: moonHandBonus,

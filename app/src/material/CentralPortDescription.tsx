@@ -1,4 +1,5 @@
 import { TokenDescription } from '@gamepark/react-game'
+import { CentralPortHelp } from './help/CentralPortHelp'
 import centralPort from '../images/tiles/CentralPort.png'
 
 /** The single Central Port tile, at the middle of the Virus track (84x28 mm, image carries a baked shadow). */
@@ -7,6 +8,7 @@ class CentralPortDescription extends TokenDescription {
   height = 4
   borderRadius = 0.3
   transparency = true
+  help = CentralPortHelp
 
   image = centralPort
 }
