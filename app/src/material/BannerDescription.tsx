@@ -1,5 +1,8 @@
 import { Corporation } from '@gamepark/san/Corporation'
-import { TokenDescription } from '@gamepark/react-game'
+import { MaterialType } from '@gamepark/san/material/MaterialType'
+import { RuleId } from '@gamepark/san/rules/RuleId'
+import { ItemContext, TokenDescription } from '@gamepark/react-game'
+import { isMoveItemType, MaterialMove } from '@gamepark/rules-api'
 import moonBanner from '../images/pawns/MoonBanner.png'
 import starBanner from '../images/pawns/StarBanner.png'
 
@@ -13,6 +16,18 @@ class BannerDescription extends TokenDescription<number, number, number, Corpora
   images = {
     [Corporation.Moon]: moonBanner,
     [Corporation.Star]: starBanner
+  }
+
+  /**
+   * A short click advances the banner one step instead of requiring a drag ({@link PlayCardsRule.propagandaMoves},
+   * the only move ever offered for a Banner, so there is no target to disambiguate).
+   */
+  canShortClick(move: MaterialMove, context: ItemContext) {
+    return (
+      context.rules.game.rule?.id === RuleId.PlayCards &&
+      isMoveItemType(MaterialType.Banner)(move) &&
+      move.itemIndex === context.index
+    )
   }
 }
 

@@ -1,8 +1,10 @@
+import { LocationType } from '@gamepark/san/material/LocationType'
 import { MaterialType } from '@gamepark/san/material/MaterialType'
 import { SanCard } from '@gamepark/san/material/SanCard'
 import { RuleId } from '@gamepark/san/rules/RuleId'
-import { CardDescription, ItemContext } from '@gamepark/react-game'
-import { isDeleteItemType, MaterialMove } from '@gamepark/rules-api'
+import { CardDescription, ItemContext, MaterialContentProps } from '@gamepark/react-game'
+import { isDeleteItemType, isMoveItemType, MaterialMove } from '@gamepark/rules-api'
+import { CrossingCostBadge } from './CrossingCostBadge'
 import back from '../images/cards/CardBack.jpg'
 import moonPropaganda from '../images/cards/start/MoonPropaganda.jpg'
 import moonHacking from '../images/cards/start/MoonHacking.jpg'
@@ -122,17 +124,52 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
   }
 
   /**
-   * "Destroy a card" effect ({@link RuleId.DestroyCard}): a short click on a hand card sends it to
-   * the box (a {@link deleteItem} move emitted by {@link DestroyCardRule}). There is no box drop zone
-   * on the table, so the click is the whole interaction. Outside that rule, a click still opens help.
+   * A short click on a card triggers its one obvious move for the phase currently running, instead of
+   * requiring a drag: playing a hand card ({@link RuleId.PlayCards} to PlayArea, or Discard for a
+   * Virus card, and {@link RuleId.PlayFromDiscard}), buying a River card ({@link RuleId.BuyCards} to
+   * Discard), corrupting a River or hand card ({@link RuleId.PlayCards} and
+   * {@link RuleId.CorruptFromHand}, both to CorruptionZone), and destroying a hand card
+   * ({@link RuleId.DestroyCard}, a {@link deleteItem} move — there is no box drop zone on the table,
+   * so the click is the whole interaction). When a card has more than one legal target (e.g. several
+   * free CorruptionZone slots), the framework only short-clicks a move that is unique for that card,
+   * so this can stay this permissive without picking the target itself. Outside these rules, or when
+   * ambiguous, a click still just opens help.
    */
   canShortClick(move: MaterialMove, context: ItemContext) {
-    return (
-      context.rules.game.rule?.id === RuleId.DestroyCard &&
-      isDeleteItemType(MaterialType.Card)(move) &&
-      move.itemIndex === context.index
-    )
+    const ruleId = context.rules.game.rule?.id
+    if (ruleId === RuleId.DestroyCard) {
+      return isDeleteItemType(MaterialType.Card)(move) && move.itemIndex === context.index
+    }
+    if (!isMoveItemType(MaterialType.Card)(move) || move.itemIndex !== context.index) return false
+    switch (ruleId) {
+      case RuleId.PlayCards:
+        return (
+          move.location.type === LocationType.PlayArea ||
+          move.location.type === LocationType.Discard ||
+          move.location.type === LocationType.CorruptionZone
+        )
+      case RuleId.PlayFromDiscard:
+        return move.location.type === LocationType.PlayArea
+      case RuleId.BuyCards:
+        return move.location.type === LocationType.Discard
+      case RuleId.CorruptFromHand:
+        return move.location.type === LocationType.CorruptionZone
+      default:
+        return false
+    }
   }
+
+  /** Crossing-cost badges, only meaningful (and only rendered) while the card sits in the River. */
+  content = (props: MaterialContentProps<SanCard, number>) =>
+    this.contentWithBackChildren({
+      ...props,
+      children: (
+        <>
+          {props.children}
+          <CrossingCostBadge itemIndex={props.itemIndex} />
+        </>
+      )
+    })
 }
 
 export const sanCardDescription = new SanCardDescription()

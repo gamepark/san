@@ -25,7 +25,7 @@ export class EndTurnRule extends SanRule {
       const toBox = this.playArea.index((index) => singleUse.includes(index))
       if (toBox.length) moves.push(...toBox.deleteItems())
       const toDiscard = this.playArea.index((index) => !singleUse.includes(index))
-      if (toDiscard.length) moves.push(...toDiscard.moveItems({ type: LocationType.Discard, player }))
+      if (toDiscard.length) moves.push(toDiscard.moveItemsAtOnce({ type: LocationType.Discard, player }))
       moves.push(this.startRule(RuleId.EndTurn))
       return moves
     }
@@ -40,7 +40,8 @@ export class EndTurnRule extends SanRule {
           this.startRule(RuleId.EndTurn)
         ]
       }
-      return [this.deck.deck().dealOne({ type: LocationType.Hand, player }), this.startRule(RuleId.EndTurn)]
+      const dealt = Math.min(deficit, this.deck.length)
+      return [this.deck.deck().dealAtOnce({ type: LocationType.Hand, player }, dealt), this.startRule(RuleId.EndTurn)]
     }
 
     return this.nextTurn()

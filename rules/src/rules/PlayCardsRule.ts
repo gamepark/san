@@ -1,11 +1,11 @@
 import { CustomMove, isMoveItemType, ItemMove, MaterialMove, RuleMove, RuleStep } from '@gamepark/rules-api'
-import { Corporation } from '../Corporation'
 import { getCardData, isVirusCard } from '../material/CardsData'
 import { CardType, SanCard } from '../material/SanCard'
 import { CORRUPTION_GROUP, PROPAGANDA_END, RIVER_SIZE } from '../material/constants'
 import { LocationType } from '../material/LocationType'
 import { MaterialType } from '../material/MaterialType'
 import { CustomMoveType } from './CustomMoveType'
+import { crossingCost } from './helper/crossingCost'
 import { propagandaDirection, virusDirection } from './helper/directions'
 import { Memory } from './Memory'
 import { RuleId } from './RuleId'
@@ -55,7 +55,10 @@ export class PlayCardsRule extends SanRule {
     moves.push(...this.corruptionMoves())
     moves.push(...this.propagandaMoves())
     moves.push(...this.virusMoves())
-    if (this.remind(Memory.CardPlayed)) {
+    // Playing a card is mandatory when possible, but a player stuck with no playable card and no
+    // spendable resource (no other move at all) must still be able to end the phase — the app then
+    // counts this down and ends it for them (see AutoPassTimer).
+    if (this.remind(Memory.CardPlayed) || moves.length === 0) {
       moves.push(this.customMove(CustomMoveType.EndPlayPhase))
     }
     return moves
@@ -112,20 +115,8 @@ export class PlayCardsRule extends SanRule {
     const crossedRiverX = this.crossedRiverX(x, direction)
     const points = this.spendableResource(Memory.PropagandaPoints)
     // Need at least one movement point banked, and enough to cover the (possibly reduced) cost.
-    if (points < 1 || points < this.crossingCost(crossedRiverX, this.player)) return []
+    if (points < 1 || points < crossingCost(this, crossedRiverX, this.player)) return []
     return [banner.moveItem({ type: LocationType.PropagandaTrack, player: this.player, x: nextX })]
-  }
-
-  /** Crossing cost of the River card at `riverX`, adjusted by the corrupted cards facing it. */
-  crossingCost(riverX: number, player: Corporation): number {
-    const card = this.river.getItems<SanCard>().find((item) => item.location.x === riverX)
-    const base = (card && getCardData(card.id)?.crossingCost) ?? 0
-    const mine = this.material(MaterialType.Card).location(LocationType.CorruptionZone).player(player).filter((item) => item.location.x === riverX).length
-    const opponent = this.material(MaterialType.Card)
-      .location(LocationType.CorruptionZone)
-      .player((p) => p !== undefined && p !== player)
-      .filter((item) => item.location.x === riverX).length
-    return Math.max(0, base - mine + opponent)
   }
 
   /**
@@ -198,7 +189,7 @@ export class PlayCardsRule extends SanRule {
       const direction = propagandaDirection(this.game, this.player)
       const step = move.location.x ?? 0
       const previousStep = step - direction
-      this.spendResource(Memory.PropagandaPoints, this.crossingCost(this.crossedRiverX(previousStep, direction), this.player))
+      this.spendResource(Memory.PropagandaPoints, crossingCost(this, this.crossedRiverX(previousStep, direction), this.player))
       return this.collectHandBonus(step)
     }
     if (isMoveItemType(MaterialType.VirusPawn)(move) && move.location.type === LocationType.VirusTrack) {

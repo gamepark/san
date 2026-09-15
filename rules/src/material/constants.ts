@@ -13,6 +13,9 @@ export const CORRUPTION_SLOT_CAPACITY = 2
 /** Corrupted cards needed for a Corruption victory. */
 export const CORRUPTION_WIN = 12
 
+/** A Corporation's starting Virus cards; a Hacking victory drives all of the opponent's off. */
+export const VIRUS_WIN = 5
+
 /** Spiral points spent to corrupt one card. */
 export const CORRUPTION_GROUP = 3
 

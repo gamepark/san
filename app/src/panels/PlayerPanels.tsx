@@ -1,10 +1,13 @@
 import { css } from '@emotion/react'
-import { Corporation } from '@gamepark/san/Corporation'
-import { Memory } from '@gamepark/san/rules/Memory'
+import { Corporation, otherCorporation } from '@gamepark/san/Corporation'
+import { LocationType } from '@gamepark/san/material/LocationType'
+import { MaterialType } from '@gamepark/san/material/MaterialType'
+import { CORRUPTION_WIN, PROPAGANDA_END, VIRUS_WIN } from '@gamepark/san/material/constants'
+import { propagandaDirection } from '@gamepark/san/rules/helper/directions'
 import { SanRules } from '@gamepark/san/SanRules'
 import { StyledPlayerPanel, usePlayers, useRules } from '@gamepark/react-game'
 import { createPortal } from 'react-dom'
-import { coinIcon, corruptionIcon, propagandaIcon, virusIcon } from './resourceIcons'
+import { corruptionIcon, propagandaIcon, virusIcon } from './resourceIcons'
 
 export const PlayerPanels = () => {
   const players = usePlayers<Corporation>({ sortFromMe: true })
@@ -14,16 +17,24 @@ export const PlayerPanels = () => {
     return null
   }
 
+  // The per-turn resource counters used to show here (banked points to spend); they now sit above
+  // the Discard pile instead (see PlayerResourceCounters). These are the 3 victory conditions'
+  // progress instead: cards Corrupted, steps Propaganda has crossed, opponent's Virus cards Hacked
+  // off — each out of the total needed to win that way (rules p.22).
   return createPortal(
     <>
       {players.map((player) => {
-        // "Any resource" points count towards every resource at once.
-        const flex = rules.remind<number>(Memory.FlexPoints, player.id) ?? 0
+        const corruption = rules.material(MaterialType.Card).location(LocationType.CorruptionZone).player(player.id).length
+        const direction = propagandaDirection(rules.game, player.id)
+        const bannerX = rules.material(MaterialType.Banner).id(player.id).getItem()?.location.x ?? 0
+        const propaganda = direction === 1 ? bannerX : PROPAGANDA_END - bannerX
+        const hacking = VIRUS_WIN - rules.material(MaterialType.Card).location(LocationType.VirusPile).player(otherCorporation(player.id)).length
+        // White artwork (resourceIcons.ts) on the counter badge's own dark background (Counters' default
+        // styling) — no inversion needed here, unlike PlayerResourceCounters' lighter Star badge.
         const counters = [
-          { image: corruptionIcon, value: (rules.remind<number>(Memory.CorruptionPoints, player.id) ?? 0) + flex },
-          { image: propagandaIcon, value: (rules.remind<number>(Memory.PropagandaPoints, player.id) ?? 0) + flex },
-          { image: virusIcon, value: (rules.remind<number>(Memory.VirusPoints, player.id) ?? 0) + flex },
-          { image: coinIcon, value: rules.remind<number>(Memory.Coins, player.id) ?? 0 }
+          { image: corruptionIcon, value: `${corruption}/${CORRUPTION_WIN}` },
+          { image: propagandaIcon, value: `${propaganda}/${PROPAGANDA_END}` },
+          { image: virusIcon, value: `${hacking}/${VIRUS_WIN}` }
         ]
         return (
           <StyledPlayerPanel
@@ -32,7 +43,7 @@ export const PlayerPanels = () => {
             css={[panelPosition(player.id), panelColor(player.id)]}
             activeRing
             counters={counters}
-            countersPerLine={4}
+            countersPerLine={3}
           />
         )
       })}

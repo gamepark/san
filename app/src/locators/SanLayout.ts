@@ -65,7 +65,7 @@ export const VIRUS_TRACK_Y = 8
 export const VIRUS_PILE_X = 7
 
 // --- CorruptionZone: each slot in the same column as the River card it corrupts, multiplied by fixedSide() ---
-export const CORRUPTION_Y = 10
+export const CORRUPTION_Y = 11
 export const CORRUPTION_STACK_GAP = 1.4
 
 // --- Banner and Hand Bonus tokens: on the shared centre line, multiplied by fixedSide() ---
@@ -76,7 +76,8 @@ export const HAND_BONUS_SPOT_Y = 2
 // PlayerHandBonus tokens. Below the River — Star's corner on the left, Moon's on the right.
 // Deck/Discard/Hand sit almost against the bottom edge, with PlayArea just above the Deck. ---
 export const PLAY_AREA_Y = 0
-export const PLAY_AREA_GAP = 7
+/** Vertical climb between one played card and the next, in the stack — see {@link import('./PlayAreaLocator')}. */
+export const PLAY_AREA_STACK_GAP = 1.8
 
 export const HAND_X = 38
 export const HAND_Y = 11

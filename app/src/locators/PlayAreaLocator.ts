@@ -1,17 +1,21 @@
 import { ListLocator } from '@gamepark/react-game'
 import { Location } from '@gamepark/rules-api'
-import { cornerSide, DECK_X, PLAY_AREA_GAP, PLAY_AREA_Y } from './SanLayout'
+import { cornerSide, DECK_X, PLAY_AREA_STACK_GAP, PLAY_AREA_Y } from './SanLayout'
 
-/** Cards a Corporation has played in front of itself this turn, in a row just above its Deck. */
+/**
+ * Cards a Corporation has played in front of itself this turn, climbing in a stack just above its
+ * Deck. Each new card slides slightly behind the ones already there (the `z` step in {@link getGap}
+ * is negative) — same technique as Odysseus's `PlayerAdventureColumnLocator` and Dragon Bomb's
+ * `PlayerCapturedDragonLocator`: the first card played stays fully visible on top, and every card
+ * played after it only pokes its own top edge out above the stack.
+ */
 class PlayAreaLocator extends ListLocator {
   getCoordinates(location: Location) {
     return { x: cornerSide(location.player!) * DECK_X, y: PLAY_AREA_Y }
   }
 
-  // Fans toward the table centre, not toward its edge — the anchor (above the Deck) already sits close
-  // to the edge, so fanning further outward pushed cards off the table once several were in play.
-  getGap(location: Location) {
-    return { x: -PLAY_AREA_GAP * cornerSide(location.player!) }
+  getGap() {
+    return { y: -PLAY_AREA_STACK_GAP, z: -0.01 }
   }
 }
 
