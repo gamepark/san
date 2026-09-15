@@ -36,13 +36,8 @@ const INTERNAL_RULES = [
 export class PlayCardsRule extends SanRule {
   onRuleStart(_move: RuleMove, previousRule?: RuleStep): MaterialMove[] {
     if (!previousRule || !INTERNAL_RULES.includes(previousRule.id as RuleId)) {
-      for (const key of [Memory.CorruptionPoints, Memory.PropagandaPoints, Memory.VirusPoints, Memory.Coins, Memory.FlexPoints] as const) {
-        this.memorize(key, 0, this.player)
-      }
-      this.forget(Memory.PlayedMercenaryType)
-      this.forget(Memory.AllTypesAllowed)
-      this.forget(Memory.CardPlayed)
-      this.forget(Memory.SingleUseCards)
+      this.resourcesHelper.reset()
+      this.turnFlagsHelper.reset()
       this.forget(Memory.PendingEffects)
       this.forget(Memory.Multipliers)
     }
@@ -58,7 +53,7 @@ export class PlayCardsRule extends SanRule {
     // Playing a card is mandatory when possible, but a player stuck with no playable card and no
     // spendable resource (no other move at all) must still be able to end the phase — the app then
     // counts this down and ends it for them (see AutoPassTimer).
-    if (this.remind(Memory.CardPlayed) || moves.length === 0) {
+    if (this.turnFlagsHelper.flags.cardPlayed || moves.length === 0) {
       moves.push(this.customMove(CustomMoveType.EndPlayPhase))
     }
     return moves
@@ -75,7 +70,7 @@ export class PlayCardsRule extends SanRule {
       }
       const data = getCardData(id)
       if (!data) continue
-      if (data.type === CardType.Equipment || this.mercenaryTypePlayable(data.type)) {
+      if (data.type === CardType.Equipment || this.turnFlagsHelper.mercenaryTypePlayable(data.type)) {
         moves.push(this.material(MaterialType.Card).index(index).moveItem({ type: LocationType.PlayArea, player: this.player }))
       }
     }
@@ -88,7 +83,7 @@ export class PlayCardsRule extends SanRule {
    * the one whose banner crossing {@link crossingCost} then discounts (rules, p.14).
    */
   corruptionMoves(): MaterialMove[] {
-    if (this.spendableResource(Memory.CorruptionPoints) < CORRUPTION_GROUP) return []
+    if (this.resourcesHelper.spendable('corruption') < CORRUPTION_GROUP) return []
     return this.freeCorruptionPositions().flatMap((position) =>
       this.river.moveItems({ type: LocationType.CorruptionZone, player: this.player, x: position.x, y: position.y })
     )
@@ -113,7 +108,7 @@ export class PlayCardsRule extends SanRule {
     const nextX = x + direction
     if (nextX < 0 || nextX > PROPAGANDA_END) return []
     const crossedRiverX = this.crossedRiverX(x, direction)
-    const points = this.spendableResource(Memory.PropagandaPoints)
+    const points = this.resourcesHelper.spendable('propaganda')
     // Need at least one movement point banked, and enough to cover the (possibly reduced) cost.
     if (points < 1 || points < crossingCost(this, crossedRiverX, this.player)) return []
     return [banner.moveItem({ type: LocationType.PropagandaTrack, player: this.player, x: nextX })]
@@ -128,7 +123,7 @@ export class PlayCardsRule extends SanRule {
    * {@link afterItemMove}); retreating leads back through the Port and onto the player's own card.
    */
   virusMoves(): MaterialMove[] {
-    if (this.spendableResource(Memory.VirusPoints) < 1) return []
+    if (this.resourcesHelper.spendable('virus') < 1) return []
     const pawn = this.material(MaterialType.VirusPawn)
     const item = pawn.getItem()
     if (!item) return []
@@ -169,6 +164,26 @@ export class PlayCardsRule extends SanRule {
     return token.moveItems({ type: LocationType.PlayerHandBonus, player: this.player, x: collected })
   }
 
+  /**
+   * Runs before the Virus pawn's location is mutated, so the pawn's current position can still be
+   * read as its "from" step — {@link MoveItem} only ever carries the move's target location, never
+   * where the item came from (see `@gamepark/rules-api`'s `MoveItem` type).
+   */
+  beforeItemMove(move: ItemMove): MaterialMove[] {
+    if (isMoveItemType(MaterialType.VirusPawn)(move) && move.location.type === LocationType.VirusTrack) {
+      const pawn = this.material(MaterialType.VirusPawn)
+      const from = pawn.getItem()?.location.x ?? 0
+      const to = move.location.x ?? 0
+      this.resourcesHelper.spend('virus', 1)
+      // Arriving on the Central Port from the opponent's last space = their top Virus card is crossed.
+      const dir = virusDirection(this.game, this.player)
+      if (to === 0 && from === dir * this.virusChips(this.virusOpponent)) {
+        return this.driveOffTopVirusCard()
+      }
+    }
+    return []
+  }
+
   afterItemMove(move: ItemMove): MaterialMove[] {
     if (isMoveItemType(MaterialType.Card)(move)) {
       if (move.location.type === LocationType.PlayArea) {
@@ -176,11 +191,11 @@ export class PlayCardsRule extends SanRule {
       }
       if (move.location.type === LocationType.Discard) {
         // A Virus card played from hand: no effect, but it counts as "a card played".
-        this.memorize(Memory.CardPlayed, true)
+        this.turnFlagsHelper.setCardPlayed()
         return []
       }
       if (move.location.type === LocationType.CorruptionZone) {
-        this.spendResource(Memory.CorruptionPoints, CORRUPTION_GROUP)
+        this.resourcesHelper.spend('corruption', CORRUPTION_GROUP)
         // Refill the emptied River slot; an empty Reserve ends the game (rules, p.22).
         return this.reserve.length ? [this.reserve.deck().dealOne({ type: LocationType.River })] : [this.endGame()]
       }
@@ -189,20 +204,8 @@ export class PlayCardsRule extends SanRule {
       const direction = propagandaDirection(this.game, this.player)
       const step = move.location.x ?? 0
       const previousStep = step - direction
-      this.spendResource(Memory.PropagandaPoints, crossingCost(this, this.crossedRiverX(previousStep, direction), this.player))
+      this.resourcesHelper.spend('propaganda', crossingCost(this, this.crossedRiverX(previousStep, direction), this.player))
       return this.collectHandBonus(step)
-    }
-    if (isMoveItemType(MaterialType.VirusPawn)(move) && move.location.type === LocationType.VirusTrack) {
-      this.spendResource(Memory.VirusPoints, 1)
-      const from = this.remind<number>(Memory.VirusPawnStep) ?? 0
-      const to = move.location.x ?? 0
-      this.memorize(Memory.VirusPawnStep, to)
-      // Arriving on the Central Port from the opponent's last space = their top Virus card is crossed.
-      const dir = virusDirection(this.game, this.player)
-      if (to === 0 && from === dir * this.virusChips(this.virusOpponent)) {
-        return this.driveOffTopVirusCard()
-      }
-      return []
     }
     return []
   }
@@ -213,13 +216,9 @@ export class PlayCardsRule extends SanRule {
    */
   driveOffTopVirusCard(): MaterialMove[] {
     const opponent = this.virusOpponent
-    const pile = this.virusPile(opponent)
-    const indexes = pile.getIndexes()
-    if (!indexes.length) return []
-    const topIndex = indexes.reduce((best, i) =>
-      (pile.getItem(i)!.location.x ?? 0) > (pile.getItem(best)!.location.x ?? 0) ? i : best
-    )
-    return [this.material(MaterialType.Card).index(topIndex).moveItem({ type: LocationType.Deck, player: opponent })]
+    return this.virusPile(opponent)
+      .maxBy((item) => item.location.x ?? 0)
+      .moveItems({ type: LocationType.Deck, player: opponent })
   }
 
   onCustomMove(move: CustomMove): MaterialMove[] {

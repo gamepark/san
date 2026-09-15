@@ -27,7 +27,7 @@ export class PlayFromDiscardRule extends SanRule {
     return this.discard.getIndexes().filter((index) => {
       const data = getCardData(this.material(MaterialType.Card).getItem<SanCard>(index).id)
       if (!data) return false
-      return data.type === CardType.Equipment || this.mercenaryTypePlayable(data.type)
+      return data.type === CardType.Equipment || this.turnFlagsHelper.mercenaryTypePlayable(data.type)
     })
   }
 

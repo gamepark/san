@@ -2,11 +2,15 @@ import { MaterialGame } from '@gamepark/rules-api'
 import { Corporation } from '../../Corporation'
 
 /**
- * Direction a Corporation moves its banner along the (shared) Propaganda track.
- * The two Corporations sit on opposite sides of the table and both move "to their right":
- * the first player goes 0 → {@link import('../../material/constants').PROPAGANDA_END}, the second the other way.
+ * Direction a Corporation moves its banner along the (shared) Propaganda track. Fixed by Corporation
+ * identity, like {@link virusDirection} below — not by seat order, which has no reason to match which
+ * Corporation a player picked (see {@link import('../../SanSetup').SanSetup.setupPropagandaTracks}
+ * and {@link import('../../../app/src/locators/SanLayout').fixedSide} / {@link
+ * import('../../../app/src/locators/SanLayout').cornerSide}, both keyed by identity too).
+ * Moon starts at step 0 and moves towards {@link import('../../material/constants').PROPAGANDA_END};
+ * Star starts at PROPAGANDA_END and moves the other way.
  */
-export const propagandaDirection = (game: MaterialGame, player: Corporation): 1 | -1 => (game.players[0] === player ? 1 : -1)
+export const propagandaDirection = (_game: MaterialGame, player: Corporation): 1 | -1 => (player === Corporation.Moon ? 1 : -1)
 
 /**
  * Direction a Corporation "advances" the Virus pawn (towards the opponent's Virus cards).

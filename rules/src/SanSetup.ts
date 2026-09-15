@@ -1,6 +1,7 @@
 import { MaterialGameSetup } from '@gamepark/rules-api'
 import { Corporation } from './Corporation'
 import { getCardData } from './material/CardsData'
+import { HAND_SIZE, PROPAGANDA_END, RIVER_SIZE } from './material/constants'
 import { LocationType } from './material/LocationType'
 import { MaterialType } from './material/MaterialType'
 import { getCardCopies, riverCards, SanCard, startCards, virusCards } from './material/SanCard'
@@ -11,12 +12,6 @@ import { SanRules } from './SanRules'
 
 /** Expands a list of card designs into one entry per physical copy (see {@link getCardCopies}). */
 const withCopies = (designs: SanCard[]): SanCard[] => designs.flatMap((id) => Array<SanCard>(getCardCopies(id)).fill(id))
-
-/** Number of cards making up the River (and steps of the Propaganda track minus one). */
-const RIVER_SIZE = 6
-
-/** Cards each Corporation draws for its starting hand (7 for a first game — not handled here). */
-const STARTING_HAND = 6
 
 /**
  * This class creates a new Game based on the game options
@@ -52,7 +47,7 @@ export class SanSetup extends MaterialGameSetup<Corporation, MaterialType, Locat
         .location(LocationType.Deck)
         .player(player)
         .deck()
-        .deal({ type: LocationType.Hand, player }, STARTING_HAND)
+        .deal({ type: LocationType.Hand, player }, HAND_SIZE)
     }
   }
 
@@ -115,12 +110,15 @@ export class SanSetup extends MaterialGameSetup<Corporation, MaterialType, Locat
   }
 
   /**
-   * Each Corporation's banner starts on its own end of the Propaganda track (first player: left,
-   * step 0; second player: right, step 6); the 2 Hand Bonus tokens sit further along it.
+   * Each Corporation's banner starts on its own end of the Propaganda track — Moon at step 0 (right,
+   * see {@link import('./rules/helper/directions').propagandaDirection}), Star at {@link
+   * PROPAGANDA_END} (left) — matching the fixed side each sits on visually ({@link
+   * import('../../app/src/locators/SanLayout').fixedSide}), not the seat order; the 2 Hand Bonus
+   * tokens sit further along it.
    */
   setupPropagandaTracks() {
-    this.players.forEach((player, index) => {
-      const x = index === 0 ? 0 : RIVER_SIZE
+    this.players.forEach((player) => {
+      const x = player === Corporation.Moon ? 0 : PROPAGANDA_END
       this.material(MaterialType.Banner).createItem({ id: player, location: { type: LocationType.PropagandaTrack, player, x } })
       for (const step of [2, 4]) {
         this.material(MaterialType.HandBonusToken).createItem({ id: player, location: { type: LocationType.HandBonusSpot, player, x: step } })

@@ -6,7 +6,7 @@ import { Memory } from '../Memory'
 import { SanRule } from '../SanRule'
 
 /**
- * "Corrupt a card from your hand": the player may move up to {@link Memory.EffectRepeat} hand cards
+ * "Corrupt a card from your hand": the player may move up to {@link Memory.RepeatCount} hand cards
  * into a free Corruption slot (no group-of-3 cost). Optional, so a "pass" is offered.
  */
 export class CorruptFromHandRule extends SanRule {
@@ -27,9 +27,9 @@ export class CorruptFromHandRule extends SanRule {
 
   afterItemMove(move: ItemMove): MaterialMove[] {
     if (!isMoveItemType(MaterialType.Card)(move) || move.location.type !== LocationType.CorruptionZone) return []
-    const remaining = (this.remind<number>(Memory.EffectRepeat) ?? 1) - 1
+    const remaining = (this.remind<number>(Memory.RepeatCount) ?? 1) - 1
     if (remaining <= 0 || this.hand.length === 0 || this.freeCorruptionPositions().length === 0) return this.finish()
-    this.memorize(Memory.EffectRepeat, remaining)
+    this.memorize(Memory.RepeatCount, remaining)
     return []
   }
 
@@ -38,7 +38,7 @@ export class CorruptFromHandRule extends SanRule {
   }
 
   finish(): MaterialMove[] {
-    this.forget(Memory.EffectRepeat)
+    this.forget(Memory.RepeatCount)
     return this.finishCurrentEffect()
   }
 }

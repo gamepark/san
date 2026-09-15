@@ -3,17 +3,23 @@ import { Corporation, otherCorporation } from '../Corporation'
 import { LocationType } from '../material/LocationType'
 import { MaterialType } from '../material/MaterialType'
 import { CardEffect, EffectType, getCardData, isMercenaryType } from '../material/CardsData'
-import { virusCardChips } from '../material/constants'
-import { CardType, SanCard, virusNumber } from '../material/SanCard'
+import { CORRUPTION_SLOT_CAPACITY, CORRUPTION_SLOTS, virusCardChips } from '../material/constants'
+import { SanCard, virusNumber } from '../material/SanCard'
 import { clone } from './clone'
+import { ResourcesHelper } from './helper/ResourcesHelper'
+import { TurnFlagsHelper } from './helper/TurnFlagsHelper'
 import { Memory } from './Memory'
 import { RuleId } from './RuleId'
 
 /**
- * Shared helpers for every rule of a player turn: access to the player's piles, to the effect queue
- * of the card currently being played, and to the per-turn resource counters.
+ * Shared helpers for every rule of a player turn: access to the player's piles and to the effect
+ * queue of the card currently being played. Resources and turn flags live in their own {@link
+ * ResourcesHelper} / {@link TurnFlagsHelper} (see `./helper`).
  */
 export abstract class SanRule extends PlayerTurnRule<Corporation, MaterialType, LocationType> {
+  resourcesHelper = new ResourcesHelper(this.game, this.player)
+  turnFlagsHelper = new TurnFlagsHelper(this.game)
+
   get hand() {
     return this.material(MaterialType.Card).location(LocationType.Hand).player(this.player)
   }
@@ -60,6 +66,11 @@ export abstract class SanRule extends PlayerTurnRule<Corporation, MaterialType, 
     return this.material(MaterialType.Card).location(LocationType.Reserve)
   }
 
+  /** Move the whole discard pile back onto the deck and shuffle it — the deck ran dry mid-deal. */
+  reshuffleDiscardIntoDeck(): MaterialMove[] {
+    return [this.discard.moveItemsAtOnce({ type: LocationType.Deck, player: this.player }), this.discard.shuffle()]
+  }
+
   /** The effects still to resolve for the card being played, front first. */
   get effectQueue(): CardEffect[] {
     return this.remind<CardEffect[]>(Memory.PendingEffects) ?? []
@@ -77,71 +88,23 @@ export abstract class SanRule extends PlayerTurnRule<Corporation, MaterialType, 
     return [this.startRule(RuleId.ResolveEffects)]
   }
 
-  /** Add `amount` to one of the per-player resource counters. */
-  addPoints(key: Memory.CorruptionPoints | Memory.PropagandaPoints | Memory.VirusPoints | Memory.Coins, amount: number) {
-    this.memorize<number>(key, (value) => (value ?? 0) + amount, this.player)
-  }
-
-  points(key: Memory.CorruptionPoints | Memory.PropagandaPoints | Memory.VirusPoints | Memory.Coins, player = this.player): number {
-    return this.remind<number>(key, player) ?? 0
-  }
-
-  /** "Any resource" points, usable as Corruption, Propaganda or Virus (see {@link Memory.FlexPoints}). */
-  flexPoints(player = this.player): number {
-    return this.remind<number>(Memory.FlexPoints, player) ?? 0
-  }
-
-  addFlexPoints(amount: number) {
-    this.memorize<number>(Memory.FlexPoints, (value) => (value ?? 0) + amount, this.player)
-  }
-
-  /** Points available for a resource action: its own counter plus the shared "any resource" pool. */
-  spendableResource(key: Memory.CorruptionPoints | Memory.PropagandaPoints | Memory.VirusPoints, player = this.player): number {
-    return this.points(key, player) + this.flexPoints(player)
-  }
-
-  /**
-   * Pay `cost` of a resource: spend that resource's own counter first, then take only the shortfall
-   * from the shared "any resource" pool ({@link Memory.FlexPoints}). Each pool is simply decremented
-   * by what it covers — unused points are lost at the end of the turn, not the moment a pool is
-   * first tapped. So three "gain any resource" cards give three points that can be split between
-   * Virus / Propaganda / Corruption actions.
-   */
-  spendResource(key: Memory.CorruptionPoints | Memory.PropagandaPoints | Memory.VirusPoints, cost: number) {
-    const owned = this.points(key)
-    this.memorize<number>(key, Math.max(0, owned - cost), this.player)
-    const fromFlex = cost - owned
-    if (fromFlex > 0) {
-      this.memorize<number>(Memory.FlexPoints, (value) => Math.max(0, (value ?? 0) - fromFlex), this.player)
-    }
-  }
-
-  /** Whether a Mercenary card of that type may still be played this turn. */
-  mercenaryTypePlayable(type: CardType): boolean {
-    if (this.remind(Memory.AllTypesAllowed)) return true
-    const played = this.remind<CardType | undefined>(Memory.PlayedMercenaryType)
-    return played === undefined || played === type
-  }
-
   /**
    * Register a card that just entered the play area: bank its revenue, lock the Mercenary type,
    * flag it for the box if it is Single Use, then queue its effects for resolution.
    */
   playCardEffects(itemIndex: number): MaterialMove[] {
-    this.memorize(Memory.CardPlayed, true)
+    this.turnFlagsHelper.setCardPlayed()
     const id = this.material(MaterialType.Card).getItem<SanCard>(itemIndex).id
     const data = getCardData(id)
     if (!data) return [this.startRule(RuleId.ResolveEffects)]
 
-    if (data.revenue) this.addPoints(Memory.Coins, data.revenue)
-    if (isMercenaryType(data.type) && !this.remind(Memory.AllTypesAllowed) && this.remind(Memory.PlayedMercenaryType) === undefined) {
-      this.memorize(Memory.PlayedMercenaryType, data.type)
-    }
+    if (data.revenue) this.resourcesHelper.addPoints('coins', data.revenue)
+    if (isMercenaryType(data.type)) this.turnFlagsHelper.lockMercenaryType(data.type)
     this.memorize(Memory.ResolvingCardIndex, itemIndex)
 
     const effects = clone(data.effects)
     if (effects.some((effect) => effect.type === EffectType.SingleUse)) {
-      this.memorize<number[]>(Memory.SingleUseCards, (list) => [...(list ?? []), itemIndex])
+      this.turnFlagsHelper.addSingleUseCard(itemIndex)
     }
     const queue = this.effectQueue
     queue.unshift(...effects)
@@ -153,9 +116,9 @@ export abstract class SanRule extends PlayerTurnRule<Corporation, MaterialType, 
   freeCorruptionPositions(player = this.player): { x: number; y: number }[] {
     const zone = this.material(MaterialType.Card).location(LocationType.CorruptionZone).player(player)
     const positions: { x: number; y: number }[] = []
-    for (let x = 0; x < 6; x++) {
+    for (let x = 0; x < CORRUPTION_SLOTS; x++) {
       const filled = zone.filter((item) => item.location.x === x).length
-      if (filled < 2) positions.push({ x, y: filled })
+      if (filled < CORRUPTION_SLOT_CAPACITY) positions.push({ x, y: filled })
     }
     return positions
   }

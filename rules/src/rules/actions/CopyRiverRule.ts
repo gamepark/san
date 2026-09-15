@@ -27,7 +27,7 @@ export class CopyRiverRule extends SanRule {
     return this.river.getIndexes().filter((index) => {
       const data = getCardData(this.material(MaterialType.Card).getItem<SanCard>(index).id)
       if (!data) return false
-      return !isMercenaryType(data.type) || this.mercenaryTypePlayable(data.type)
+      return !isMercenaryType(data.type) || this.turnFlagsHelper.mercenaryTypePlayable(data.type)
     })
   }
 
@@ -38,16 +38,12 @@ export class CopyRiverRule extends SanRule {
     const id = this.material(MaterialType.Card).getItem<SanCard>(move.data as number).id
     const data = getCardData(id)!
 
-    if (isMercenaryType(data.type) && !this.remind(Memory.AllTypesAllowed) && this.remind(Memory.PlayedMercenaryType) === undefined) {
-      this.memorize(Memory.PlayedMercenaryType, data.type)
-    }
+    if (isMercenaryType(data.type)) this.turnFlagsHelper.lockMercenaryType(data.type)
 
     const effects: CardEffect[] = clone(data.effects)
     if (effects.some((effect) => effect.type === EffectType.SingleUse)) {
       const copyingCard = this.remind<number>(Memory.ResolvingCardIndex)
-      if (copyingCard !== undefined) {
-        this.memorize<number[]>(Memory.SingleUseCards, (list) => [...(list ?? []), copyingCard])
-      }
+      if (copyingCard !== undefined) this.turnFlagsHelper.addSingleUseCard(copyingCard)
     }
 
     const queue = this.effectQueue

@@ -11,6 +11,7 @@
  */
 
 import { Corporation } from '@gamepark/san/Corporation'
+import { RIVER_SIZE } from '@gamepark/san/material/constants'
 
 export const CARD_WIDTH = 6.3
 export const CARD_HEIGHT = 8.8
@@ -38,7 +39,6 @@ export const CENTRE_X = 6
 // --- Shared centre: the River (also the board of the Propaganda track) ---
 export const RIVER_Y = CENTRE_Y
 export const RIVER_GAP = 9
-export const RIVER_SIZE = 6
 /** x of River card number i (0..5), centred on the table. */
 export const riverX = (i: number): number => CENTRE_X + (i - (RIVER_SIZE - 1) / 2) * RIVER_GAP
 

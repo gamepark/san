@@ -1,6 +1,6 @@
 import { css } from '@emotion/react'
 import { Corporation } from '@gamepark/san/Corporation'
-import { Memory } from '@gamepark/san/rules/Memory'
+import { EMPTY_RESOURCES, Memory, ResourcesMemory } from '@gamepark/san/rules/Memory'
 import { SanRules } from '@gamepark/san/SanRules'
 import { useRules } from '@gamepark/react-game'
 import { Location } from '@gamepark/rules-api'
@@ -20,13 +20,13 @@ export const PlayerResourceCounters = ({ location }: { location: Location }) => 
   if (!rules || player === undefined) return null
 
   // "Any resource" points count towards every resource at once.
-  const flex = rules.remind<number>(Memory.FlexPoints, player) ?? 0
+  const resources = rules.remind<ResourcesMemory>(Memory.Resources, player) ?? EMPTY_RESOURCES
   const counters = [
     // corruption/propaganda/virus are the game's own white-artwork icons; coin is still the dark-stroke SVG.
-    { image: corruptionIcon, value: (rules.remind<number>(Memory.CorruptionPoints, player) ?? 0) + flex, whiteArtwork: true },
-    { image: propagandaIcon, value: (rules.remind<number>(Memory.PropagandaPoints, player) ?? 0) + flex, whiteArtwork: true },
-    { image: virusIcon, value: (rules.remind<number>(Memory.VirusPoints, player) ?? 0) + flex, whiteArtwork: true },
-    { image: coinIcon, value: rules.remind<number>(Memory.Coins, player) ?? 0, whiteArtwork: false }
+    { image: corruptionIcon, value: resources.corruption + resources.flex, whiteArtwork: true },
+    { image: propagandaIcon, value: resources.propaganda + resources.flex, whiteArtwork: true },
+    { image: virusIcon, value: resources.virus + resources.flex, whiteArtwork: true },
+    { image: coinIcon, value: resources.coins, whiteArtwork: false }
   ]
   const isMoon = player === Corporation.Moon
   const colorCss = isMoon ? moonCss : starCss

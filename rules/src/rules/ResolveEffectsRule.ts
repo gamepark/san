@@ -7,9 +7,9 @@ import { SanRule } from './SanRule'
 
 /** Which resource counter an {@link EffectType.Corruption}/{@link EffectType.Propaganda}/{@link EffectType.Virus} feeds. */
 const POINTS_KEY = {
-  [EffectType.Corruption]: Memory.CorruptionPoints,
-  [EffectType.Propaganda]: Memory.PropagandaPoints,
-  [EffectType.Virus]: Memory.VirusPoints
+  [EffectType.Corruption]: 'corruption',
+  [EffectType.Propaganda]: 'propaganda',
+  [EffectType.Virus]: 'virus'
 } as const
 
 const RESOURCE_TYPES: EffectType[] = [EffectType.Corruption, EffectType.Propaganda, EffectType.Virus]
@@ -25,7 +25,7 @@ interface MultiplierState {
 /**
  * An "either / or" that is really "gain any resource": every branch is a plain resource gain
  * (e.g. `propaganda(1) / virus(1) / corruption(1)` on the starting Equipment card). The player must
- * not have to pick one — see {@link Memory.FlexPoints}.
+ * not have to pick one — see {@link import('./Memory').ResourcesMemory.flex}.
  */
 const isAnyResourceEither = (effect: CardEffect): boolean =>
   !!effect.option && effect.option.length >= 2 && effect.option.every((option) => RESOURCE_TYPES.includes(option.type))
@@ -50,7 +50,7 @@ export class ResolveEffectsRule extends SanRule {
         case EffectType.Corruption:
         case EffectType.Propaganda:
         case EffectType.Virus:
-          this.addPoints(POINTS_KEY[effect.type], effect.value ?? 0)
+          this.resourcesHelper.addPoints(POINTS_KEY[effect.type], effect.value ?? 0)
           queue.shift()
           break
 
@@ -64,7 +64,7 @@ export class ResolveEffectsRule extends SanRule {
         }
 
         case EffectType.AllTypes:
-          this.memorize(Memory.AllTypesAllowed, true)
+          this.turnFlagsHelper.setAllTypesAllowed()
           queue.shift()
           break
 
@@ -75,13 +75,13 @@ export class ResolveEffectsRule extends SanRule {
 
         case EffectType.Draw:
           this.setQueue(queue)
-          this.memorize(Memory.DrawCount, effect.value ?? 1)
+          this.memorize(Memory.RepeatCount, effect.value ?? 1)
           return [this.startRule(RuleId.DrawCards)]
 
         case EffectType.Either:
-          // "Gain any resource": no choice — feed the shared pool (see Memory.FlexPoints).
+          // "Gain any resource": no choice — feed the shared pool (see ResourcesMemory.flex).
           if (isAnyResourceEither(effect)) {
-            this.addFlexPoints(effect.option![0].value ?? 0)
+            this.resourcesHelper.addFlexPoints(effect.option![0].value ?? 0)
             queue.shift()
             break
           }
@@ -90,7 +90,7 @@ export class ResolveEffectsRule extends SanRule {
 
         case EffectType.Destroy:
           this.setQueue(queue)
-          this.memorize(Memory.EffectRepeat, effect.value ?? 1)
+          this.memorize(Memory.RepeatCount, effect.value ?? 1)
           return [this.startRule(RuleId.DestroyCard)]
 
         case EffectType.PlayFromDiscard:
@@ -99,7 +99,7 @@ export class ResolveEffectsRule extends SanRule {
 
         case EffectType.CorruptFromHand:
           this.setQueue(queue)
-          this.memorize(Memory.EffectRepeat, effect.value ?? 1)
+          this.memorize(Memory.RepeatCount, effect.value ?? 1)
           return [this.startRule(RuleId.CorruptFromHand)]
 
         case EffectType.CopyRiver:
@@ -127,7 +127,7 @@ export class ResolveEffectsRule extends SanRule {
     for (const multiplier of multipliers) {
       const played = this.countPlayed(multiplier.per)
       if (played > multiplier.counted) {
-        this.addPoints(POINTS_KEY[multiplier.gain], (played - multiplier.counted) * multiplier.value)
+        this.resourcesHelper.addPoints(POINTS_KEY[multiplier.gain], (played - multiplier.counted) * multiplier.value)
         multiplier.counted = played
       }
     }
