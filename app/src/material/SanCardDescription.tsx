@@ -1,3 +1,4 @@
+import { css } from '@emotion/react'
 import { faDollarSign } from '@fortawesome/free-solid-svg-icons/faDollarSign'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { LocationType } from '@gamepark/san/material/LocationType'
@@ -9,6 +10,7 @@ import { isDeleteItemType, isMoveItemType, MaterialItem, MaterialMove } from '@g
 import { Trans } from 'react-i18next'
 import { CrossingCostBadge } from './CrossingCostBadge'
 import { SanCardHelp } from './help/SanCardHelp'
+import { colors } from '../theme/colors'
 import back from '../images/cards/CardBack.jpg'
 import moonPropaganda from '../images/cards/start/MoonPropaganda.jpg'
 import moonHacking from '../images/cards/start/MoonHacking.jpg'
@@ -176,7 +178,7 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
     // Top-right corner of the card (width 6.3 / height 8.8, so half-width 3.15 / half-height 4.4),
     // inset a bit so it doesn't hang off the edge.
     return (
-      <ItemMenuButton label={<Trans i18nKey="button.buy" />} x={2.3} y={-5} move={buy}>
+      <ItemMenuButton label={<Trans i18nKey="button.buy" />} css={buyButtonCss} x={2.3} y={-5} move={buy}>
         <FontAwesomeIcon icon={faDollarSign} />
       </ItemMenuButton>
     )
@@ -194,5 +196,16 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
       )
     })
 }
+
+/** Gold-on-propaganda-blue, matching the table theme (see theme/colors.ts) rather than the library's plain white default. */
+const buyButtonCss = css`
+  background-color: ${colors.propaganda} !important;
+  border: 0.1em solid ${colors.corruptionLight} !important;
+  color: ${colors.paper} !important;
+
+  &:hover {
+    background-color: ${colors.propagandaLight} !important;
+  }
+`
 
 export const sanCardDescription = new SanCardDescription()

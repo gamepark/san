@@ -8,6 +8,7 @@ import { SanRules } from '@gamepark/san/SanRules'
 import { StyledPlayerPanel, usePlayers, useRules } from '@gamepark/react-game'
 import { createPortal } from 'react-dom'
 import { corruptionIcon, propagandaIcon, virusIcon } from './resourceIcons'
+import { colors } from '../theme/colors'
 
 export const PlayerPanels = () => {
   const players = usePlayers<Corporation>({ sortFromMe: true })
@@ -29,12 +30,14 @@ export const PlayerPanels = () => {
         const bannerX = rules.material(MaterialType.Banner).id(player.id).getItem()?.location.x ?? 0
         const propaganda = direction === 1 ? bannerX : PROPAGANDA_END - bannerX
         const hacking = VIRUS_WIN - rules.material(MaterialType.Card).location(LocationType.VirusPile).player(otherCorporation(player.id)).length
-        // White artwork (resourceIcons.ts) on the counter badge's own dark background (Counters' default
-        // styling) — no inversion needed here, unlike PlayerResourceCounters' lighter Star badge.
+        // White artwork (resourceIcons.ts) on the counter badge's own dark background (theme.playerPanel.dataBadge)
+        // — no inversion needed here, unlike PlayerResourceCounters' lighter Star badge. Each counter's
+        // border picks up its own resource colour instead of the generic corruption-gold every other
+        // badge (name, timer) uses, so the 3 victory conditions read apart from one another.
         const counters = [
-          { image: corruptionIcon, value: `${corruption}/${CORRUPTION_WIN}` },
-          { image: propagandaIcon, value: `${propaganda}/${PROPAGANDA_END}` },
-          { image: virusIcon, value: `${hacking}/${VIRUS_WIN}` }
+          { image: corruptionIcon, value: `${corruption}/${CORRUPTION_WIN}`, extraCss: counterBorder(colors.corruptionLight) },
+          { image: propagandaIcon, value: `${propaganda}/${PROPAGANDA_END}`, extraCss: counterBorder(colors.propagandaLight) },
+          { image: virusIcon, value: `${hacking}/${VIRUS_WIN}`, extraCss: counterBorder(colors.hackingLight) }
         ]
         return (
           <StyledPlayerPanel
@@ -73,9 +76,14 @@ const panelPosition = (corporation: Corporation) => css`
 const panelColor = (corporation: Corporation) =>
   corporation === Corporation.Star
     ? css`
-        background-color: #f0f0ee !important;
+        background-color: ${colors.starDark} !important;
       `
     : css`
-        background-color: #1c1c1e !important;
-        color: white !important;
+        background-color: ${colors.moon} !important;
+        color: ${colors.paper} !important;
       `
+
+/** Overrides theme.playerPanel.dataBadge's generic gold border with this counter's own resource colour. */
+const counterBorder = (color: string) => css`
+  border-color: ${color} !important;
+`

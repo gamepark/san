@@ -5,6 +5,8 @@ import { SanRules } from '@gamepark/san/SanRules'
 import { useRules } from '@gamepark/react-game'
 import { Location } from '@gamepark/rules-api'
 import { coinIcon, corruptionIcon, propagandaIcon, virusIcon } from '../panels/resourceIcons'
+import { colors } from '../theme/colors'
+import { fontDisplay } from '../theme/typography'
 
 /**
  * Corruption / Propaganda / Virus / Coin counters for a Corporation — moved here from the player
@@ -59,23 +61,27 @@ const counterCss = css`
   align-items: center;
   gap: 0.2em;
   border-radius: 0.5em;
+  border: 0.08em solid ${colors.corruptionLight};
   padding: 0.05em 0.3em;
+  font-family: ${fontDisplay};
   font-size: 1.4em;
-  font-weight: bold;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   line-height: 1.3;
   white-space: nowrap;
+  box-shadow: 0 0.15em 0.3em rgba(0, 0, 0, 0.35);
 `
 
 /** Moon: white on black, matching its Banner standee — same code as CrossingCostBadge's topCss. */
 const moonCss = css`
-  background: black;
-  color: white;
+  background: ${colors.moon};
+  color: ${colors.paper};
 `
 
 /** Star: black on grey, matching its Banner standee — same code as CrossingCostBadge's bottomCss. */
 const starCss = css`
-  background: #9a9a9a;
-  color: black;
+  background: ${colors.starDark};
+  color: ${colors.ink};
 `
 
 const iconCss = css`

@@ -5,6 +5,8 @@ import { MaterialType } from '@gamepark/san/material/MaterialType'
 import { crossingCost } from '@gamepark/san/rules/helper/crossingCost'
 import { SanRules } from '@gamepark/san/SanRules'
 import { useDraggedItem, useRules } from '@gamepark/react-game'
+import { colors } from '../theme/colors'
+import { fontDisplay } from '../theme/typography'
 
 /**
  * Propaganda cost to cross this River card, for each Corporation — Moon's above the card, Star's
@@ -39,10 +41,14 @@ const badgeCss = css`
   left: 50%;
   padding: 0.05em 0.5em;
   border-radius: 1em;
+  border: 0.08em solid ${colors.corruptionLight};
+  font-family: ${fontDisplay};
   font-size: 1.3em;
-  font-weight: bold;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   line-height: 1.4;
   white-space: nowrap;
+  box-shadow: 0 0.15em 0.3em rgba(0, 0, 0, 0.35);
   transition: opacity 0.15s ease;
 `
 
@@ -54,14 +60,14 @@ const draggedCss = css`
 const topCss = css`
   top: 0;
   transform: translate(-50%, -100%) translateZ(3em);
-  background: black;
-  color: white;
+  background: ${colors.moon};
+  color: ${colors.paper};
 `
 
 /** Star's badge: black on grey, matching its Banner standee. */
 const bottomCss = css`
   bottom: 0;
   transform: translate(-50%, 100%) translateZ(3em);
-  background: #9a9a9a;
-  color: black;
+  background: ${colors.starDark};
+  color: ${colors.ink};
 `
