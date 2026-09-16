@@ -5,6 +5,7 @@ import { SanSetup } from '@gamepark/san/SanSetup'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { gameAnimations } from './animations/GameAnimations'
+import { ai } from './ai'
 import { App } from './App'
 import { SanLogDescription } from './logs/SanLogDescription'
 import { Locators } from './locators/Locators'
@@ -25,6 +26,7 @@ createRoot(document.getElementById('root')!).render(
       animations={gameAnimations}
       scoring={Scoring}
       theme={theme}
+      ai={ai}
     >
       <App />
     </GameProvider>

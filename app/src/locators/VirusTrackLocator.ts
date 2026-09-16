@@ -5,6 +5,8 @@ import { virusCardChips } from '@gamepark/san/material/constants'
 import { LocationType } from '@gamepark/san/material/LocationType'
 import { MaterialType } from '@gamepark/san/material/MaterialType'
 import { SanCard, virusNumber } from '@gamepark/san/material/SanCard'
+import { PlayCardsRule } from '@gamepark/san/rules/PlayCardsRule'
+import { RuleId } from '@gamepark/san/rules/RuleId'
 import { CENTRAL_PORT_X, VIRUS_PILE_X, VIRUS_TRACK_Y } from './SanLayout'
 
 /**
@@ -86,6 +88,18 @@ class VirusTrackLocator extends Locator {
       y: VIRUS_TRACK_Y + mirror * chip.dx,
       z: 2
     }
+  }
+
+  /**
+   * The spaces the pawn can be clicked to directly on its own turn — reuses {@link PlayCardsRule.virusMoves}
+   * so this stays in sync with the actual legal moves rather than duplicating that logic.
+   */
+  getLocations(context: MaterialContext): Partial<Location>[] {
+    if (context.rules.game.rule?.player !== context.player || context.rules.game.rule?.id !== RuleId.PlayCards) return []
+    return new PlayCardsRule(context.rules.game)
+      .virusMoves()
+      .filter(isMoveItemType(MaterialType.VirusPawn))
+      .map((move) => move.location)
   }
 
   /** Standable advancement spaces on a Corporation's current top Virus card (0 if its pile is empty, matching {@link SanRule.virusChips}). */
