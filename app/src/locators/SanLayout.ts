@@ -59,6 +59,8 @@ export const trackX = (step: number, context: MaterialContext): number => riverD
 
 /** Banner and Hand Bonus tokens ride their own Corporation's track, across the River cards on its side. */
 export const BANNER_Y = 3
+/** The near player's banner sits 1 cm closer to the River than the far player's. */
+export const NEAR_BANNER_Y = BANNER_Y - 1
 export const HAND_BONUS_SPOT_Y = 2
 
 // --- Left column: the Reserve, between the two players' Decks ---
