@@ -7,20 +7,18 @@ import { MaterialType } from '@gamepark/san/material/MaterialType'
 import { SanCard, virusNumber } from '@gamepark/san/material/SanCard'
 import { PlayCardsRule } from '@gamepark/san/rules/PlayCardsRule'
 import { RuleId } from '@gamepark/san/rules/RuleId'
-import { CENTRAL_PORT_X, VIRUS_PILE_X, VIRUS_TRACK_Y } from './SanLayout'
+import { VIRUS_TRACK_X } from './SanLayout'
+import { virusPileLocator, virusPileRotation } from './VirusPileLocator'
 
 /**
  * Offsets (in cm) of each printed "case d'avancement" from the CENTRE of the Virus card, measured on
- * the artwork as originally printed — i.e. as the Moon card would be drawn at rotation 0°, before the
- * Virus track's own 90° rotation ({@link import('./CentralPortAreaLocator')}). Keyed by the number of
- * the card on top of the pile; the array is ordered `k = 1 … N` where `k = 1` is the space nearest the
- * Central Port and `k = N` the one nearest the pile (the order the pawn crosses them). Lengths are
- * `8 − number` (Virus 5 → 3 spaces, Virus 1 → 7).
+ * the artwork as printed (card upright). Keyed by the number of the card on top of the pile; the array
+ * is ordered `k = 1 … N` where `k = 1` is the space nearest the Central Port and `k = N` the one
+ * nearest the pile (the order the pawn crosses them). Lengths are `8 − number` (Virus 5 → 3 spaces,
+ * Virus 1 → 7). Moon and Star cards share the same layout.
  *
- * Moon's card is drawn rotated 90° and Star's 180° further still ({@link import('./VirusPileLocator')}),
- * so each offset is mirrored for Star then rotated 90° for both sides — see
- * {@link VirusTrackLocator.getCoordinates}.
- *
+ * The pile is drawn upright or upside down ({@link virusPileRotation}), so each offset is turned with
+ * it — see {@link VirusTrackLocator.getCoordinates}.
  */
 const CHIPS: Record<number, { dx: number; dy: number }[]> = {
   5: [
@@ -63,9 +61,8 @@ const CHIPS: Record<number, { dx: number; dy: number }[]> = {
 /**
  * Position of the Virus pawn along the Virus track.
  *
- * `location.x` is the signed step from the Central Port (0): positive steps are on the Star's side
- * (left, per {@link import('./VirusPileLocator')}'s `cornerSide`), negative on the Moon's side
- * (right). `|step|` is the advancement-space number (1 = next to the Central Port) on that
+ * `location.x` is the signed step from the Central Port (0): positive steps are on the Star's Virus
+ * pile, negative on the Moon's — whichever side of the Central Port each is displayed on. `|step|` is the advancement-space number (1 = next to the Central Port) on that
  * Corporation's *current* top Virus card, whose count is `8 − topCardNumber` ({@link virusCardChips}).
  * Each space is placed from {@link CHIPS}.
  */
@@ -73,19 +70,19 @@ class VirusTrackLocator extends Locator {
   getCoordinates(location: Location, context: MaterialContext) {
     const step = location.x ?? 0
     if (step === 0) {
-      return { x: CENTRAL_PORT_X, y: VIRUS_TRACK_Y, z: 2 }
+      return { x: VIRUS_TRACK_X, y: 0, z: 2 }
     }
-    const rulesSide = Math.sign(step) // +1 = Star, -1 = Moon (rules convention)
-    const visualSide = -rulesSide // -1 = Star (left), +1 = Moon (right), matches cornerSide
-    const k = Math.abs(step) // 1..chips, 1 = the space next to the Central Port
-    const chips = this.topVirusChips(context, rulesSide === 1 ? Corporation.Star : Corporation.Moon)
-    const top = 8 - chips // number printed on that side's current top Virus card
-    const chip = CHIPS[top]?.[k - 1] ?? { dx: 0, dy: 0 }
-    const mirror = rulesSide === 1 ? -1 : 1 // Star cards are drawn rotated 180° further
-    // Mirror for Star, then rotate the card-frame offset 90° to match the Virus track's own rotation: (dx, dy) -> (-dy, dx).
+    const corporation = step > 0 ? Corporation.Star : Corporation.Moon // whose Virus pile the space is printed on
+    const cards = context.rules.material(MaterialType.Card).location(LocationType.VirusPile).player(corporation).length
+    // The spaces are printed on the card on top of the pile, which the pile shifts a little off its base.
+    const pile = { type: LocationType.VirusPile, player: corporation, x: Math.max(0, cards - 1) }
+    const top = virusPileLocator.getLocationCoordinates(pile, context)
+    const chips = this.topVirusChips(context, corporation)
+    const chip = CHIPS[8 - chips]?.[Math.abs(step) - 1] ?? { dx: 0, dy: 0 } // keyed by the number printed on the top card
+    const turn = virusPileRotation(pile, context) === 180 ? -1 : 1
     return {
-      x: visualSide * VIRUS_PILE_X - mirror * chip.dy,
-      y: VIRUS_TRACK_Y + mirror * chip.dx,
+      x: (top.x ?? 0) + turn * chip.dx,
+      y: (top.y ?? 0) + turn * chip.dy,
       z: 2
     }
   }

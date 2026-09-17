@@ -1,20 +1,18 @@
-import { Locator } from '@gamepark/react-game'
+import { Locator, MaterialContext } from '@gamepark/react-game'
 import { Location } from '@gamepark/rules-api'
-import { cornerSide, DECK_X, DECK_Y, DISCARD_X, PLAYER_HAND_BONUS_GAP } from './SanLayout'
+import { PLAYER_HAND_BONUS_GAP, PLAYER_HAND_BONUS_X, PLAYER_HAND_BONUS_Y, playerSide } from './SanLayout'
 
-/** "Bonus de main" tokens a Corporation has collected, between its Deck and Discard piles (location.x = 0..1). */
+/** "Bonus de main" tokens a Corporation has collected, side by side on the Reserve side of its Deck (location.x = 0..1), turned towards their owner. */
 class PlayerHandBonusLocator extends Locator {
-  getCoordinates(location: Location) {
-    const side = cornerSide(location.player!)
-    const slot = location.x ?? 0
+  getCoordinates(location: Location, context: MaterialContext) {
     return {
-      x: side * ((DECK_X + DISCARD_X) / 2),
-      y: DECK_Y + (slot - 0.5) * PLAYER_HAND_BONUS_GAP
+      x: PLAYER_HAND_BONUS_X + ((location.x ?? 0) - 0.5) * PLAYER_HAND_BONUS_GAP,
+      y: PLAYER_HAND_BONUS_Y * playerSide(location.player!, context)
     }
   }
 
-  getRotateZ() {
-    return 90
+  getRotateZ(location: Location, context: MaterialContext) {
+    return playerSide(location.player!, context) === 1 ? 0 : 180
   }
 }
 

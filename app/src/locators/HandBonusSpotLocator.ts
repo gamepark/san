@@ -1,15 +1,15 @@
-import { Locator } from '@gamepark/react-game'
+import { Locator, MaterialContext } from '@gamepark/react-game'
 import { Location } from '@gamepark/rules-api'
-import { CENTRE_Y, fixedSide, HAND_BONUS_SPOT_Y, trackX } from './SanLayout'
+import { HAND_BONUS_SPOT_Y, playerSide, trackX } from './SanLayout'
 
-/** A "Bonus de main" token still on the Propaganda track (location.player = its Corporation, location.x = the step it sits on), on that Corporation's permanent side. */
+/** A "Bonus de main" token still on the Propaganda track (location.player = its Corporation, location.x = the step it sits on), on that Corporation's track, turned towards their owner. */
 class HandBonusSpotLocator extends Locator {
-  getCoordinates(location: Location) {
-    return { x: trackX(location.x ?? 0), y: CENTRE_Y + HAND_BONUS_SPOT_Y * fixedSide(location.player!) }
+  getCoordinates(location: Location, context: MaterialContext) {
+    return { x: trackX(location.x ?? 0, context), y: HAND_BONUS_SPOT_Y * playerSide(location.player!, context) }
   }
 
-  getRotateZ() {
-    return 90
+  getRotateZ(location: Location, context: MaterialContext) {
+    return playerSide(location.player!, context) === 1 ? 90 : 270
   }
 }
 

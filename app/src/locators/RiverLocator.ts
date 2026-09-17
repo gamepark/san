@@ -1,14 +1,14 @@
-import { ListLocator } from '@gamepark/react-game'
-import { RIVER_GAP, RIVER_Y, riverX } from './SanLayout'
+import { ListLocator, MaterialContext } from '@gamepark/react-game'
+import { RIVER_GAP, riverDirection, riverX } from './SanLayout'
 
-/** The 6 face-up River cards, in a centred row (also the board of the Propaganda track). */
+/** The 6 face-up River cards, in a row across the middle of the table (also the board of the Propaganda tracks). */
 class RiverLocator extends ListLocator {
-  getCoordinates() {
-    return { x: riverX(0), y: RIVER_Y }
+  getCoordinates(_location: unknown, context: MaterialContext) {
+    return { x: riverX(0, context), y: 0 }
   }
 
-  getGap() {
-    return { x: RIVER_GAP }
+  getGap(_location: unknown, context: MaterialContext) {
+    return { x: RIVER_GAP * riverDirection(context) }
   }
 }
 

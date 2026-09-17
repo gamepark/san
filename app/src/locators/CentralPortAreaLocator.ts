@@ -1,16 +1,9 @@
 import { Locator } from '@gamepark/react-game'
-import { CENTRAL_PORT_X, VIRUS_TRACK_Y } from './SanLayout'
+import { VIRUS_TRACK_X } from './SanLayout'
 
-/** The Central Port tile, centred between the two players, in the middle of the Virus track. */
+/** The Central Port tile, right of the River, between the two Virus piles (rules p.6-7). */
 class CentralPortAreaLocator extends Locator {
-  getCoordinates() {
-    return { x: CENTRAL_PORT_X, y: VIRUS_TRACK_Y }
-  }
-
-  /** The tile's long side follows the Virus track, now running left-to-right between the players. */
-  getRotateZ() {
-    return 90
-  }
+  coordinates = { x: VIRUS_TRACK_X, y: 0 }
 }
 
 export const centralPortAreaLocator = new CentralPortAreaLocator()

@@ -4,13 +4,15 @@ import { LocationType } from '@gamepark/san/material/LocationType'
 import { MaterialType } from '@gamepark/san/material/MaterialType'
 import { crossingCost } from '@gamepark/san/rules/helper/crossingCost'
 import { SanRules } from '@gamepark/san/SanRules'
-import { useDraggedItem, useRules } from '@gamepark/react-game'
+import { useDraggedItem, usePlayerId, useRules } from '@gamepark/react-game'
 import { colors } from '../theme/colors'
 import { fontDisplay } from '../theme/typography'
 
 /**
- * Propaganda cost to cross this River card, for each Corporation — Moon's above the card, Star's
- * below (see SanCardDescription). Same pattern as dragon-bomb's DragonCardPowerBadge.
+ * Propaganda cost for the viewer (or, for a spectator, the Corporation displayed at the bottom) to
+ * cross this River card: a small white triangle pointing right, the way the viewer's banner moves along
+ * the track, in the bottom-left corner of the card, under the triangle printed on the card's edge. The opponent's cost is not shown. Same pattern as
+ * dragon-bomb's DragonCardPowerBadge.
  *
  * Stays visible at all times, including while the card is merely draggable (a `translateZ` push, not
  * just `z-index`, keeps it above any glow/highlight the table renders around draggable cards in this
@@ -23,51 +25,56 @@ import { fontDisplay } from '../theme/typography'
 export const CrossingCostBadge = ({ itemIndex }: { itemIndex?: number }) => {
   const rules = useRules<SanRules>()
   const draggedItem = useDraggedItem<MaterialType>()
+  const playerId = usePlayerId<Corporation>()
   if (!rules || itemIndex === undefined) return null
   const item = rules.material(MaterialType.Card).getItem(itemIndex)
   if (!item || item.location.type !== LocationType.River) return null
-  const riverX = item.location.x ?? 0
   const isDragged = draggedItem?.type === MaterialType.Card && draggedItem.index === itemIndex
   return (
-    <>
-      <span css={[badgeCss, topCss, isDragged && draggedCss]}>{crossingCost(rules, riverX, Corporation.Moon)}</span>
-      <span css={[badgeCss, bottomCss, isDragged && draggedCss]}>{crossingCost(rules, riverX, Corporation.Star)}</span>
-    </>
+    <span css={[badgeCss, isDragged && draggedCss]}>
+      <span css={triangleCss} />
+      <span css={numberCss}>{crossingCost(rules, item.location.x ?? 0, playerId ?? rules.players[0])}</span>
+    </span>
   )
 }
 
+/** The shadow is on the wrapper: a `drop-shadow` filter follows the clipped triangle, a box-shadow would not. */
 const badgeCss = css`
   position: absolute;
-  left: 50%;
-  padding: 0.05em 0.5em;
-  border-radius: 1em;
-  border: 0.08em solid ${colors.corruptionLight};
-  font-family: ${fontDisplay};
-  font-size: 1.3em;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  line-height: 1.4;
-  white-space: nowrap;
-  box-shadow: 0 0.15em 0.3em rgba(0, 0, 0, 0.35);
+  left: 0.25em;
+  bottom: 0.15em;
+  width: 1.5em;
+  height: 1.4em;
+  transform: translateZ(3em);
+  filter: drop-shadow(0 0.08em 0.15em rgba(0, 0, 0, 0.5));
   transition: opacity 0.15s ease;
+  pointer-events: none;
 `
 
 const draggedCss = css`
   opacity: 0;
 `
 
-/** Moon's badge: white on black, matching its Banner standee. */
-const topCss = css`
-  top: 0;
-  transform: translate(-50%, -100%) translateZ(3em);
-  background: ${colors.moon};
-  color: ${colors.paper};
+const triangleCss = css`
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  background: ${colors.paper};
 `
 
-/** Star's badge: black on grey, matching its Banner standee. */
-const bottomCss = css`
-  bottom: 0;
-  transform: translate(-50%, 100%) translateZ(3em);
-  background: ${colors.starDark};
-  color: ${colors.ink};
+/**
+ * Over the triangle rather than inside it, so that the clip does not cut the digit: the triangle is
+ * smaller than the digit is tall. It sits towards the wide side, where there is room for it.
+ */
+const numberCss = css`
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 0.2em;
+  color: ${colors.propaganda};
+  font-family: ${fontDisplay};
+  font-size: 1em;
+  font-weight: 700;
+  line-height: 1;
 `

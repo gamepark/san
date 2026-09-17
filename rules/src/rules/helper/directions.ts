@@ -4,9 +4,9 @@ import { Corporation } from '../../Corporation'
 /**
  * Direction a Corporation moves its banner along the (shared) Propaganda track. Fixed by Corporation
  * identity, like {@link virusDirection} below — not by seat order, which has no reason to match which
- * Corporation a player picked (see {@link import('../../SanSetup').SanSetup.setupPropagandaTracks}
- * and {@link import('../../../app/src/locators/SanLayout').fixedSide} / {@link
- * import('../../../app/src/locators/SanLayout').cornerSide}, both keyed by identity too).
+ * Corporation a player picked (see {@link import('../../SanSetup').SanSetup.setupPropagandaTracks}; the
+ * app mirrors the track when Moon is displayed at the bottom, see {@link
+ * import('../../../app/src/locators/SanLayout').riverDirection}).
  * Moon starts at step 0 and moves towards {@link import('../../material/constants').PROPAGANDA_END};
  * Star starts at PROPAGANDA_END and moves the other way.
  */

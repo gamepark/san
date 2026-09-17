@@ -10,14 +10,14 @@ import { fontDisplay } from '../theme/typography'
 
 /**
  * Corruption / Propaganda / Virus / Coin counters for a Corporation — moved here from the player
- * panels, above its Discard pile's own static location (declared on DiscardLocator, always present
- * even while the pile itself is empty). Small vertical stack, same colours as the crossing-cost
- * badges' Banner code: white on black for Moon, black on grey for Star.
+ * panels, next to its Discard pile's own static location (declared on DiscardLocator, always present
+ * even while the pile itself is empty): a 2×2 grid on the right of the pile, under the PlayArea. Same colours as the crossing-cost badges' Banner code: white on black for Moon, black on grey for Star.
  */
 export const PlayerResourceCounters = ({ location }: { location: Location }) => {
   const rules = useRules<SanRules>()
   const player = location.player as Corporation | undefined
-  if (!rules || player === undefined) return null
+  // Only the player whose turn it is has resources to spend.
+  if (!rules || player === undefined || rules.game.rule?.player !== player) return null
 
   // "Any resource" points count towards every resource at once.
   const resources = rules.remind<ResourcesMemory>(Memory.Resources, player) ?? EMPTY_RESOURCES
@@ -48,12 +48,12 @@ export const PlayerResourceCounters = ({ location }: { location: Location }) => 
 
 const wrapperCss = css`
   position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translate(-50%, -100%) translateY(-2em) translateZ(3em);
-  display: flex;
-  flex-direction: column;
-  gap: 0.5em;
+  left: 100%;
+  top: 50%;
+  transform: translate(0.4em, -50%) translateZ(3em);
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0.4em;
 `
 
 const counterCss = css`

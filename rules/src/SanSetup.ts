@@ -93,7 +93,7 @@ export class SanSetup extends MaterialGameSetup<Corporation, MaterialType, Locat
     this.material(MaterialType.CentralPort).createItem({ id: 1, location: { type: LocationType.CentralPortArea } })
     for (const player of this.players) {
       this.material(MaterialType.Card).createItems(
-        virusCards[player].map((id) => ({ id, location: { type: LocationType.VirusPile, player } }))
+        virusCards[player].map((id, x) => ({ id, location: { type: LocationType.VirusPile, player, x } }))
       )
     }
     const x = -virusDirection(this.game, this.startingPlayer)
@@ -110,11 +110,11 @@ export class SanSetup extends MaterialGameSetup<Corporation, MaterialType, Locat
   }
 
   /**
-   * Each Corporation's banner starts on its own end of the Propaganda track — Moon at step 0 (right,
-   * see {@link import('./rules/helper/directions').propagandaDirection}), Star at {@link
-   * PROPAGANDA_END} (left) — matching the fixed side each sits on visually ({@link
-   * import('../../app/src/locators/SanLayout').fixedSide}), not the seat order; the 2 Hand Bonus
-   * tokens sit further along it.
+   * Each Corporation's banner starts on its own end of the Propaganda track — Moon at step 0, Star at
+   * {@link PROPAGANDA_END} (see {@link import('./rules/helper/directions').propagandaDirection}) —
+   * which is the first step on its left once seated (rules p.4; the app mirrors the track for the
+   * player displayed at the bottom, {@link import('../../app/src/locators/SanLayout').riverDirection}),
+   * not the seat order; the 2 Hand Bonus tokens sit further along it.
    */
   setupPropagandaTracks() {
     this.players.forEach((player) => {
