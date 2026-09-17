@@ -10,6 +10,7 @@ import { isDeleteItemType, isMoveItemType, MaterialItem, MaterialMove } from '@g
 import { Trans } from 'react-i18next'
 import { CrossingCostBadge } from './CrossingCostBadge'
 import { SanCardHelp } from './help/SanCardHelp'
+import { CARD_BORDER_RADIUS } from '../locators/SanLayout'
 import { colors } from '../theme/colors'
 import back from '../images/cards/CardBack.jpg'
 import moonPropaganda from '../images/cards/start/MoonPropaganda.jpg'
@@ -71,7 +72,7 @@ import riverEquipment18 from '../images/cards/river/Equipment18.jpg'
 class SanCardDescription extends CardDescription<number, number, number, SanCard> {
   width = 6.3
   height = 8.8
-  borderRadius = 0.3
+  borderRadius = CARD_BORDER_RADIUS
   help = SanCardHelp
 
   backImage = back

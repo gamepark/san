@@ -1,6 +1,6 @@
 import { DropAreaDescription, ListLocator, MaterialContext } from '@gamepark/react-game'
 import { Location } from '@gamepark/rules-api'
-import { CARD_WIDTH, PLAY_AREA_DROP_HEIGHT, PLAY_AREA_MAX_COUNT, PLAY_AREA_STACK_GAP, PLAY_AREA_X, playerSide, VIRUS_PILE_Y } from './SanLayout'
+import { CARD_BORDER_RADIUS, CARD_WIDTH, PLAY_AREA_DROP_HEIGHT, PLAY_AREA_MAX_COUNT, PLAY_AREA_STACK_GAP, PLAY_AREA_X, playerSide, VIRUS_PILE_Y } from './SanLayout'
 
 /**
  * Cards played this turn, right of the Central Port. The players never play at the same time, so both
@@ -35,7 +35,7 @@ class PlayAreaLocator extends ListLocator {
   }
 
   /** A fixed column, about as tall as the two Virus piles and the Central Port between them. */
-  locationDescription = new DropAreaDescription({ width: CARD_WIDTH, height: PLAY_AREA_DROP_HEIGHT, borderRadius: 0.3 })
+  locationDescription = new DropAreaDescription({ width: CARD_WIDTH, height: PLAY_AREA_DROP_HEIGHT, borderRadius: CARD_BORDER_RADIUS })
 }
 
 export const playAreaLocator = new PlayAreaLocator()

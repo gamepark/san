@@ -30,6 +30,7 @@ import { RIVER_SIZE } from '@gamepark/san/material/constants'
 
 export const CARD_WIDTH = 6.3
 export const CARD_HEIGHT = 8.8
+export const CARD_BORDER_RADIUS = 0.3
 
 /** The Corporation displayed at the bottom: the player's own, or the first one for a spectator. */
 export const bottomCorporation = (context: MaterialContext): Corporation => context.player ?? context.rules.players[0]
