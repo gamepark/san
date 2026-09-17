@@ -152,8 +152,8 @@ export const PLAYER_PANEL_WIDTH = 10.2
 export const PLAYER_PANEL_X = TABLE_X_MIN + 0.3
 /** Where the near panel's bottom edge (the far panel's top edge) lies. */
 export const PLAYER_PANEL_Y = TABLE_HALF_HEIGHT - 0.3
-/** Over every piece of material. */
-export const PLAYER_PANEL_Z = 2
+/** Over every piece of material, including items animated in flight across the table. */
+export const PLAYER_PANEL_Z = 20
 
 /** x of the hand's centre: halfway between the panel's right edge and the left edge of the Discard lying on its side. */
 export const HAND_X = (PLAYER_PANEL_X + PLAYER_PANEL_WIDTH + DISCARD_X - CARD_HEIGHT / 2) / 2
