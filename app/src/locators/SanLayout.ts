@@ -97,6 +97,8 @@ export const PLAY_AREA_STACK_GAP = 1.8
  * the stack from one Virus pile to 0.8 cm short of the far edge of the table.
  */
 export const PLAY_AREA_MAX_COUNT = 11
+/** Height of the drop zone: about the two Virus piles and the Central Port between them. */
+export const PLAY_AREA_DROP_HEIGHT = 20
 
 // --- A player's own area, along their edge of the table ---
 /** The Discard lies on its side (90°), just past its owner's Virus pile. */

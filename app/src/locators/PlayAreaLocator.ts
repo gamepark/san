@@ -1,6 +1,6 @@
-import { ItemContext, ListLocator, MaterialContext } from '@gamepark/react-game'
+import { DropAreaDescription, ListLocator, MaterialContext } from '@gamepark/react-game'
 import { Location } from '@gamepark/rules-api'
-import { PLAY_AREA_MAX_COUNT, PLAY_AREA_STACK_GAP, PLAY_AREA_X, playerSide, VIRUS_PILE_Y } from './SanLayout'
+import { CARD_WIDTH, PLAY_AREA_DROP_HEIGHT, PLAY_AREA_MAX_COUNT, PLAY_AREA_STACK_GAP, PLAY_AREA_X, playerSide, VIRUS_PILE_Y } from './SanLayout'
 
 /**
  * Cards played this turn, right of the Central Port. The players never play at the same time, so both
@@ -29,19 +29,13 @@ class PlayAreaLocator extends ListLocator {
     return Math.min(PLAY_AREA_STACK_GAP * (count - 1), PLAY_AREA_STACK_GAP * (PLAY_AREA_MAX_COUNT - 1))
   }
 
-  /**
-   * A card dropped here is shown where the next card played goes, not over the whole stack: level with
-   * the Virus pile for the player, below the last card for the opponent.
-   */
-  getAreaCoordinates(location: Location, context: MaterialContext) {
-    const side = playerSide(location.player!, context)
-    if (side === 1) return { x: PLAY_AREA_X, y: VIRUS_PILE_Y }
-    return this.getLocationCoordinates(location, context, this.countListItems(location, context))
+  /** The drop zone is a column centred on the Central Port. */
+  getAreaCoordinates() {
+    return { x: PLAY_AREA_X, y: 0 }
   }
 
-  generateLocationDescriptionFromDraggedItem(location: Location, context: ItemContext) {
-    return super.generateLocationDescriptionFromDraggedItem({ ...location, x: 0 }, context)
-  }
+  /** A fixed column, about as tall as the two Virus piles and the Central Port between them. */
+  locationDescription = new DropAreaDescription({ width: CARD_WIDTH, height: PLAY_AREA_DROP_HEIGHT, borderRadius: 0.3 })
 }
 
 export const playAreaLocator = new PlayAreaLocator()
