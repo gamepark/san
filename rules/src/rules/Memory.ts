@@ -66,5 +66,13 @@ export enum Memory {
    * Multiplier effects played this turn, each kept up to date with the cards played after it
    * (see {@link import('./ResolveEffectsRule').ResolveEffectsRule.applyMultipliers}).
    */
-  Multipliers
+  Multipliers,
+
+  /**
+   * Whether this table was set up with the "first game" option (rules p.10, p.23): hands are refilled
+   * to 7 cards instead of 6 for the whole game. Global (no player), set once at
+   * {@link import('../SanSetup').SanSetup.setupMaterial} and read by
+   * {@link import('./EndTurnRule').EndTurnRule.handSize}.
+   */
+  FirstGame
 }

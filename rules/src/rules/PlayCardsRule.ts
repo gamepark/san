@@ -213,12 +213,17 @@ export class PlayCardsRule extends SanRule {
   /**
    * The Virus pawn left the opponent's top Virus card by its far (pile-side) end: that card goes
    * onto its owner's deck. Leaving by the near (Port-side) end while retreating never touches it.
+   *
+   * `x: 0` is required (rules, p.19: "placez cette carte... sur la pioche") — Deck uses a
+   * {@link import('@gamepark/rules-api').PositiveSequenceStrategy}, which without an explicit `x`
+   * appends the item after every existing card (the bottom of the deck, drawn last) instead of
+   * shifting them down to make room on top (the next card drawn).
    */
   driveOffTopVirusCard(): MaterialMove[] {
     const opponent = this.virusOpponent
     return this.virusPile(opponent)
       .maxBy((item) => item.location.x ?? 0)
-      .moveItems({ type: LocationType.Deck, player: opponent })
+      .moveItems({ type: LocationType.Deck, player: opponent, x: 0 })
   }
 
   onCustomMove(move: CustomMove): MaterialMove[] {

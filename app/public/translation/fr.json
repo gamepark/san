@@ -56,9 +56,9 @@
   "help.card.crossing-cost": "Coût de traversée sur la piste Propagande : {value}",
 
   "help.card.virus.title": "Carte Virus",
-  "help.card.virus.desc": "Les cartes Virus n’ont pas d’effets ni de coût. À votre tour, les cartes Virus peuvent être jouées de votre main : elles sont alors placées directement dans votre défausse, sans effet.",
-  "help.card.virus.chips": "Nombre de cases d’avancement sur la piste Virus : {value}",
-  "help.card.virus.number": "Numéro de la carte : {value}",
+  "help.card.virus.desc": "Chaque Corporation empile face visible ses 5 cartes Virus numérotées de 1 à 5 (la 5 au sommet, la 1 en dessous) à côté du Port Central.",
+  "help.card.virus.neutralize": "Quand son adversaire fait franchir le Port Central au pion Virus depuis cette pile, la carte du dessus est retirée et placée face cachée au sommet de la pioche de cette Corporation. Une fois la carte 1 ainsi neutralisée, son adversaire remporte la partie par Hacking.",
+  "help.card.virus.play": "Si une carte Virus rejoint votre main en la piochant, vous pouvez la jouer directement dans votre défausse à votre tour : elle n’a ni effet ni coût.",
 
   "help.hand-bonus-token.title": "Jeton Bonus de main",
   "help.hand-bonus-token.desc": "Lorsque votre bannière arrive à l’emplacement d’un jeton Bonus de main, vous gagnez celui-ci et le placez à côté de votre pioche.",

@@ -1,6 +1,5 @@
 import { CardEffect, EffectType, getCardData, isVirusCard } from '@gamepark/san/material/CardsData'
-import { virusCardChips } from '@gamepark/san/material/constants'
-import { CardType, SanCard, virusNumber } from '@gamepark/san/material/SanCard'
+import { CardType, SanCard } from '@gamepark/san/material/SanCard'
 import { MaterialHelpProps } from '@gamepark/react-game'
 import { useTranslation } from 'react-i18next'
 import { SanCardButtons } from './buttons/SanCardButtons'
@@ -76,13 +75,12 @@ export const SanCardHelp = (props: MaterialHelpProps) => {
   if (id === undefined) return null
 
   if (isVirusCard(id)) {
-    const number = virusNumber(id)
     return (
       <>
         <h2>{t('help.card.virus.title')}</h2>
         <p>{t('help.card.virus.desc')}</p>
-        <p>{t('help.card.virus.chips', { value: virusCardChips(number) })}</p>
-        <p>{t('help.card.virus.number', { value: number })}</p>
+        <p>{t('help.card.virus.neutralize')}</p>
+        <p>{t('help.card.virus.play')}</p>
         <SanCardButtons {...props} />
       </>
     )

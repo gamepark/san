@@ -1,5 +1,7 @@
 {
   "identities": "Corporation",
   "identities.1": "Lune",
-  "identities.2": "Étoile"
+  "identities.2": "Étoile",
+  "option.firstGame": "Première partie",
+  "option.firstGame.help": "Votre main est recomposée à 7 cartes au lieu de 6."
 }

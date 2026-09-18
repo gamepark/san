@@ -5,7 +5,7 @@ import virusPawn from '../images/pawns/VirusPawn.png'
 /** The single Virus pawn moving along the Virus track. */
 class VirusPawnDescription extends TokenDescription {
   width = 2.7
-  height = 4.1
+  height = 4.6
   borderRadius = 0.3
   transparency = true
 

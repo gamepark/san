@@ -6,6 +6,7 @@ import { LocationType } from './material/LocationType'
 import { MaterialType } from './material/MaterialType'
 import { getCardCopies, riverCards, SanCard, startCards, virusCards } from './material/SanCard'
 import { propagandaDirection, virusDirection } from './rules/helper/directions'
+import { Memory } from './rules/Memory'
 import { RuleId } from './rules/RuleId'
 import { SanOptions } from './SanOptions'
 import { SanRules } from './SanRules'
@@ -22,8 +23,10 @@ export class SanSetup extends MaterialGameSetup<Corporation, MaterialType, Locat
   /** Computed once the River exists, reused by {@link setupVirusTracks} and {@link start}. */
   private startingPlayer!: Corporation
 
-  setupMaterial(_options: SanOptions) {
-    this.setupDecks()
+  setupMaterial(options: SanOptions) {
+    // Memorized once for the whole game: EndTurnRule.handSize reads it back at every hand refill.
+    const firstGame = this.memorize(Memory.FirstGame, !!options.firstGame)
+    this.setupDecks(firstGame)
     this.setupRiverAndReserve()
     this.setupPropagandaTracks()
     // Needs the River in place: it compares the crossing cost of the cards facing each banner.
@@ -36,8 +39,12 @@ export class SanSetup extends MaterialGameSetup<Corporation, MaterialType, Locat
     //this.fillAllLocations()
   }
 
-  /** Each Corporation shuffles its 12 start cards face down, then draws its opening hand. */
-  setupDecks() {
+  /**
+   * Each Corporation shuffles its 12 start cards face down, then draws its opening hand — 7 cards
+   * instead of 6 with the "first game" option (rules p.10).
+   */
+  setupDecks(firstGame: boolean) {
+    const handSize = HAND_SIZE + (firstGame ? 1 : 0)
     for (const player of this.players) {
       this.material(MaterialType.Card).createItems(
         withCopies(startCards[player]).map((id) => ({ id, location: { type: LocationType.Deck, player } }))
@@ -47,7 +54,7 @@ export class SanSetup extends MaterialGameSetup<Corporation, MaterialType, Locat
         .location(LocationType.Deck)
         .player(player)
         .deck()
-        .deal({ type: LocationType.Hand, player }, HAND_SIZE)
+        .deal({ type: LocationType.Hand, player }, handSize)
     }
   }
 

@@ -19,7 +19,11 @@ export const VIRUS_WIN = 5
 /** Spiral points spent to corrupt one card. */
 export const CORRUPTION_GROUP = 3
 
-/** Cards a hand is refilled to (7 for a first game — not handled). */
+/**
+ * Cards a hand is refilled to on a normal table. The "first game" option (rules p.10, p.23) adds 1 for
+ * the whole game — see {@link import('../SanOptions').SanOptions.firstGame} and
+ * {@link import('../rules/EndTurnRule').EndTurnRule.handSize}.
+ */
 export const HAND_SIZE = 6
 
 /**

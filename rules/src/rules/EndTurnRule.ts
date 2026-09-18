@@ -2,6 +2,7 @@ import { MaterialMove } from '@gamepark/rules-api'
 import { HAND_SIZE } from '../material/constants'
 import { LocationType } from '../material/LocationType'
 import { MaterialType } from '../material/MaterialType'
+import { Memory } from './Memory'
 import { RuleId } from './RuleId'
 import { SanRule } from './SanRule'
 
@@ -47,8 +48,9 @@ export class EndTurnRule extends SanRule {
     return [this.startPlayerTurn(RuleId.PlayCards, this.nextPlayer)]
   }
 
-  /** 6 cards, plus one for each collected Hand Bonus token. */
+  /** 6 cards (7 with the "first game" option, rules p.10), plus one for each collected Hand Bonus token. */
   get handSize(): number {
-    return HAND_SIZE + this.material(MaterialType.HandBonusToken).location(LocationType.PlayerHandBonus).player(this.player).length
+    const base = HAND_SIZE + (this.remind<boolean>(Memory.FirstGame) ? 1 : 0)
+    return base + this.material(MaterialType.HandBonusToken).location(LocationType.PlayerHandBonus).player(this.player).length
   }
 }

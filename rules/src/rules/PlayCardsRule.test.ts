@@ -162,11 +162,39 @@ describe('PlayCardsRule', () => {
 
     expect(rules.remind(Memory.Resources, Corporation.Moon).virus).toBe(0)
     expect(consequences).toHaveLength(1)
-    expect(consequences[0]).toMatchObject({ itemIndex: 0, location: { type: LocationType.Deck, player: Corporation.Star } })
+    expect(consequences[0]).toMatchObject({ itemIndex: 0, location: { type: LocationType.Deck, player: Corporation.Star, x: 0 } })
 
     rules.play(consequences[0])
     expect(rules.material(MaterialType.Card).location(LocationType.VirusPile).player(Corporation.Star).length).toBe(0)
     expect(rules.material(MaterialType.Card).location(LocationType.Deck).player(Corporation.Star).length).toBe(1)
+  })
+
+  test('the driven-off Virus card lands on top of an already non-empty deck (rules p.19: "sur la pioche")', () => {
+    const rules = testRules(
+      { id: RuleId.PlayCards, player: Corporation.Moon },
+      {
+        [MaterialType.VirusPawn]: [{ id: 1, location: { type: LocationType.VirusTrack, x: 3 } }], // on Star's only (Virus5, 3 chips) card, last space
+        [MaterialType.Card]: [
+          { id: SanCard.StarVirus5, location: { type: LocationType.VirusPile, player: Corporation.Star } },
+          // Star's deck already has 2 cards: the neutralized Virus card must end up drawn before both.
+          { id: SanCard.StarPropaganda, location: { type: LocationType.Deck, player: Corporation.Star, x: 0 } },
+          { id: SanCard.StarHacking, location: { type: LocationType.Deck, player: Corporation.Star, x: 1 } }
+        ]
+      },
+      { [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, virus: 1 } } }
+    )
+    const move = rules.material(MaterialType.VirusPawn).moveItem({ type: LocationType.VirusTrack, x: 0 })
+    const [driveOff] = rules.play(move)
+    rules.play(driveOff)
+
+    const deck = rules.material(MaterialType.Card).location(LocationType.Deck).player(Corporation.Star).getItems<SanCard>()
+    expect(deck).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: SanCard.StarVirus5, location: expect.objectContaining({ x: 0 }) }),
+        expect.objectContaining({ id: SanCard.StarPropaganda, location: expect.objectContaining({ x: 1 }) }),
+        expect.objectContaining({ id: SanCard.StarHacking, location: expect.objectContaining({ x: 2 }) })
+      ])
+    )
   })
 
   test('retreating through the Central Port does not drive off any card', () => {

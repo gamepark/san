@@ -54,6 +54,23 @@ describe('EndTurnRule', () => {
     expect(rules.material(MaterialType.Card).location(LocationType.Deck).player(Corporation.Moon).length).toBe(3)
   })
 
+  test('refills to 7 cards instead of 6 with the "first game" option (rules p.10)', () => {
+    const rules = testRules(
+      { id: RuleId.EndTurn, player: Corporation.Moon },
+      {
+        [MaterialType.Card]: [
+          ...filler(4, { type: LocationType.Hand, player: Corporation.Moon }),
+          ...filler(5, { type: LocationType.Deck, player: Corporation.Moon })
+        ]
+      },
+      { [Memory.FirstGame]: true }
+    )
+    const consequences = rules.play(rules.startRule(RuleId.EndTurn)) // hand=4, target=7, deficit=3, deck has plenty
+    rules.play(consequences[0])
+    expect(rules.material(MaterialType.Card).location(LocationType.Hand).player(Corporation.Moon).length).toBe(7)
+    expect(rules.material(MaterialType.Card).location(LocationType.Deck).player(Corporation.Moon).length).toBe(2)
+  })
+
   test('reshuffles the discard into the deck once it runs dry while still short a card, then loops back', () => {
     const rules = testRules(
       { id: RuleId.EndTurn, player: Corporation.Moon },

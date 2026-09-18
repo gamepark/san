@@ -12,6 +12,8 @@ type PlayerOptions = { id: Corporation }
  */
 export type SanOptions = {
   players: PlayerOptions[]
+  /** "Première partie" (rules p.10, p.23): hands are refilled to 7 cards instead of 6 for the whole game. */
+  firstGame: boolean
 }
 
 /**
@@ -34,5 +36,9 @@ export type SanOptions = {
 export const SanOptionsSpecV2: OptionsSpecV2 = {
   specVersion: 2,
   players: { min: 2, max: 2 },
-  identities: { values: getEnumValues(Corporation) }
+  identities: { values: getEnumValues(Corporation) },
+  options: {
+    /** "Play with a 7-card hand for the whole game" (rules p.10, p.23) — a plain yes/no, no values to constrain. */
+    firstGame: { kind: 'boolean' }
+  }
 }
