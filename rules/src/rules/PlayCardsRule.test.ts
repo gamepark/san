@@ -129,24 +129,41 @@ describe('PlayCardsRule', () => {
     expect(moves.some((move) => isMoveItemType(MaterialType.Banner)(move))).toBe(false)
   })
 
-  test('offers to advance and retreat the Virus pawn from the Central Port', () => {
-    const rules = testRules(
+  const virusRules = (x: number, virus: number, starVirus = SanCard.StarVirus5) =>
+    testRules(
       { id: RuleId.PlayCards, player: Corporation.Moon },
       {
-        [MaterialType.VirusPawn]: [{ id: 1, location: { type: LocationType.VirusTrack, x: 0 } }],
+        [MaterialType.VirusPawn]: [{ id: 1, location: { type: LocationType.VirusTrack, x } }],
         [MaterialType.Card]: [
-          { id: SanCard.StarVirus5, location: { type: LocationType.VirusPile, player: Corporation.Star } },
+          { id: starVirus, location: { type: LocationType.VirusPile, player: Corporation.Star } },
           { id: SanCard.MoonVirus5, location: { type: LocationType.VirusPile, player: Corporation.Moon } }
         ]
       },
-      { [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, virus: 1 } } }
+      { [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, virus } } }
     )
-    const moves = rules
+  const virusTargets = (rules: ReturnType<typeof testRules>) =>
+    rules
       .getLegalMoves(Corporation.Moon)
       .filter(isMoveItemType(MaterialType.VirusPawn))
       .map((move) => move.location.x)
-      .sort()
-    expect(moves).toEqual([-1, 1]) // retreat towards Moon's own card, advance towards Star's
+
+  test('only offers to advance the Virus pawn towards the opponent, never to retreat', () => {
+    expect(virusTargets(virusRules(0, 1))).toEqual([1])
+  })
+
+  test('offers every space up to the opponent’s last one, as far as the banked points allow', () => {
+    expect(virusTargets(virusRules(0, 2))).toEqual([1, 2])
+    expect(virusTargets(virusRules(0, 9))).toEqual([1, 2, 3]) // Star's Virus 5 has 3 spaces: stops on the last one
+  })
+
+  test('counts the spaces from the player’s own card, through the Central Port', () => {
+    expect(virusTargets(virusRules(-2, 9))).toEqual([-1, 0, 1, 2, 3])
+  })
+
+  test('advancing several spaces spends one Skull point per space', () => {
+    const rules = virusRules(0, 5)
+    rules.play(rules.material(MaterialType.VirusPawn).moveItem({ type: LocationType.VirusTrack, x: 3 }))
+    expect(rules.remind(Memory.Resources, Corporation.Moon).virus).toBe(2)
   })
 
   test('advancing onto the Central Port from the opponent’s last space drives off their top Virus card', () => {
@@ -198,11 +215,11 @@ describe('PlayCardsRule', () => {
     )
   })
 
-  test('retreating through the Central Port does not drive off any card', () => {
+  test('advancing through the Central Port from the player’s own card does not drive off any card', () => {
     const rules = testRules(
       { id: RuleId.PlayCards, player: Corporation.Moon },
       {
-        [MaterialType.VirusPawn]: [{ id: 1, location: { type: LocationType.VirusTrack, x: 1 } }], // on Moon's own card, about to retreat through the Port
+        [MaterialType.VirusPawn]: [{ id: 1, location: { type: LocationType.VirusTrack, x: -1 } }], // on Moon's own card, about to cross the Port
         [MaterialType.Card]: [{ id: SanCard.StarVirus5, location: { type: LocationType.VirusPile, player: Corporation.Star } }]
       },
       { [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, virus: 1 } } }

@@ -5,7 +5,6 @@ import { LocationType } from './material/LocationType'
 import { MaterialType } from './material/MaterialType'
 import { CardType, SanCard } from './material/SanCard'
 import { CustomMoveType } from './rules/CustomMoveType'
-import { virusDirection } from './rules/helper/directions'
 import { PlayCardsRule } from './rules/PlayCardsRule'
 import { RuleId } from './rules/RuleId'
 import { SanRules } from './SanRules'
@@ -93,18 +92,19 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
   }
 
   /**
-   * The one target among {@link PlayCardsRule.virusMoves} that actually progresses this player's
-   * Hacking score (advancing towards, or driving off, the opponent's top Virus card). The other
-   * candidate target — retreating towards this player's own Virus card — only helps the opponent,
-   * so it is never picked as a "victory" move here.
+   * The farthest target among {@link PlayCardsRule.virusMoves} — every one of them progresses this
+   * player's Hacking score (advancing towards, or driving off, the opponent's top Virus card), and the
+   * farthest spends the most banked points in a single move.
    */
   private virusAdvanceTarget(rule: PlayCardsRule): number | undefined {
     const pawn = rule.material(MaterialType.VirusPawn).getItem()
     if (!pawn) return undefined
     const x = pawn.location.x ?? 0
-    const dir = virusDirection(rule.game, rule.player)
-    const oppChips = rule.virusChips(rule.virusOpponent)
-    return x === dir * oppChips ? 0 : x + dir
+    const targets = rule
+      .virusMoves()
+      .filter(isMoveItemType(MaterialType.VirusPawn))
+      .map((move) => move.location.x ?? 0)
+    return targets.length ? targets.reduce((far, target) => (rule.virusStepsCost(x, target) > rule.virusStepsCost(x, far) ? target : far)) : undefined
   }
 
   /** Buy the first affordable River card on offer instead of passing; passes when none is affordable. */

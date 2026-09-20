@@ -126,37 +126,41 @@ export class PlayCardsRule extends SanRule {
 
   /**
    * Each Skull point moves the Virus pawn one space along the Virus track (rulebook p.18, diagram
-   * p.19). `location.x` is the signed step from the Central Port (0): the pawn stands on the
-   * "cases d'avancement" of whichever side it is on — `x = ±1 … ±{@link SanRule.virusChips}` of that
-   * Corporation's current top Virus card. From the opponent's last space, one more Skull towards
-   * them puts the pawn back on the Central Port and drives that card off (handled in
-   * {@link beforeItemMove}); retreating leads back through the Port and onto the player's own card.
+   * p.19), in one direction only: towards the opponent's Virus card ({@link virusDirection}) — "forward"
+   * on their card, "backward" through the numbering of the player's own. `location.x` is the signed
+   * step from the Central Port (0): the pawn stands on the "cases d'avancement" of whichever side it
+   * is on — `x = ±1 … ±{@link SanRule.virusChips}` of that Corporation's current top Virus card.
+   *
+   * Every space up to the opponent's last one is offered, as far as the banked points allow (each
+   * costs its distance, see {@link virusStepsCost}), so the player can spend several points in one
+   * move — the farthest one being the "Avancer de x" button. From the opponent's last space, one more
+   * Skull towards them puts the pawn back on the Central Port and drives that card off (handled in
+   * {@link beforeItemMove}).
    */
   virusMoves(): MaterialMove[] {
-    if (this.resourcesHelper.points('virus') < 1) return []
+    const points = this.resourcesHelper.points('virus')
+    if (points < 1) return []
     const pawn = this.material(MaterialType.VirusPawn)
     const item = pawn.getItem()
     if (!item) return []
     const x = item.location.x ?? 0
     const dir = virusDirection(this.game, this.player) // Moon attacks towards +x, Star towards -x
     const oppChips = this.virusChips(this.virusOpponent)
-    const ownChips = this.virusChips(this.player)
     const step = (target: number) => pawn.moveItem({ type: LocationType.VirusTrack, x: target })
-    const moves: MaterialMove[] = []
 
-    // Advance towards the opponent. From their last space, the step lands on the Central Port (0).
-    if (x === dir * oppChips) {
-      moves.push(step(0))
-    } else {
-      const advance = x + dir
-      if (Math.sign(advance) !== dir || Math.abs(advance) <= oppChips) moves.push(step(advance))
-    }
+    // From their last space, the step lands on the Central Port (0) and drives their top card off.
+    if (oppChips > 0 && x === dir * oppChips) return [step(0)]
 
-    // Retreat towards, through, and onto the player's own Virus card.
-    const retreat = x - dir
-    if (Math.sign(retreat) !== -dir || Math.abs(retreat) <= ownChips) moves.push(step(retreat))
+    // Spaces left up to their last one — counted from our own card too, through the Central Port.
+    const reachable = Math.min(points, oppChips - dir * x)
+    return Array.from({ length: Math.max(0, reachable) }, (_, i) => step(x + dir * (i + 1)))
+  }
 
-    return moves
+  /** Skull points spent by moving the pawn from `from` to `to`: one per space, or one for driving the opponent's top card off. */
+  virusStepsCost(from: number, to: number): number {
+    const dir = virusDirection(this.game, this.player)
+    if (to === 0 && from === dir * this.virusChips(this.virusOpponent)) return 1
+    return Math.abs(to - from)
   }
 
   /** Once at least 1 charge is banked, offer to draw the top card of the deck (reshuffling the discard first if needed). */
@@ -222,7 +226,7 @@ export class PlayCardsRule extends SanRule {
       const pawn = this.material(MaterialType.VirusPawn)
       const from = pawn.getItem()?.location.x ?? 0
       const to = move.location.x ?? 0
-      this.resourcesHelper.spend('virus', 1)
+      this.resourcesHelper.spend('virus', this.virusStepsCost(from, to))
       // Arriving on the Central Port from the opponent's last space = their top Virus card is crossed.
       const dir = virusDirection(this.game, this.player)
       if (to === 0 && from === dir * this.virusChips(this.virusOpponent)) {

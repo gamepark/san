@@ -80,6 +80,8 @@
 
   "button.buy": "Acheter",
   "button.draw": "Piocher",
+  "button.advance-virus": "Avancer de {steps}",
+  "button.retreat-virus": "Reculer de {steps}",
   "button.copy-river": "Copier",
   "help.button.buy": "Acheter cette carte",
   "help.button.play": "Jouer cette carte",
