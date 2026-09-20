@@ -18,17 +18,10 @@ import { LocationType } from './material/LocationType'
 import { SanCard } from './material/SanCard'
 import { MaterialType } from './material/MaterialType'
 import { BuyCardsRule } from './rules/BuyCardsRule'
-import { ChooseEffectRule } from './rules/actions/ChooseEffectRule'
-import { CopyRiverRule } from './rules/actions/CopyRiverRule'
-import { CorruptFromHandRule } from './rules/actions/CorruptFromHandRule'
-import { DestroyCardRule } from './rules/actions/DestroyCardRule'
-import { DrawCardsRule } from './rules/actions/DrawCardsRule'
 import { EndTurnRule } from './rules/EndTurnRule'
 import { propagandaDirection } from './rules/helper/directions'
 import { victoryOutcome } from './rules/helper/victory'
 import { PlayCardsRule } from './rules/PlayCardsRule'
-import { PlayFromDiscardRule } from './rules/actions/PlayFromDiscardRule'
-import { ResolveEffectsRule } from './rules/ResolveEffectsRule'
 import { RuleId } from './rules/RuleId'
 
 /**
@@ -43,13 +36,6 @@ export class SanRules
 {
   rules = {
     [RuleId.PlayCards]: PlayCardsRule,
-    [RuleId.ResolveEffects]: ResolveEffectsRule,
-    [RuleId.ChooseEffect]: ChooseEffectRule,
-    [RuleId.DrawCards]: DrawCardsRule,
-    [RuleId.DestroyCard]: DestroyCardRule,
-    [RuleId.PlayFromDiscard]: PlayFromDiscardRule,
-    [RuleId.CorruptFromHand]: CorruptFromHandRule,
-    [RuleId.CopyRiver]: CopyRiverRule,
     [RuleId.EndTurn]: EndTurnRule,
     [RuleId.BuyCards]: BuyCardsRule
   }

@@ -1,21 +1,46 @@
 import { CardType } from '../material/SanCard'
 
-/** The per-player resource counters accumulated this turn, shown on the player panels. */
+/**
+ * The per-player resource counters accumulated this turn, shown on the player panels. Every
+ * counter here is credited immediately when a card is played, and spent at the player's own
+ * pace during the rest of {@link import('./RuleId').RuleId.PlayCards} — never forced the moment
+ * the card is played.
+ */
 export interface ResourcesMemory {
   corruption: number
   propaganda: number
   virus: number
   coins: number
-  flex: number
+  /** Cards still drawable from the deck this turn (one {@link import('./CustomMoveType').CustomMoveType.DrawCard} spends one). */
+  draw: number
+  /** Hand cards still destroyable (to the box) this turn. */
+  destroy: number
+  /** Hand cards still corruptible for free (no group-of-3 cost) this turn. */
+  corruptFromHand: number
+  /** Discard cards still playable this turn. */
+  playFromDiscard: number
+  /** River cards still copyable this turn. */
+  copyRiver: number
 }
 
-export const EMPTY_RESOURCES: ResourcesMemory = { corruption: 0, propaganda: 0, virus: 0, coins: 0, flex: 0 }
+export const EMPTY_RESOURCES: ResourcesMemory = {
+  corruption: 0,
+  propaganda: 0,
+  virus: 0,
+  coins: 0,
+  draw: 0,
+  destroy: 0,
+  corruptFromHand: 0,
+  playFromDiscard: 0,
+  copyRiver: 0
+}
 
 /**
- * Flags/markers for the current turn. Not derivable from `playArea`'s own cards: {@link
- * import('./actions/CopyRiverRule').CopyRiverRule} can grant `playedMercenaryType` / lift
- * `allTypesAllowed` / flag a card into `singleUseCards` from a *copied* River card's data, without
- * the copying card's own type or effects ever reflecting it.
+ * Flags/markers for the current turn. Not derivable from `playArea`'s own cards: spending a
+ * {@link ResourcesMemory.copyRiver} charge (see {@link import('./PlayCardsRule').PlayCardsRule})
+ * can grant `playedMercenaryType` / lift `allTypesAllowed` / flag a card into `singleUseCards`
+ * from a *copied* River card's data, without the copying card's own type or effects ever
+ * reflecting it.
  */
 export interface TurnFlagsMemory {
   /** The single Mercenary type already played (or copied) this turn, if any. */
@@ -41,30 +66,30 @@ export const EMPTY_TURN_FLAGS: TurnFlagsMemory = { allTypesAllowed: false, cardP
  * start of every turn. Everything else concerns the player currently taking their turn.
  */
 export enum Memory {
-  /**
-   * Corruption / Propaganda / Virus / Coins / "any resource" (flex) points accumulated this turn
-   * (per player, see {@link ResourcesMemory}). Flex points top up every resource at once for
-   * reachability checks, from Equipment "gain any resource" effects, and are spent one at a time to
-   * cover a shortfall in whichever resource counter an action draws from.
-   */
+  /** Corruption / Propaganda / Virus / Coins and the other per-turn charges (per player, see {@link ResourcesMemory}). */
   Resources = 1,
 
   /** See {@link TurnFlagsMemory}. */
   TurnFlags,
 
-  /** Queue of {@link import('../material/CardsData').CardEffect} still to resolve for the current card. */
-  PendingEffects,
-  /** Item index of the card whose effects are being resolved (for "copy" / single-use targeting). */
-  ResolvingCardIndex,
   /**
-   * Remaining repetitions of the current sub-rule: cards left to draw
-   * ({@link import('./RuleId').RuleId.DrawCards}), or effect repeats left (Destroy / Corrupt from
-   * hand). These sub-rules are never active at once, so they share one countdown.
+   * Pending "either / or" choices, one entry per played card whose {@link
+   * import('../material/CardsData').EffectType.Either} effect hasn't been resolved yet: `{
+   * itemIndex, options }`. Unlike the pooled counters in {@link ResourcesMemory}, these can't be
+   * merged across cards (each carries its own distinct set of options), so they stay keyed by the
+   * card that granted them. Shown as one button per option directly on that card.
    */
-  RepeatCount,
+  PendingEitherChoices,
+  /**
+   * Item indexes of played cards still holding an unspent {@link ResourcesMemory.copyRiver}
+   * charge, oldest first (FIFO). Spending a charge `shift()`s this list: if the copied card turns
+   * out to be Single Use, the oldest source card is the one flagged into `singleUseCards` instead
+   * of the copied card itself.
+   */
+  CopyRiverSources,
   /**
    * Multiplier effects played this turn, each kept up to date with the cards played after it
-   * (see {@link import('./ResolveEffectsRule').ResolveEffectsRule.applyMultipliers}).
+   * (see {@link import('./SanRule').SanRule.applyMultipliers}).
    */
   Multipliers,
 

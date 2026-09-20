@@ -4,39 +4,61 @@ import { EMPTY_RESOURCES, Memory, ResourcesMemory } from '@gamepark/san/rules/Me
 import { SanRules } from '@gamepark/san/SanRules'
 import { useRules } from '@gamepark/react-game'
 import { Location } from '@gamepark/rules-api'
-import { coinIcon, corruptionIcon, propagandaIcon, virusIcon } from '../panels/resourceIcons'
+import { useTranslation } from 'react-i18next'
+import {
+  coinIcon,
+  copyRiverIcon,
+  corruptFromHandIcon,
+  corruptionIcon,
+  destroyIcon,
+  drawIcon,
+  playFromDiscardIcon,
+  propagandaIcon,
+  virusIcon
+} from '../panels/resourceIcons'
 import { colors } from '../theme/colors'
 import { fontDisplay } from '../theme/typography'
 
 /**
- * Corruption / Propaganda / Virus / Coin counters for a Corporation — moved here from the player
- * panels, next to its Discard pile's own static location (declared on DiscardLocator, always present
- * even while the pile itself is empty): a 2×2 grid on the right of the pile, under the PlayArea. Same colours as the crossing-cost badges' Banner code: white on black for Moon, black on grey for Star.
+ * Corruption / Propaganda / Virus / Coin / Draw / Destroy / CorruptFromHand / PlayFromDiscard /
+ * CopyRiver counters for a Corporation — moved here from the player panels, next to its Discard
+ * pile's own static location (declared on DiscardLocator, always present even while the pile itself
+ * is empty). Every card effect banks into one of these the instant it's played (see {@link
+ * import('@gamepark/san/rules/SanRule').SanRule.applyEffect}); none of them force an immediate
+ * decision, so each one is only ever shown here while there's still something to spend — a row at 0
+ * is hidden rather than printed. Same colours as the crossing-cost badges' Banner code: white on
+ * black for Moon, black on grey for Star.
  */
 export const PlayerResourceCounters = ({ location }: { location: Location }) => {
   const rules = useRules<SanRules>()
+  const { t } = useTranslation()
   const player = location.player as Corporation | undefined
   // Only the player whose turn it is has resources to spend.
   if (!rules || player === undefined || rules.game.rule?.player !== player) return null
 
-  // "Any resource" points count towards every resource at once.
   const resources = rules.remind<ResourcesMemory>(Memory.Resources, player) ?? EMPTY_RESOURCES
   const counters = [
-    // corruption/propaganda/virus are the game's own white-artwork icons; coin is still the dark-stroke SVG.
-    { image: corruptionIcon, value: resources.corruption + resources.flex, whiteArtwork: true },
-    { image: propagandaIcon, value: resources.propaganda + resources.flex, whiteArtwork: true },
-    { image: virusIcon, value: resources.virus + resources.flex, whiteArtwork: true },
-    { image: coinIcon, value: resources.coins, whiteArtwork: false }
-  ]
+    // All white artwork except the coin, which is still a dark-stroke SVG.
+    { image: corruptionIcon, value: resources.corruption, whiteArtwork: true, titleKey: 'resource.corruption' },
+    { image: propagandaIcon, value: resources.propaganda, whiteArtwork: true, titleKey: 'resource.propaganda' },
+    { image: virusIcon, value: resources.virus, whiteArtwork: true, titleKey: 'resource.virus' },
+    { image: coinIcon, value: resources.coins, whiteArtwork: false, titleKey: 'resource.coins' },
+    { image: drawIcon, value: resources.draw, whiteArtwork: true, titleKey: 'resource.draw' },
+    { image: destroyIcon, value: resources.destroy, whiteArtwork: true, titleKey: 'resource.destroy' },
+    { image: corruptFromHandIcon, value: resources.corruptFromHand, whiteArtwork: true, titleKey: 'resource.corrupt-from-hand' },
+    { image: playFromDiscardIcon, value: resources.playFromDiscard, whiteArtwork: true, titleKey: 'resource.play-from-discard' },
+    { image: copyRiverIcon, value: resources.copyRiver, whiteArtwork: true, titleKey: 'resource.copy-river' }
+  ].filter((counter) => counter.value > 0)
+  if (!counters.length) return null
   const isMoon = player === Corporation.Moon
   const colorCss = isMoon ? moonCss : starCss
   return (
     <div css={wrapperCss}>
       {counters.map((counter, i) => {
-        // White artwork needs inverting to read on Star's grey; the dark coin SVG needs it on Moon's black.
+        // White artwork needs inverting to read on Star's grey; the dark SVGs need it on Moon's black.
         const needsInvert = counter.whiteArtwork ? !isMoon : isMoon
         return (
-          <span css={[counterCss, colorCss]} key={i}>
+          <span css={[counterCss, colorCss]} key={i} title={t(counter.titleKey)}>
             <span css={[iconCss, needsInvert && invertIconCss]} style={{ backgroundImage: `url(${counter.image})` }} />
             {counter.value}
           </span>

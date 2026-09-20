@@ -1,5 +1,10 @@
+import copyRiver from '../images/icons/copyRiver.png'
 import corruption from '../images/icons/corruption.png'
+import corruptFromHand from '../images/icons/corruptFromHand.png'
+import destroy from '../images/icons/destroy.png'
+import draw from '../images/icons/draw.png'
 import hacking from '../images/icons/hacking.png'
+import playFromDiscard from '../images/icons/playFromDiscard.png'
 import propagande from '../images/icons/propagande.png'
 
 /** Spiral — Corruption points. Same artwork as the game's own Corruption icon (white on transparent). */
@@ -21,3 +26,14 @@ const svg = (body: string) =>
   )}`
 
 export const coinIcon = svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4"/>')
+
+/**
+ * Icons for the 5 counters added when card effects became optional/spend-whenever charges (Draw /
+ * Destroy / CorruptFromHand / PlayFromDiscard / CopyRiver). Game artwork like the 3 above (white on
+ * transparent); the opaque originals are kept in `images/icons/base`.
+ */
+export const drawIcon = draw
+export const destroyIcon = destroy
+export const corruptFromHandIcon = corruptFromHand
+export const playFromDiscardIcon = playFromDiscard
+export const copyRiverIcon = copyRiver

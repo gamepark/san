@@ -1,4 +1,4 @@
-import { isCustomMoveType, isMoveItemType, MaterialMove } from '@gamepark/rules-api'
+import { isCustomMoveType, isDeleteItemType, isMoveItemType, MaterialMove } from '@gamepark/rules-api'
 import { describe, expect, test } from 'vitest'
 import { Corporation } from '../Corporation'
 import { LocationType } from '../material/LocationType'
@@ -46,7 +46,7 @@ describe('PlayCardsRule', () => {
     expect(moves[0]).toMatchObject({ location: { type: LocationType.Discard } })
   })
 
-  test('playing a card into the play area banks its revenue, locks its Mercenary type and queues its effects', () => {
+  test('playing a card into the play area banks its revenue, locks its Mercenary type and banks its effects as spendable charges', () => {
     const rules = testRules(
       { id: RuleId.PlayCards, player: Corporation.Moon },
       { [MaterialType.Card]: [{ id: SanCard.MoonPropaganda, location: { type: LocationType.Hand, player: Corporation.Moon } }] }
@@ -55,10 +55,11 @@ describe('PlayCardsRule', () => {
     const consequences = rules.play(move)
 
     expect(rules.remind(Memory.Resources, Corporation.Moon).coins).toBe(1) // MoonPropaganda's revenue
+    expect(rules.remind(Memory.Resources, Corporation.Moon).propaganda).toBe(1) // propaganda(1), banked immediately
     expect(rules.remind(Memory.TurnFlags).playedMercenaryType).toBe(1) // CardType.Propaganda
     expect(rules.remind(Memory.TurnFlags).cardPlayed).toBe(true)
-    expect(rules.remind(Memory.PendingEffects)).toHaveLength(1) // propaganda(1) still queued
-    expect(consequences).toEqual([rules.startRule(RuleId.ResolveEffects)])
+    // No rule transition needed any more: the effect is banked, not queued for forced resolution.
+    expect(consequences).toEqual([])
   })
 
   test('a Virus card discarded from hand still counts as "a card played" this turn', () => {
@@ -87,11 +88,11 @@ describe('PlayCardsRule', () => {
     expect(rules.remind(Memory.Resources, Corporation.Moon).corruption).toBe(0)
   })
 
-  test('does not offer to corrupt with fewer than 3 Corruption points, even with flex points', () => {
+  test('does not offer to corrupt with fewer than 3 Corruption points', () => {
     const rules = testRules(
       { id: RuleId.PlayCards, player: Corporation.Moon },
       { [MaterialType.Card]: [{ id: SanCard.RiverPropaganda1, location: { type: LocationType.River, x: 0 } }] },
-      { [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, corruption: 1, flex: 1 } } }
+      { [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, corruption: 1 } } }
     )
     const moves = rules.getLegalMoves(Corporation.Moon)
     expect(moves.some((move) => isMoveItemType(MaterialType.Card)(move) && move.location.type === LocationType.CorruptionZone)).toBe(false)
@@ -234,5 +235,249 @@ describe('PlayCardsRule', () => {
     )
     const consequences = rules.play(rules.customMove(CustomMoveType.EndPlayPhase))
     expect(consequences).toEqual([rules.startRule(RuleId.BuyCards)])
+  })
+
+  describe('card effects become banked, spend-whenever charges', () => {
+    test('a Multiplier registers and grants nothing until a matching card is already in the play area', () => {
+      const rules = testRules(
+        { id: RuleId.PlayCards, player: Corporation.Moon },
+        {
+          [MaterialType.Card]: [
+            { id: SanCard.MoonPropaganda, location: { type: LocationType.PlayArea, player: Corporation.Moon } }, // already played, Propaganda type
+            { id: SanCard.RiverPropaganda4, location: { type: LocationType.Hand, player: Corporation.Moon } } // multiplier(Propaganda, Propaganda)
+          ]
+        }
+      )
+      const move = rules.material(MaterialType.Card).index(1).moveItem({ type: LocationType.PlayArea, player: Corporation.Moon })
+      rules.play(move)
+      // Both the pre-existing card and the Multiplier's own card count: +2.
+      expect(rules.remind(Memory.Resources, Corporation.Moon).propaganda).toBe(2)
+      expect(rules.remind(Memory.Multipliers)).toEqual([{ gain: 2, per: 1, value: 1, counted: 2 }]) // EffectType.Propaganda, CardType.Propaganda
+    })
+
+    test('an AllTypes effect lifts the one-Mercenary-type restriction immediately, with no counter', () => {
+      const rules = testRules(
+        { id: RuleId.PlayCards, player: Corporation.Moon },
+        { [MaterialType.Card]: [{ id: SanCard.RiverEquipment9, location: { type: LocationType.Hand, player: Corporation.Moon } }] } // [draw(1), AllTypes]
+      )
+      const move = rules.material(MaterialType.Card).index(0).moveItem({ type: LocationType.PlayArea, player: Corporation.Moon })
+      rules.play(move)
+      expect(rules.remind(Memory.TurnFlags).allTypesAllowed).toBe(true)
+      expect(rules.remind(Memory.Resources, Corporation.Moon).draw).toBe(1) // the other effect on the same card still banks normally
+    })
+
+    test('a SingleUse effect flags the card for the box immediately, with no counter', () => {
+      const rules = testRules(
+        { id: RuleId.PlayCards, player: Corporation.Moon },
+        { [MaterialType.Card]: [{ id: SanCard.RiverEquipment10, location: { type: LocationType.Hand, player: Corporation.Moon } }] } // [singleUse, draw(5)]
+      )
+      const move = rules.material(MaterialType.Card).index(0).moveItem({ type: LocationType.PlayArea, player: Corporation.Moon })
+      rules.play(move)
+      expect(rules.remind(Memory.TurnFlags).singleUseCards).toEqual([0])
+      expect(rules.remind(Memory.Resources, Corporation.Moon).draw).toBe(5)
+    })
+
+    test('Draw banks a charge; spending it deals a card and decrements the charge', () => {
+      const rules = testRules(
+        { id: RuleId.PlayCards, player: Corporation.Moon },
+        {
+          [MaterialType.Card]: [
+            { id: SanCard.RiverEquipment2, location: { type: LocationType.Hand, player: Corporation.Moon } }, // draw(3)
+            { id: SanCard.MoonHacking, location: { type: LocationType.Deck, player: Corporation.Moon } }
+          ]
+        }
+      )
+      rules.play(rules.material(MaterialType.Card).index(0).moveItem({ type: LocationType.PlayArea, player: Corporation.Moon }))
+      expect(rules.remind(Memory.Resources, Corporation.Moon).draw).toBe(3)
+
+      const draw = rules.getLegalMoves(Corporation.Moon).find(isCustomMoveType(CustomMoveType.DrawCard))
+      expect(draw).toBeDefined()
+      const consequences = rules.play(draw!)
+      expect(rules.remind(Memory.Resources, Corporation.Moon).draw).toBe(2)
+      expect(consequences).toHaveLength(1)
+      rules.play(consequences[0])
+      expect(rules.material(MaterialType.Card).location(LocationType.Hand).player(Corporation.Moon).length).toBe(1)
+    })
+
+    test('Draw is not offered once both the deck and the discard are empty, even with a banked charge', () => {
+      const rules = testRules(
+        { id: RuleId.PlayCards, player: Corporation.Moon },
+        {},
+        { [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, draw: 1 } } }
+      )
+      expect(rules.getLegalMoves(Corporation.Moon).some(isCustomMoveType(CustomMoveType.DrawCard))).toBe(false)
+    })
+
+    test('Destroy banks a charge; spending it deletes a hand card and decrements the charge', () => {
+      const rules = testRules(
+        { id: RuleId.PlayCards, player: Corporation.Moon },
+        {
+          [MaterialType.Card]: [
+            { id: SanCard.RiverEquipment3, location: { type: LocationType.Hand, player: Corporation.Moon } }, // Destroy(1)
+            { id: SanCard.MoonHacking, location: { type: LocationType.Hand, player: Corporation.Moon } }
+          ]
+        }
+      )
+      rules.play(rules.material(MaterialType.Card).index(0).moveItem({ type: LocationType.PlayArea, player: Corporation.Moon }))
+      expect(rules.remind(Memory.Resources, Corporation.Moon).destroy).toBe(1)
+
+      const destroy = rules.getLegalMoves(Corporation.Moon).find((move) => isDeleteItemType(MaterialType.Card)(move) && move.itemIndex === 1)
+      expect(destroy).toBeDefined()
+      rules.play(destroy!)
+      expect(rules.remind(Memory.Resources, Corporation.Moon).destroy).toBe(0)
+      expect(rules.material(MaterialType.Card).location(LocationType.Hand).player(Corporation.Moon).length).toBe(0)
+    })
+
+    test('CorruptFromHand banks a charge; spending it moves a hand card to a free slot at no cost, unlike a River corruption', () => {
+      const rules = testRules(
+        { id: RuleId.PlayCards, player: Corporation.Moon },
+        {
+          [MaterialType.Card]: [
+            { id: SanCard.RiverEquipment8, location: { type: LocationType.Hand, player: Corporation.Moon } }, // CorruptFromHand
+            { id: SanCard.MoonHacking, location: { type: LocationType.Hand, player: Corporation.Moon } }
+          ]
+        }
+      )
+      rules.play(rules.material(MaterialType.Card).index(0).moveItem({ type: LocationType.PlayArea, player: Corporation.Moon }))
+      expect(rules.remind(Memory.Resources, Corporation.Moon).corruptFromHand).toBe(1)
+
+      const corrupt = rules
+        .getLegalMoves(Corporation.Moon)
+        .find((move) => isMoveItemType(MaterialType.Card)(move) && move.itemIndex === 1 && move.location.type === LocationType.CorruptionZone)
+      expect(corrupt).toBeDefined()
+      rules.play(corrupt!)
+      // Free: unlike a River corruption, no 3-point group is spent (there isn't even any banked here).
+      expect(rules.remind(Memory.Resources, Corporation.Moon).corruptFromHand).toBe(0)
+      expect(rules.remind(Memory.Resources, Corporation.Moon).corruption).toBe(0)
+      expect(rules.material(MaterialType.Card).location(LocationType.CorruptionZone).player(Corporation.Moon).length).toBe(1)
+    })
+
+    test('PlayFromDiscard banks a charge; spending it plays a discard card, whose own effects bank in turn', () => {
+      const rules = testRules(
+        { id: RuleId.PlayCards, player: Corporation.Moon },
+        {
+          [MaterialType.Card]: [
+            { id: SanCard.RiverEquipment4, location: { type: LocationType.Hand, player: Corporation.Moon } }, // PlayFromDiscard
+            { id: SanCard.MoonPropaganda, location: { type: LocationType.Discard, player: Corporation.Moon } } // propaganda(1)
+          ]
+        }
+      )
+      rules.play(rules.material(MaterialType.Card).index(0).moveItem({ type: LocationType.PlayArea, player: Corporation.Moon }))
+      expect(rules.remind(Memory.Resources, Corporation.Moon).playFromDiscard).toBe(1)
+
+      const replay = rules
+        .getLegalMoves(Corporation.Moon)
+        .find((move) => isMoveItemType(MaterialType.Card)(move) && move.itemIndex === 1 && move.location.type === LocationType.PlayArea)
+      expect(replay).toBeDefined()
+      rules.play(replay!)
+      expect(rules.remind(Memory.Resources, Corporation.Moon).playFromDiscard).toBe(0)
+      expect(rules.remind(Memory.Resources, Corporation.Moon).propaganda).toBe(1) // the replayed card's own effect
+      expect(rules.remind(Memory.Resources, Corporation.Moon).coins).toBe(1) // and its revenue
+    })
+
+    test('CopyRiver banks a charge; spending it applies the copied card\'s effects and locks its Mercenary type', () => {
+      const rules = testRules(
+        { id: RuleId.PlayCards, player: Corporation.Moon },
+        {
+          [MaterialType.Card]: [
+            { id: SanCard.RiverEquipment14, location: { type: LocationType.Hand, player: Corporation.Moon } }, // CopyRiver
+            { id: SanCard.RiverPropaganda1, location: { type: LocationType.River, x: 0 } } // [propaganda(1), draw(1)]
+          ]
+        }
+      )
+      rules.play(rules.material(MaterialType.Card).index(0).moveItem({ type: LocationType.PlayArea, player: Corporation.Moon }))
+      expect(rules.remind(Memory.Resources, Corporation.Moon).copyRiver).toBe(1)
+      expect(rules.remind(Memory.CopyRiverSources)).toEqual([0]) // itemIndex 0 = the card carrying CopyRiver
+
+      const copy = rules.getLegalMoves(Corporation.Moon).find(isCustomMoveType(CustomMoveType.CopyRiverCard))
+      expect(copy).toBeDefined()
+      rules.play(copy!)
+      expect(rules.remind(Memory.Resources, Corporation.Moon).copyRiver).toBe(0)
+      expect(rules.remind(Memory.CopyRiverSources)).toEqual([])
+      expect(rules.remind(Memory.Resources, Corporation.Moon).propaganda).toBe(1)
+      expect(rules.remind(Memory.Resources, Corporation.Moon).draw).toBe(1)
+      expect(rules.remind(Memory.TurnFlags).playedMercenaryType).toBe(1) // CardType.Propaganda
+    })
+
+    test('copying a Single Use card flags the oldest still-unspent CopyRiver source (FIFO), not the copied card itself', () => {
+      const rules = testRules(
+        { id: RuleId.PlayCards, player: Corporation.Moon },
+        {
+          [MaterialType.Card]: [
+            { id: SanCard.RiverEquipment14, location: { type: LocationType.PlayArea, player: Corporation.Moon } }, // itemIndex 0, played first
+            { id: SanCard.RiverEquipment16, location: { type: LocationType.River, x: 0 } } // itemIndex 1, [singleUse, corruption(6)]
+          ]
+        },
+        { [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, copyRiver: 2 } }, [Memory.CopyRiverSources]: [3, 5] }
+      )
+      const copy = rules.getLegalMoves(Corporation.Moon).find(isCustomMoveType(CustomMoveType.CopyRiverCard))
+      rules.play(copy!)
+      expect(rules.remind(Memory.CopyRiverSources)).toEqual([5]) // the oldest (3) was consumed
+      expect(rules.remind(Memory.TurnFlags).singleUseCards).toEqual([3]) // not itemIndex 1, the copied River card
+      expect(rules.remind(Memory.Resources, Corporation.Moon).corruption).toBe(6)
+    })
+
+    test('a real Either (one option is not a resource gain) offers one button per option, tied to the card that granted it', () => {
+      const rules = testRules(
+        { id: RuleId.PlayCards, player: Corporation.Moon },
+        { [MaterialType.Card]: [{ id: SanCard.RiverPropaganda2, location: { type: LocationType.Hand, player: Corporation.Moon } }] } // either(propaganda(2), draw(2))
+      )
+      rules.play(rules.material(MaterialType.Card).index(0).moveItem({ type: LocationType.PlayArea, player: Corporation.Moon }))
+      expect(rules.remind(Memory.Resources, Corporation.Moon).coins).toBe(1) // the card's revenue, unrelated to its Either
+      expect(rules.remind(Memory.Resources, Corporation.Moon).propaganda).toBe(0) // no points banked yet, no choice made
+      expect(rules.remind(Memory.PendingEitherChoices)).toEqual([
+        { itemIndex: 0, options: [{ type: 2, value: 2 }, { type: 9, value: 2 }] } // EffectType.Propaganda / EffectType.Draw
+      ])
+
+      const moves = rules.getLegalMoves(Corporation.Moon).filter(isCustomMoveType(CustomMoveType.ChooseEffectOption))
+      expect(moves).toHaveLength(2)
+      expect(moves.map((move) => move.data)).toEqual([
+        { itemIndex: 0, option: 0 },
+        { itemIndex: 0, option: 1 }
+      ])
+
+      rules.play(rules.customMove(CustomMoveType.ChooseEffectOption, { itemIndex: 0, option: 1 }))
+      expect(rules.remind(Memory.PendingEitherChoices)).toEqual([])
+      expect(rules.remind(Memory.Resources, Corporation.Moon).draw).toBe(2)
+      expect(rules.remind(Memory.Resources, Corporation.Moon).propaganda).toBe(0)
+    })
+
+    test('the starting Equipment cards\' "any resource" Either also offers 3 buttons, crediting only the chosen resource', () => {
+      const rules = testRules(
+        { id: RuleId.PlayCards, player: Corporation.Moon },
+        { [MaterialType.Card]: [{ id: SanCard.MoonEquipment, location: { type: LocationType.Hand, player: Corporation.Moon } }] } // either(propaganda(1), virus(1), corruption(1))
+      )
+      rules.play(rules.material(MaterialType.Card).index(0).moveItem({ type: LocationType.PlayArea, player: Corporation.Moon }))
+      expect(rules.remind(Memory.Resources, Corporation.Moon).coins).toBe(1) // the card's revenue, unrelated to its Either
+      expect(rules.remind(Memory.Resources, Corporation.Moon).propaganda).toBe(0) // no points banked yet, no choice made
+      expect(rules.remind(Memory.PendingEitherChoices)).toEqual([
+        { itemIndex: 0, options: [{ type: 2, value: 1 }, { type: 3, value: 1 }, { type: 1, value: 1 }] } // Propaganda / Virus / Corruption
+      ])
+
+      const moves = rules.getLegalMoves(Corporation.Moon).filter(isCustomMoveType(CustomMoveType.ChooseEffectOption))
+      expect(moves).toHaveLength(3)
+
+      rules.play(rules.customMove(CustomMoveType.ChooseEffectOption, { itemIndex: 0, option: 2 })) // Corruption
+      expect(rules.remind(Memory.PendingEitherChoices)).toEqual([])
+      expect(rules.remind(Memory.Resources, Corporation.Moon).corruption).toBe(1)
+      expect(rules.remind(Memory.Resources, Corporation.Moon).propaganda).toBe(0)
+      expect(rules.remind(Memory.Resources, Corporation.Moon).virus).toBe(0)
+    })
+
+    test('unspent charges and pending choices are wiped when a new PlayCards phase starts', () => {
+      const rules = testRules(
+        { id: RuleId.PlayCards, player: Corporation.Moon },
+        {},
+        {
+          [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, draw: 3, destroy: 2 } },
+          [Memory.PendingEitherChoices]: [{ itemIndex: 0, options: [] }],
+          [Memory.CopyRiverSources]: [0]
+        }
+      )
+      rules.play(rules.startRule(RuleId.PlayCards))
+      expect(rules.remind(Memory.Resources, Corporation.Moon)).toEqual(EMPTY_RESOURCES)
+      expect(rules.remind(Memory.PendingEitherChoices)).toBeUndefined()
+      expect(rules.remind(Memory.CopyRiverSources)).toBeUndefined()
+    })
   })
 })

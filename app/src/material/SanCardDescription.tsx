@@ -1,14 +1,18 @@
 import { css } from '@emotion/react'
+import { faCopy } from '@fortawesome/free-solid-svg-icons/faCopy'
 import { faDollarSign } from '@fortawesome/free-solid-svg-icons/faDollarSign'
+import { faLayerGroup } from '@fortawesome/free-solid-svg-icons/faLayerGroup'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { LocationType } from '@gamepark/san/material/LocationType'
 import { MaterialType } from '@gamepark/san/material/MaterialType'
 import { SanCard } from '@gamepark/san/material/SanCard'
+import { CustomMoveType } from '@gamepark/san/rules/CustomMoveType'
 import { RuleId } from '@gamepark/san/rules/RuleId'
 import { CardDescription, ItemContext, ItemMenuButton, MaterialContentProps } from '@gamepark/react-game'
-import { isDeleteItemType, isMoveItemType, MaterialItem, MaterialMove } from '@gamepark/rules-api'
+import { isCustomMoveType, isDeleteItemType, isMoveItemType, MaterialItem, MaterialMove } from '@gamepark/rules-api'
 import { Trans } from 'react-i18next'
 import { CrossingCostBadge } from './CrossingCostBadge'
+import { eitherChoiceButtons } from './EitherChoiceButtons'
 import { SanCardHelp } from './help/SanCardHelp'
 import { CARD_BORDER_RADIUS } from '../locators/SanLayout'
 import { colors } from '../theme/colors'
@@ -132,60 +136,92 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
   }
 
   /**
-   * A short click on a card triggers its one obvious move for the phase currently running, instead of
-   * requiring a drag: playing a hand card ({@link RuleId.PlayCards} to PlayArea, or Discard for a
-   * Virus card, and {@link RuleId.PlayFromDiscard}), corrupting a River or hand card
-   * ({@link RuleId.PlayCards} and {@link RuleId.CorruptFromHand}, both to CorruptionZone), and
-   * destroying a hand card ({@link RuleId.DestroyCard}, a {@link deleteItem} move — there is no box
-   * drop zone on the table, so the click is the whole interaction). Buying ({@link RuleId.BuyCards})
-   * is deliberately not here: it gets its own "Acheter" button instead — see {@link getItemMenu}. When
-   * a card has more than one legal target (e.g. several free CorruptionZone slots), the framework only
-   * short-clicks a move that is unique for that card, so this can stay this permissive without picking
-   * the target itself. Outside these rules, or when ambiguous, a click still just opens help.
+   * A short click on a card triggers its one obvious move for {@link RuleId.PlayCards}, instead of
+   * requiring a drag: playing a hand card (to PlayArea, or Discard for a Virus card), playing a
+   * discard card (also to PlayArea — every card effect is a banked, spend-whenever charge now, so
+   * "play from discard" is just another PlayArea move offered in the same phase, not a dedicated
+   * rule step), corrupting a River or hand card (both to CorruptionZone, whichever is spendable),
+   * and destroying a hand card (a {@link deleteItem} move — there is no box drop zone on the table,
+   * so the click is the whole interaction). Buying ({@link RuleId.BuyCards}) and copying a River
+   * card/drawing (both {@link CustomMoveType}, not tied to a unique target item in the same way) are
+   * deliberately not here: they get their own buttons instead — see {@link getItemMenu}. When a card
+   * has more than one legal target (e.g. several free CorruptionZone slots), the framework only
+   * short-clicks a move that is unique for that card, so this can stay this permissive without
+   * picking the target itself. Outside these rules, or when ambiguous, a click still just opens help.
    */
   canShortClick(move: MaterialMove, context: ItemContext) {
-    const ruleId = context.rules.game.rule?.id
-    if (ruleId === RuleId.DestroyCard) {
-      return isDeleteItemType(MaterialType.Card)(move) && move.itemIndex === context.index
-    }
+    if (context.rules.game.rule?.id !== RuleId.PlayCards) return false
+    if (isDeleteItemType(MaterialType.Card)(move)) return move.itemIndex === context.index
     if (!isMoveItemType(MaterialType.Card)(move) || move.itemIndex !== context.index) return false
-    switch (ruleId) {
-      case RuleId.PlayCards:
-        return (
-          move.location.type === LocationType.PlayArea ||
-          move.location.type === LocationType.Discard ||
-          move.location.type === LocationType.CorruptionZone
-        )
-      case RuleId.PlayFromDiscard:
-        return move.location.type === LocationType.PlayArea
-      case RuleId.CorruptFromHand:
-        return move.location.type === LocationType.CorruptionZone
-      default:
-        return false
-    }
+    return (
+      move.location.type === LocationType.PlayArea ||
+      move.location.type === LocationType.Discard ||
+      move.location.type === LocationType.CorruptionZone
+    )
   }
 
-  // Buttons are always shown (rather than only on hover/selection) so "Acheter" stays reachable on
+  // Buttons are always shown (rather than only on hover/selection) so they stay reachable on
   // touch devices, same convention as rival-cities' AllianceCardDescription.
   menuAlwaysVisible = true
 
-  /** "Acheter" button on every River card the current buying income can afford ({@link RuleId.BuyCards}, to Discard). */
+  /**
+   * "Acheter" on every River card the current buying income can afford ({@link RuleId.BuyCards}),
+   * "Copier" on every River card still copyable this turn (spends a banked
+   * {@link import('@gamepark/san/rules/Memory').ResourcesMemory.copyRiver} charge), "Piocher" on
+   * the top of the deck while a banked {@link import('@gamepark/san/rules/Memory').ResourcesMemory.draw}
+   * charge remains, and the "either / or" choice buttons on a played card that still has one pending
+   * (see {@link eitherChoiceButtons}) — none of these have a natural drag/short-click target of their
+   * own, and rendering them here (rather than through `content`) keeps them outside the card's own
+   * clickable area, so clicking one doesn't also open the help dialog.
+   */
   getItemMenu(item: MaterialItem, context: ItemContext, legalMoves: MaterialMove[]) {
-    if (context.rules.game.rule?.id !== RuleId.BuyCards || item.location.type !== LocationType.River) return
-    const buy = legalMoves.find(
-      (move) => isMoveItemType(MaterialType.Card)(move) && move.itemIndex === context.index && move.location.type === LocationType.Discard
-    )
-    if (!buy) return
-    // Top-right corner of the card (width 6.3 / height 8.8, so half-width 3.15 / half-height 4.4),
-    // inset a bit so it doesn't hang off the edge.
-    return (
-      <ItemMenuButton label={<Trans i18nKey="button.buy" />} css={buyButtonCss} x={2.3} y={-5} move={buy}>
-        <FontAwesomeIcon icon={faDollarSign} />
-      </ItemMenuButton>
-    )
+    if (context.rules.game.rule?.id === RuleId.BuyCards) {
+      if (item.location.type !== LocationType.River) return
+      const buy = legalMoves.find(
+        (move) => isMoveItemType(MaterialType.Card)(move) && move.itemIndex === context.index && move.location.type === LocationType.Discard
+      )
+      if (!buy) return
+      // Top-right corner of the card (width 6.3 / height 8.8, so half-width 3.15 / half-height 4.4),
+      // inset a bit so it doesn't hang off the edge.
+      return (
+        <ItemMenuButton label={<Trans i18nKey="button.buy" />} css={buyButtonCss} x={2.3} y={-5} move={buy}>
+          <FontAwesomeIcon icon={faDollarSign} />
+        </ItemMenuButton>
+      )
+    }
+
+    if (context.rules.game.rule?.id !== RuleId.PlayCards) return
+
+    if (item.location.type === LocationType.River) {
+      const copy = legalMoves.find((move) => isCustomMoveType(CustomMoveType.CopyRiverCard)(move) && move.data === context.index)
+      if (!copy) return
+      return (
+        <ItemMenuButton label={<Trans i18nKey="button.copy-river" />} css={copyButtonCss} x={-2.3} y={-5} move={copy}>
+          <FontAwesomeIcon icon={faCopy} />
+        </ItemMenuButton>
+      )
+    }
+
+    // Only the active player's own deck: both decks have a card at `x: 0`, so without the player
+    // check the "Piocher" button also showed up on the opponent's pile.
+    if (item.location.type === LocationType.Deck && item.location.player === context.rules.game.rule?.player && (item.location.x ?? 0) === 0) {
+      const draw = legalMoves.find(isCustomMoveType(CustomMoveType.DrawCard))
+      if (!draw) return
+      return (
+        <ItemMenuButton label={<Trans i18nKey="button.draw" />} css={drawButtonCss} x={0} y={0} move={draw}>
+          <FontAwesomeIcon icon={faLayerGroup} />
+        </ItemMenuButton>
+      )
+    }
+
+    if (item.location.type === LocationType.PlayArea) {
+      return eitherChoiceButtons(context, legalMoves)
+    }
+
+    return
   }
 
-  /** Crossing-cost badges, only meaningful (and only rendered) while the card sits in the River. */
+  /** Crossing-cost badge, only meaningful (and only rendered) while the card sits in the River. */
   content = (props: MaterialContentProps<SanCard, number>) =>
     this.contentWithBackChildren({
       ...props,
@@ -206,6 +242,28 @@ const buyButtonCss = css`
 
   &:hover {
     background-color: ${colors.propagandaLight} !important;
+  }
+`
+
+/** Equipment grey, distinct from Buy's blue and from the card's own colour. */
+const copyButtonCss = css`
+  background-color: ${colors.equipment} !important;
+  border: 0.1em solid ${colors.paperSoft} !important;
+  color: ${colors.paper} !important;
+
+  &:hover {
+    background-color: ${colors.equipmentDark} !important;
+  }
+`
+
+/** Same grey as Copy, centred on the deck rather than in a card corner. */
+const drawButtonCss = css`
+  background-color: ${colors.equipment} !important;
+  border: 0.1em solid ${colors.paperSoft} !important;
+  color: ${colors.paper} !important;
+
+  &:hover {
+    background-color: ${colors.equipmentDark} !important;
   }
 `
 

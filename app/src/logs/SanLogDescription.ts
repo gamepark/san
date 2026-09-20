@@ -28,16 +28,21 @@ export class SanLogDescription implements LogDescription {
     const ruleId: RuleId = context.game.rule?.id
 
     if (isMoveItemType(MaterialType.Card)(move)) {
+      // PlayFromDiscard/CorruptFromHand no longer have their own RuleId (folded into PlayCards): the
+      // card's location just before this exact move, from the same snapshot `ruleId` above reads, is
+      // what tells a River-funded Corruption from a free CorruptFromHand one, and a hand-play from a
+      // PlayFromDiscard one — both otherwise identical Card moves landing on the same location.
+      const fromType = context.game.items?.[MaterialType.Card]?.[move.itemIndex]?.location.type
       switch (move.location.type) {
         case LocationType.PlayArea:
-          if (ruleId === RuleId.PlayFromDiscard) return { Component: PlayFromDiscardLog, player: context.action.playerId }
+          if (fromType === LocationType.Discard) return { Component: PlayFromDiscardLog, player: context.action.playerId }
           return { Component: PlayCardLog, player: context.action.playerId }
         case LocationType.Discard:
           if (ruleId === RuleId.BuyCards) return { Component: BuyCardLog, player: context.action.playerId }
           if (ruleId === RuleId.PlayCards) return { Component: PlayVirusCardLog, player: context.action.playerId }
           break
         case LocationType.CorruptionZone:
-          if (ruleId === RuleId.CorruptFromHand) return { Component: CorruptFromHandLog, player: context.action.playerId }
+          if (fromType === LocationType.Hand) return { Component: CorruptFromHandLog, player: context.action.playerId }
           return { Component: CorruptCardLog, player: context.action.playerId }
         case LocationType.Deck:
           // Consequence of the Virus pawn crossing the Central Port (see PlayCardsRule.driveOffTopVirusCard).
