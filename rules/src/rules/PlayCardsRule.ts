@@ -1,7 +1,8 @@
 import { CustomMove, isDeleteItemType, isMoveItemType, ItemMove, Location, MaterialMove } from '@gamepark/rules-api'
 import { CardEffect, EffectType, getCardData, isVirusCard, isMercenaryType } from '../material/CardsData'
-import { CardType, SanCard } from '../material/SanCard'
-import { CORRUPTION_GROUP, PROPAGANDA_END, RIVER_SIZE } from '../material/constants'
+import { CardType, SanCard, virusNumber } from '../material/SanCard'
+import { CORRUPTION_GROUP, CORRUPTION_SLOT_CAPACITY, CORRUPTION_SLOTS, PROPAGANDA_END, RIVER_SIZE, virusCardChips } from '../material/constants'
+import { Corporation, otherCorporation } from '../Corporation'
 import { LocationType } from '../material/LocationType'
 import { MaterialType } from '../material/MaterialType'
 import { clone } from './clone'
@@ -11,6 +12,21 @@ import { propagandaDirection, virusDirection } from './helper/directions'
 import { Memory } from './Memory'
 import { RuleId } from './RuleId'
 import { SanRule } from './SanRule'
+
+/** Which resource counter an {@link EffectType.Corruption}/{@link EffectType.Propaganda}/{@link EffectType.Virus} feeds. */
+const POINTS_KEY = {
+  [EffectType.Corruption]: 'corruption',
+  [EffectType.Propaganda]: 'propaganda',
+  [EffectType.Virus]: 'virus'
+} as const
+
+/** A Multiplier played this turn, plus how many matching cards it has already paid out for. */
+interface MultiplierState {
+  gain: EffectType.Corruption | EffectType.Propaganda | EffectType.Virus
+  per: CardType
+  value: number
+  counted: number
+}
 
 /** One card posed whose "either / or" hasn't been chosen yet — see {@link Memory.PendingEitherChoices}. */
 interface PendingEitherChoice {
@@ -22,7 +38,7 @@ interface PendingEitherChoice {
  * Turn phase 1 — "Play one or more cards" (mandatory).
  *
  * Every card effect turns into a banked, per-player counter the instant the card lands in the
- * play area (see {@link SanRule.playCardEffects}/{@link SanRule.applyEffect}). None of them force
+ * play area (see {@link playCardEffects}/{@link applyEffect}). None of them force
  * an immediate decision: spending a counter — corrupting a card, advancing the banner, moving the
  * Virus pawn, drawing, destroying, corrupting from hand, playing from discard, copying a River
  * card or a played card, or picking a side of an "either / or" — is offered here for as long as the counter (or
@@ -32,6 +48,14 @@ interface PendingEitherChoice {
  * Anything left unspent is lost then (see {@link import('./EndTurnRule').EndTurnRule.nextTurn}).
  */
 export class PlayCardsRule extends SanRule {
+  get discard() {
+    return this.material(MaterialType.Card).location(LocationType.Discard).player(this.player)
+  }
+
+  get deck() {
+    return this.material(MaterialType.Card).location(LocationType.Deck).player(this.player)
+  }
+
   onRuleStart(): MaterialMove[] {
     this.resourcesHelper.reset()
     this.turnFlagsHelper.reset()
@@ -131,7 +155,7 @@ export class PlayCardsRule extends SanRule {
    * p.19), in one direction only: towards the opponent's Virus card ({@link virusDirection}) — "forward"
    * on their card, "backward" through the numbering of the player's own. `location.x` is the signed
    * step from the Central Port (0): the pawn stands on the "cases d'avancement" of whichever side it
-   * is on — `x = ±1 … ±{@link SanRule.virusChips}` of that Corporation's current top Virus card.
+   * is on — `x = ±1 … ±{@link virusChips}` of that Corporation's current top Virus card.
    *
    * Every space up to the opponent's last one is offered, as far as the banked points allow (each
    * costs its distance, see {@link virusStepsCost}), so the player can spend several points in one
@@ -349,6 +373,193 @@ export class PlayCardsRule extends SanRule {
       this.applyEffect(sourceIndex, effect)
     }
     this.applyMultipliers()
+  }
+
+  /** A Corporation's stack of Virus cards, still on the board (driven-off cards leave for its deck). */
+  virusPile(player: Corporation) {
+    return this.material(MaterialType.Card).location(LocationType.VirusPile).player(player)
+  }
+
+  /** The other Corporation (the one the active player attacks along the Virus track). */
+  get virusOpponent(): Corporation {
+    return otherCorporation(this.player)
+  }
+
+  /** Highest Virus number still on a Corporation's pile (5 at setup, 0 once every card is driven off). */
+  topVirusNumber(player: Corporation): number {
+    const numbers = this.virusPile(player)
+      .getItems<SanCard>()
+      .map((item) => virusNumber(item.id))
+    return numbers.length ? Math.max(...numbers) : 0
+  }
+
+  /** Standable advancement spaces on a Corporation's current top Virus card (0 if its pile is empty). */
+  virusChips(player: Corporation): number {
+    const top = this.topVirusNumber(player)
+    return top === 0 ? 0 : virusCardChips(top)
+  }
+
+  /**
+   * Register a card that just entered the play area: bank its revenue, lock the Mercenary type,
+   * flag it for the box if it is Single Use, then apply each of its effects immediately (they turn
+   * into banked, optional-to-spend resources — see {@link applyEffect} — except Multiplier/SingleUse/
+   * AllTypes, which have no "spend" moment and stay fully automatic).
+   */
+  playCardEffects(itemIndex: number): MaterialMove[] {
+    this.turnFlagsHelper.setCardPlayed()
+    const id = this.material(MaterialType.Card).getItem<SanCard>(itemIndex).id
+    const data = getCardData(id)
+    if (!data) return []
+
+    if (data.revenue) this.resourcesHelper.addPoints('coins', data.revenue)
+    if (isMercenaryType(data.type)) this.turnFlagsHelper.lockMercenaryType(data.type)
+
+    const effects = clone(data.effects)
+    if (effects.some((effect) => effect.type === EffectType.SingleUse)) {
+      this.turnFlagsHelper.addSingleUseCard(itemIndex)
+    }
+    for (const effect of effects) this.applyEffect(itemIndex, effect)
+    this.applyMultipliers()
+    return []
+  }
+
+  /**
+   * Apply one card effect: resource gains bank immediately (their *use* is what stays optional —
+   * see `drawMoves`/`destroyMoves`/etc.), while
+   * Multiplier/SingleUse/AllTypes apply outright since they have no discrete "moment of use".
+   * `itemIndex` is the played card that granted the effect — needed to track which card a CopyRiver
+   * charge came from (see {@link import('./Memory').Memory.CopyRiverSources}) and, for Either, which
+   * card the pending choice belongs to.
+   */
+  applyEffect(itemIndex: number, effect: CardEffect): void {
+    switch (effect.type) {
+      case EffectType.Corruption:
+      case EffectType.Propaganda:
+      case EffectType.Virus:
+        this.resourcesHelper.addPoints(POINTS_KEY[effect.type], effect.value ?? 0)
+        break
+
+      case EffectType.Multiplier: {
+        const multipliers = this.remind<MultiplierState[]>(Memory.Multipliers) ?? []
+        multipliers.push({ gain: effect.gain!, per: effect.per!, value: effect.value ?? 1, counted: 0 })
+        this.memorize(Memory.Multipliers, multipliers)
+        break
+      }
+
+      case EffectType.AllTypes:
+        this.turnFlagsHelper.setAllTypesAllowed()
+        break
+
+      case EffectType.SingleUse:
+        break
+
+      case EffectType.Draw:
+        this.resourcesHelper.addPoints('draw', effect.value ?? 1)
+        break
+
+      case EffectType.Destroy:
+        this.resourcesHelper.addPoints('destroy', effect.value ?? 1)
+        break
+
+      case EffectType.CorruptFromHand:
+        this.resourcesHelper.addPoints('corruptFromHand', effect.value ?? 1)
+        break
+
+      case EffectType.PlayFromDiscard:
+        this.resourcesHelper.addPoints('playFromDiscard', 1)
+        break
+
+      case EffectType.CopyRiver: {
+        this.resourcesHelper.addPoints('copyRiver', 1)
+        const sources = this.remind<number[]>(Memory.CopyRiverSources) ?? []
+        sources.push(itemIndex)
+        this.memorize(Memory.CopyRiverSources, sources)
+        break
+      }
+
+      case EffectType.CopyPlayed: {
+        this.resourcesHelper.addPoints('copyPlayed', 1)
+        const sources = this.remind<number[]>(Memory.CopyPlayedSources) ?? []
+        sources.push(itemIndex)
+        this.memorize(Memory.CopyPlayedSources, sources)
+        break
+      }
+
+      case EffectType.Either: {
+        // Every "either / or" — including the starting Equipment cards' "gain any resource" (in
+        // practice a plain 3-way choice between Corruption/Propaganda/Hacking) — waits for the
+        // player to pick a side; see PlayCardsRule.eitherChoiceMoves.
+        const pending = this.remind<PendingEitherChoice[]>(Memory.PendingEitherChoices) ?? []
+        pending.push({ itemIndex, options: effect.option! })
+        this.memorize(Memory.PendingEitherChoices, pending)
+        break
+      }
+    }
+  }
+
+  /**
+   * Bring every Multiplier played this turn up to date with the cards now in the play area, so a
+   * Multiplier ends up counting every matching card of the turn whatever the order it was played in
+   * (rules, p.20: "autant de fois que de cartes jouées lors de ce tour"). Must run after every card
+   * enters the play area (hand, PlayFromDiscard or CopyRiver alike).
+   */
+  applyMultipliers(): void {
+    const multipliers = this.remind<MultiplierState[]>(Memory.Multipliers)
+    if (!multipliers?.length) return
+    for (const multiplier of multipliers) {
+      const played = this.countPlayed(multiplier.per)
+      if (played > multiplier.counted) {
+        this.resourcesHelper.addPoints(POINTS_KEY[multiplier.gain], (played - multiplier.counted) * multiplier.value)
+        multiplier.counted = played
+      }
+    }
+    this.memorize(Memory.Multipliers, multipliers)
+  }
+
+  /** Cards of that type already played this turn (the card carrying the multiplier is among them). */
+  countPlayed(type: CardType): number {
+    return this.playArea.getItems<SanCard>().filter((item) => getCardData(item.id)?.type === type).length
+  }
+
+  /** Positions of the Corruption zone still able to receive a card, as {@link LocationType.CorruptionZone} coordinates. */
+  freeCorruptionPositions(player = this.player): { x: number; y: number }[] {
+    const zone = this.material(MaterialType.Card).location(LocationType.CorruptionZone).player(player)
+    const positions: { x: number; y: number }[] = []
+    for (let x = 0; x < CORRUPTION_SLOTS; x++) {
+      const filled = zone.filter((item) => item.location.x === x).length
+      if (filled < CORRUPTION_SLOT_CAPACITY) positions.push({ x, y: filled })
+    }
+    return positions
+  }
+
+  /** Discard indexes playable this turn, restricted by the one-Mercenary-type-per-turn rule. */
+  playableDiscardIndexes(): number[] {
+    return this.discard.getIndexes().filter((index) => {
+      const data = getCardData(this.material(MaterialType.Card).getItem<SanCard>(index).id)
+      if (!data) return false
+      return data.type === CardType.Equipment || this.turnFlagsHelper.mercenaryTypePlayable(data.type)
+    })
+  }
+
+  /**
+   * Play area indexes copyable by a {@link EffectType.CopyPlayed} charge. Their type was already
+   * played this turn, so the one-Mercenary-type restriction never excludes any. Cards that copy a
+   * played card themselves are left out: copying one would only trade the charge for another.
+   */
+  copyablePlayedIndexes(): number[] {
+    return this.playArea.getIndexes().filter((index) => {
+      const data = getCardData(this.material(MaterialType.Card).getItem<SanCard>(index).id)
+      return data !== undefined && !data.effects.some((effect) => effect.type === EffectType.CopyPlayed)
+    })
+  }
+
+  /** River indexes copyable this turn, restricted by the one-Mercenary-type-per-turn rule. */
+  copyableIndexes(): number[] {
+    return this.river.getIndexes().filter((index) => {
+      const data = getCardData(this.material(MaterialType.Card).getItem<SanCard>(index).id)
+      if (!data) return false
+      return !isMercenaryType(data.type) || this.turnFlagsHelper.mercenaryTypePlayable(data.type)
+    })
   }
 
   onCustomMove(move: CustomMove): MaterialMove[] {

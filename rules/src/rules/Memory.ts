@@ -92,7 +92,7 @@ export enum Memory {
   CopyRiverSources,
   /**
    * Multiplier effects played this turn, each kept up to date with the cards played after it
-   * (see {@link import('./SanRule').SanRule.applyMultipliers}).
+   * (see {@link import('./PlayCardsRule').PlayCardsRule.applyMultipliers}).
    */
   Multipliers,
 
