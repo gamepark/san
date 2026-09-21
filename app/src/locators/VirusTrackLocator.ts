@@ -11,51 +11,35 @@ import { VIRUS_TRACK_X } from './SanLayout'
 import { virusPileLocator, virusPileRotation } from './VirusPileLocator'
 
 /**
- * Offsets (in cm) of each printed "case d'avancement" from the CENTRE of the Virus card, measured on
- * the artwork as printed (card upright). Keyed by the number of the card on top of the pile; the array
- * is ordered `k = 1 … N` where `k = 1` is the space nearest the Central Port and `k = N` the one
- * nearest the pile (the order the pawn crosses them). Lengths are `8 − number` (Virus 5 → 3 spaces,
- * Virus 1 → 7). Moon and Star cards share the same layout.
+ * Centres (in cm, from the CENTRE of the Virus card, card upright) of the yellow squares that frame each
+ * printed "case d'avancement". Measured on the 630×880 artwork (100 px/cm): every Virus card prints a
+ * subset of the same seven squares, 1.68 × 1.71 cm each ({@link VirusTrackDropDescription}).
+ */
+const SQUARES = {
+  a: { dx: -0.73, dy: -2.83 },
+  b: { dx: 1.36, dy: -2.38 },
+  c: { dx: -1.45, dy: -0.9 },
+  d: { dx: 1.64, dy: -0.36 },
+  e: { dx: -1, dy: 1.04 },
+  f: { dx: 1.23, dy: 1.57 },
+  g: { dx: -1.4, dy: 2.94 }
+}
+
+/**
+ * The squares printed on each Virus card, keyed by its number and ordered `k = 1 … N` where `k = 1` is
+ * the space nearest the Central Port and `k = N` the one nearest the pile (the order the pawn crosses
+ * them). Lengths are `8 − number` (Virus 5 → 3 spaces, Virus 1 → 7). Moon and Star cards share the same
+ * layout.
  *
  * The pile is drawn upright or upside down ({@link virusPileRotation}), so each offset is turned with
  * it — see {@link VirusTrackLocator.getCoordinates}.
  */
 const CHIPS: Record<number, { dx: number; dy: number }[]> = {
-  5: [
-    { dx: -1, dy: 0.9 },
-    { dx: -0.8, dy: -2.9 },
-    { dx: 1.5, dy: -0.5 }
-  ],
-  4: [
-    { dx: -1.5, dy: 3 },
-    { dx: -1.5, dy: -1 },
-    { dx: 1.5, dy: -2.5 },
-    { dx: 1.3, dy: 1.7 }
-  ],
-  3: [
-    { dx: -1, dy: 1 },
-    { dx: -1.5, dy: -1 },
-    { dx: 1.5, dy: -2.3 },
-    { dx: 1.8, dy: -0.5 },
-    { dx: 1.2, dy: 1.5 }
-  ],
-  2: [
-    { dx: -1, dy: 1 },
-    { dx: -1.5, dy: -1 },
-    { dx: -0.7, dy: -3 },
-    { dx: 1.5, dy: -2.5 },
-    { dx: 1.7, dy: -0.5 },
-    { dx: 1.2, dy: 1.5 }
-  ],
-  1: [
-    { dx: -1.3, dy: 2.8 },
-    { dx: -1, dy: 0.9 },
-    { dx: -1.5, dy: -1 },
-    { dx: -0.7, dy: -3 },
-    { dx: 1.5, dy: -2.5 },
-    { dx: 1.7, dy: -0.5 },
-    { dx: 1.2, dy: 1.5 }
-  ]
+  5: [SQUARES.e, SQUARES.a, SQUARES.d],
+  4: [SQUARES.g, SQUARES.c, SQUARES.b, SQUARES.f],
+  3: [SQUARES.e, SQUARES.c, SQUARES.b, SQUARES.d, SQUARES.f],
+  2: [SQUARES.e, SQUARES.c, SQUARES.a, SQUARES.b, SQUARES.d, SQUARES.f],
+  1: [SQUARES.g, SQUARES.e, SQUARES.c, SQUARES.a, SQUARES.b, SQUARES.d, SQUARES.f]
 }
 
 /**
@@ -117,11 +101,11 @@ class VirusTrackLocator extends Locator {
 
   /**
    * The pawn art is a standee whose foot is at the bottom of the image. Raise it by (almost) half its
-   * height so the foot — not the image centre — sits on the advancement-space chip. Tune the % to
-   * drop it exactly on the square.
+   * height so the foot — not the image centre — sits on the advancement-space chip, then nudge it
+   * (in cm) so it stands in the middle of the yellow square. Tune both to drop it exactly on the square.
    */
   placeItem(item: MaterialItem, context: ItemContext): string[] {
-    return super.placeItem(item, context).concat('translateY(-42%)')
+    return super.placeItem(item, context).concat('translate(0.2em, 0.3em)', 'translateY(-42%)')
   }
 
   getPositionDependencies(_location: Location, context: MaterialContext) {
@@ -131,14 +115,13 @@ class VirusTrackLocator extends Locator {
     }
   }
 
-  /** The drop zone is a small square, like a "case d'avancement" chip on the card, not the pawn shape. */
+  /** The drop zone is the yellow square framing a "case d'avancement" on the card, not the pawn shape. */
   locationDescription = new VirusTrackDropDescription()
 }
 
 class VirusTrackDropDescription extends DropAreaDescription {
-  width = 1.9
-  height = 1.9
-  borderRadius = 0.2
+  width = 1.68
+  height = 1.71
 
   canShortClick(move: MaterialMove, location: Location): boolean {
     return (
