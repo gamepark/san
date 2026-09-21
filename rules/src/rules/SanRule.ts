@@ -6,6 +6,7 @@ import { CardEffect, EffectType, getCardData, isMercenaryType } from '../materia
 import { CORRUPTION_SLOT_CAPACITY, CORRUPTION_SLOTS, virusCardChips } from '../material/constants'
 import { CardType, SanCard, virusNumber } from '../material/SanCard'
 import { clone } from './clone'
+import { CustomMoveType, DrawData } from './CustomMoveType'
 import { ResourcesHelper } from './helper/ResourcesHelper'
 import { TurnFlagsHelper } from './helper/TurnFlagsHelper'
 import { Memory } from './Memory'
@@ -80,9 +81,9 @@ export abstract class SanRule extends PlayerTurnRule<Corporation, MaterialType, 
     return this.material(MaterialType.Card).location(LocationType.Reserve)
   }
 
-  /** Move the whole discard pile back onto the deck and shuffle it — the deck ran dry mid-deal. */
-  reshuffleDiscardIntoDeck(): MaterialMove[] {
-    return [this.discard.moveItemsAtOnce({ type: LocationType.Deck, player: this.player }), this.discard.shuffle()]
+  /** Deal cards from a Corporation's deck to its hand — the reshuffle of the discard is handled by {@link import('../SanRules').SanRules}. */
+  drawCards(player: Corporation, quantity: number): MaterialMove {
+    return this.customMove(CustomMoveType.Draw, { player, quantity } satisfies DrawData)
   }
 
   /**

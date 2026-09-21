@@ -8,7 +8,7 @@ import { SanRule } from './SanRule'
 
 /**
  * End of turn (mandatory phases 3 & 4): discard the played cards (Single Use cards are removed from
- * the game — back to the box, physically), refill the hand — reshuffling the discard if needed —
+ * the game — back to the box, physically), refill the hand (see {@link SanRule.drawCards}),
  * then pass to the opponent.
  *
  * Runs after the optional {@link import('./RuleId').RuleId.BuyCards} phase; any coins left unspent
@@ -30,16 +30,7 @@ export class EndTurnRule extends SanRule {
     }
 
     const deficit = this.handSize - this.hand.length
-    if (deficit > 0) {
-      if (this.deck.length === 0) {
-        if (this.discard.length === 0) return this.nextTurn()
-        return [...this.reshuffleDiscardIntoDeck(), this.startRule(RuleId.EndTurn)]
-      }
-      const dealt = Math.min(deficit, this.deck.length)
-      return [this.deck.deck().dealAtOnce({ type: LocationType.Hand, player }, dealt), this.startRule(RuleId.EndTurn)]
-    }
-
-    return this.nextTurn()
+    return deficit > 0 ? [this.drawCards(player, deficit), ...this.nextTurn()] : this.nextTurn()
   }
 
   nextTurn(): MaterialMove[] {

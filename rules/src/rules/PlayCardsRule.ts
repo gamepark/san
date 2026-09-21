@@ -306,14 +306,9 @@ export class PlayCardsRule extends SanRule {
       case CustomMoveType.EndPlayPhase:
         return [this.startRule(RuleId.BuyCards)]
 
-      case CustomMoveType.DrawCard: {
-        if (this.deck.length === 0) {
-          // Nothing to reshuffle would mean drawMoves() never offered this move in the first place.
-          return [...this.reshuffleDiscardIntoDeck(), this.customMove(CustomMoveType.DrawCard)]
-        }
+      case CustomMoveType.DrawCard:
         this.resourcesHelper.spend('draw')
-        return [this.deck.deck().dealOne({ type: LocationType.Hand, player: this.player })]
-      }
+        return [this.drawCards(this.player, 1)]
 
       case CustomMoveType.CopyRiverCard: {
         this.resourcesHelper.spend('copyRiver')

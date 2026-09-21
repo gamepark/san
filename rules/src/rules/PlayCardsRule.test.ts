@@ -8,7 +8,7 @@ import { SanCard } from '../material/SanCard'
 import { CustomMoveType } from './CustomMoveType'
 import { EMPTY_RESOURCES, EMPTY_TURN_FLAGS, Memory } from './Memory'
 import { RuleId } from './RuleId'
-import { testRules } from '../tests/fixture'
+import { playAll, testRules } from '../tests/fixture'
 
 describe('PlayCardsRule', () => {
   test('offers to play an Equipment card regardless of the Mercenary type already locked', () => {
@@ -330,8 +330,7 @@ describe('PlayCardsRule', () => {
       expect(draw).toBeDefined()
       const consequences = rules.play(draw!)
       expect(rules.remind(Memory.Resources, Corporation.Moon).draw).toBe(2)
-      expect(consequences).toHaveLength(1)
-      rules.play(consequences[0])
+      playAll(rules, consequences)
       expect(rules.material(MaterialType.Card).location(LocationType.Hand).player(Corporation.Moon).length).toBe(1)
     })
 

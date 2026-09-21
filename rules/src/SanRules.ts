@@ -1,5 +1,6 @@
 import {
   CompetitiveRank,
+  CustomMove,
   FillGapStrategy,
   hideItemId,
   hideItemIdToOthers,
@@ -7,6 +8,7 @@ import {
   ItemMove,
   MaterialGame,
   MaterialMove,
+  PlayMoveContext,
   PositiveSequenceStrategy,
   SecretMaterialRules,
   TimeLimit
@@ -18,6 +20,7 @@ import { LocationType } from './material/LocationType'
 import { SanCard } from './material/SanCard'
 import { MaterialType } from './material/MaterialType'
 import { BuyCardsRule } from './rules/BuyCardsRule'
+import { CustomMoveType, DrawData } from './rules/CustomMoveType'
 import { EndTurnRule } from './rules/EndTurnRule'
 import { propagandaDirection } from './rules/helper/directions'
 import { victoryOutcome } from './rules/helper/victory'
@@ -89,6 +92,32 @@ export class SanRules
     }
 
     return super.afterItemMove(move)
+  }
+
+  protected onCustomMove(move: CustomMove, context?: PlayMoveContext): MaterialMove[] {
+    const moves = super.onCustomMove(move, context)
+    if (move.type === CustomMoveType.Draw) moves.push(...this.draw(move.data as DrawData))
+    return moves
+  }
+
+  /**
+   * Deal up to `quantity` cards from the deck to the hand. As soon as the deck is empty — even when
+   * it held exactly the cards needed — the discard is shuffled into a new deck, then the rest is drawn.
+   */
+  private draw({ player, quantity }: DrawData): MaterialMove[] {
+    const moves: MaterialMove[] = []
+    const deck = this.material(MaterialType.Card).location(LocationType.Deck).player(player).deck()
+    const dealt = Math.min(quantity, deck.length)
+    const emptied = dealt === deck.length
+    if (dealt > 0) moves.push(deck.dealAtOnce({ type: LocationType.Hand, player }, dealt))
+    if (emptied) {
+      const discard = this.material(MaterialType.Card).location(LocationType.Discard).player(player)
+      if (discard.length > 0) {
+        moves.push(discard.moveItemsAtOnce({ type: LocationType.Deck, player }), discard.shuffle())
+        if (quantity > dealt) moves.push(this.customMove(CustomMoveType.Draw, { player, quantity: quantity - dealt } satisfies DrawData))
+      }
+    }
+    return moves
   }
 
   /**

@@ -1,4 +1,4 @@
-import { MaterialGame, MaterialItem } from '@gamepark/rules-api'
+import { MaterialGame, MaterialItem, MaterialMove } from '@gamepark/rules-api'
 import { Corporation } from '../Corporation'
 import { LocationType } from '../material/LocationType'
 import { MaterialType } from '../material/MaterialType'
@@ -26,4 +26,11 @@ export function testGame(
 /** Same as {@link testGame}, already wrapped in a fresh {@link SanRules} instance ready to `.play()`. */
 export function testRules(rule: { id: RuleId; player: Corporation }, items: Items, memory: TestMemory = {}): SanRules {
   return new SanRules(testGame(rule, items, memory))
+}
+
+/** Play `moves` and all their consequences depth-first, as the server does. */
+export function playAll(rules: SanRules, moves: MaterialMove<Corporation, MaterialType, LocationType>[]) {
+  const queue = [...moves]
+  let move
+  while ((move = queue.shift())) queue.unshift(...rules.play(move))
 }

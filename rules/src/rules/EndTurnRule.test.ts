@@ -6,7 +6,9 @@ import { MaterialType } from '../material/MaterialType'
 import { SanCard } from '../material/SanCard'
 import { EMPTY_RESOURCES, EMPTY_TURN_FLAGS, Memory } from './Memory'
 import { RuleId } from './RuleId'
-import { testRules } from '../tests/fixture'
+import { playAll, testRules } from '../tests/fixture'
+import { SanRules } from '../SanRules'
+import { CustomMoveType } from './CustomMoveType'
 
 const filler = (n: number, location: { type: LocationType; player?: Corporation }) =>
   Array.from({ length: n }, () => ({ id: SanCard.RiverEquipment1, location }))
@@ -35,7 +37,9 @@ describe('EndTurnRule', () => {
     expect(rules.material(MaterialType.Card).length).toBe(1) // the boxed card is gone entirely
   })
 
-  test('refills the hand from the deck up to hand size, then loops back', () => {
+  const count = (rules: SanRules, type: LocationType) => rules.material(MaterialType.Card).location(type).player(Corporation.Moon).length
+
+  test('refills the hand from the deck up to hand size, then passes to the opponent', () => {
     const rules = testRules(
       { id: RuleId.EndTurn, player: Corporation.Moon },
       {
@@ -46,12 +50,12 @@ describe('EndTurnRule', () => {
       }
     )
     const consequences = rules.play(rules.startRule(RuleId.EndTurn)) // hand=4, target=6, deficit=2, deck has plenty
-    expect(consequences).toHaveLength(2)
-    expect(consequences).toContainEqual(rules.startRule(RuleId.EndTurn))
+    expect(consequences).toEqual([rules.customMove(CustomMoveType.Draw, { player: Corporation.Moon, quantity: 2 }), rules.startPlayerTurn(RuleId.PlayCards, Corporation.Star)])
 
-    rules.play(consequences[0])
-    expect(rules.material(MaterialType.Card).location(LocationType.Hand).player(Corporation.Moon).length).toBe(6)
-    expect(rules.material(MaterialType.Card).location(LocationType.Deck).player(Corporation.Moon).length).toBe(3)
+    playAll(rules, consequences)
+    expect(count(rules, LocationType.Hand)).toBe(6)
+    expect(count(rules, LocationType.Deck)).toBe(3)
+    expect(rules.game.rule?.player).toBe(Corporation.Star)
   })
 
   test('refills to 7 cards instead of 6 with the "first game" option (rules p.10)', () => {
@@ -65,36 +69,57 @@ describe('EndTurnRule', () => {
       },
       { [Memory.FirstGame]: true }
     )
-    const consequences = rules.play(rules.startRule(RuleId.EndTurn)) // hand=4, target=7, deficit=3, deck has plenty
-    rules.play(consequences[0])
-    expect(rules.material(MaterialType.Card).location(LocationType.Hand).player(Corporation.Moon).length).toBe(7)
-    expect(rules.material(MaterialType.Card).location(LocationType.Deck).player(Corporation.Moon).length).toBe(2)
+    playAll(rules, [rules.startRule(RuleId.EndTurn)]) // hand=4, target=7, deficit=3, deck has plenty
+    expect(count(rules, LocationType.Hand)).toBe(7)
+    expect(count(rules, LocationType.Deck)).toBe(2)
   })
 
-  test('reshuffles the discard into the deck once it runs dry while still short a card, then loops back', () => {
+  test('reshuffles the discard into the deck once it runs dry while still short a card', () => {
     const rules = testRules(
       { id: RuleId.EndTurn, player: Corporation.Moon },
       {
         [MaterialType.Card]: [
-          ...filler(5, { type: LocationType.Hand, player: Corporation.Moon }),
+          ...filler(4, { type: LocationType.Hand, player: Corporation.Moon }),
+          ...filler(1, { type: LocationType.Deck, player: Corporation.Moon }),
           ...filler(3, { type: LocationType.Discard, player: Corporation.Moon })
         ]
       }
     )
-    const consequences = rules.play(rules.startRule(RuleId.EndTurn))
-    expect(consequences).toHaveLength(3)
-    expect(isMoveItemsAtOnce(consequences[0])).toBe(true)
-    expect(isShuffle(consequences[1])).toBe(true)
-    expect(consequences[2]).toEqual(rules.startRule(RuleId.EndTurn))
+    playAll(rules, [rules.startRule(RuleId.EndTurn)])
+    expect(count(rules, LocationType.Hand)).toBe(6)
+    expect(count(rules, LocationType.Deck)).toBe(2)
+    expect(count(rules, LocationType.Discard)).toBe(0)
   })
 
-  test('gives up and moves on when both the deck and the discard are empty', () => {
+  test('reshuffles the discard as soon as the deck is empty, even when it held exactly the cards needed', () => {
+    const rules = testRules(
+      { id: RuleId.EndTurn, player: Corporation.Moon },
+      {
+        [MaterialType.Card]: [
+          ...filler(4, { type: LocationType.Hand, player: Corporation.Moon }),
+          ...filler(2, { type: LocationType.Deck, player: Corporation.Moon }),
+          ...filler(3, { type: LocationType.Discard, player: Corporation.Moon })
+        ]
+      }
+    )
+    const consequences = rules.play(rules.customMove(CustomMoveType.Draw, { player: Corporation.Moon, quantity: 2 }))
+    expect(consequences).toHaveLength(3)
+    expect(isShuffle(consequences[2])).toBe(true)
+
+    playAll(rules, consequences)
+    expect(count(rules, LocationType.Hand)).toBe(6)
+    expect(count(rules, LocationType.Deck)).toBe(3)
+    expect(count(rules, LocationType.Discard)).toBe(0)
+  })
+
+  test('draws what it can and moves on when both the deck and the discard are empty', () => {
     const rules = testRules(
       { id: RuleId.EndTurn, player: Corporation.Moon },
       { [MaterialType.Card]: filler(3, { type: LocationType.Hand, player: Corporation.Moon }) }
     )
-    const consequences = rules.play(rules.startRule(RuleId.EndTurn))
-    expect(consequences).toEqual([rules.startPlayerTurn(RuleId.PlayCards, Corporation.Star)])
+    playAll(rules, [rules.startRule(RuleId.EndTurn)])
+    expect(count(rules, LocationType.Hand)).toBe(3)
+    expect(rules.game.rule).toEqual(expect.objectContaining({ id: RuleId.PlayCards, player: Corporation.Star }))
   })
 
   test('moves straight to the next turn when the play area is empty and the hand is already full', () => {
