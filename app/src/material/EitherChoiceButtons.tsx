@@ -24,8 +24,8 @@ const OPTION_ICON: Partial<Record<EffectType, { image: string; whiteArtwork: boo
 /**
  * One small icon button per option of this played card's still-unresolved "either / or" effect (see
  * {@link import('@gamepark/san/rules/Memory').Memory.PendingEitherChoices}), laid out in a row over
- * the top of the card, right where its printed effect icons sit — icon + value only, no text label,
- * so it reads at a glance instead of dwarfing the card.
+ * the top of the card, right where its printed effect icons sit — icon only, plus the quantity as the
+ * button's label when there is one, so it reads at a glance instead of dwarfing the card.
  *
  * A plain function, called from {@link import('./SanCardDescription').SanCardDescription.getItemMenu}
  * rather than rendered through `content`: `content` nests it inside the card's own clickable area, so
@@ -49,7 +49,10 @@ export const eitherChoiceButtons = (context: ItemContext, legalMoves: MaterialMo
   // in from the left. Unlike most of `getItemMenu`'s other buttons (x/y from the card's centre),
   // these are positioned from the card's top-left corner instead, at the card's own 1 unit ≈
   // width/6.3 scale.
-  const gap = 1.2
+  // When an option has a quantity, it is shown as the button's label, on its right: spread the
+  // buttons further apart so each label fits before the next button.
+  const hasQuantity = cardMoves.some((move) => (choice.options[(move.data as { option: number }).option].value ?? 1) > 1)
+  const gap = hasQuantity ? 2.8 : 1.7
   const start = -2
 
   return (
@@ -59,9 +62,16 @@ export const eitherChoiceButtons = (context: ItemContext, legalMoves: MaterialMo
         const effect = choice.options[option]
         const icon = OPTION_ICON[effect.type]
         return (
-          <ItemMenuButton key={option} move={move} x={start + i * gap} y={-3.5} css={optionButtonCss}>
-            {icon && <span css={[iconCss, icon.whiteArtwork && invertIconCss]} style={{ backgroundImage: `url(${icon.image})` }} />}
-            {(effect.value ?? 1) > 1 && <span css={valueBadgeCss}>{effect.value}</span>}
+          <ItemMenuButton
+            key={option}
+            move={move}
+            x={start + i * gap}
+            y={-3.5}
+            labelPosition="right"
+            label={(effect.value ?? 1) > 1 ? `×${effect.value}` : undefined}
+            css={optionButtonCss}
+          >
+            {icon && <div css={[iconCss, icon.whiteArtwork && invertIconCss]} style={{ backgroundImage: `url(${icon.image})` }} />}
           </ItemMenuButton>
         )
       })}
@@ -71,19 +81,26 @@ export const eitherChoiceButtons = (context: ItemContext, legalMoves: MaterialMo
 
 const optionButtonCss = css`
   position: absolute !important;
-  width: 1.2em !important;
-  height: 1.2em !important;
+  width: 1.5em !important;
+  height: 1.5em !important;
   min-width: 0 !important;
-  border-radius: 0.7em !important;
+  border-radius: 0.75em !important;
   padding: 0 !important;
   background-color: ${colors.paperSoft} !important;
   border: 0.06em solid ${colors.equipmentDark} !important;
   box-shadow: 0 0.1em 0.2em rgba(0, 0, 0, 0.4);
+
+  /* The quantity label, read over the card art. */
+  > span {
+    background: rgba(0, 0, 0, 0.85);
+    font-size: 0.8em;
+    font-weight: 700;
+  }
 `
 
 const iconCss = css`
-  width: 0.8em;
-  height: 0.8em;
+  width: 1em;
+  height: 1em;
   background-repeat: no-repeat;
   background-size: contain;
   background-position: center;
@@ -92,20 +109,4 @@ const iconCss = css`
 /** The counter icons' white artwork needs inverting to read dark against this button's light background. */
 const invertIconCss = css`
   filter: invert(1);
-`
-
-const valueBadgeCss = css`
-  position: absolute;
-  top: -0.25em;
-  right: -0.25em;
-  min-width: 0.9em;
-  height: 0.9em;
-  padding: 0 0.1em;
-  border-radius: 0.45em;
-  background: ${colors.corruptionLight};
-  color: ${colors.ink};
-  font-size: 0.55em;
-  font-weight: 700;
-  line-height: 0.9em;
-  text-align: center;
 `
