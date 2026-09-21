@@ -1,17 +1,9 @@
 import { usePlayerId, usePlayerName, useRules } from '@gamepark/react-game'
 import { Corporation } from '@gamepark/san/Corporation'
 import { victoryOutcome } from '@gamepark/san/rules/helper/victory'
-import { VictoryType } from '@gamepark/san/rules/VictoryType'
 import { SanRules } from '@gamepark/san/SanRules'
 import { Trans, useTranslation } from 'react-i18next'
-
-/** Translation key suffix for each {@link VictoryType} (rules p.22). */
-const reasonKey: Record<VictoryType, string> = {
-  [VictoryType.Corruption]: 'corruption',
-  [VictoryType.Propaganda]: 'propaganda',
-  [VictoryType.Hacking]: 'hacking',
-  [VictoryType.Reserve]: 'reserve'
-}
+import { reasonKey } from './reasonKey'
 
 export const GameOverHeader = () => {
   const me = usePlayerId<Corporation>()

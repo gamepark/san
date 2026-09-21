@@ -1,6 +1,6 @@
 /**
- * How a game of San ended (rules p.22). Memorized alongside {@link import('./Memory').Memory.Winner}
- * so the app can show the right end-of-game message.
+ * How a game of San ended (rules p.22). Not memorized: derived from the final board state by
+ * {@link import('./helper/victory').victoryOutcome}, so the app can show the right end-of-game message.
  */
 export enum VictoryType {
   /** A Corporation corrupted 12 cards. */

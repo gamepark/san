@@ -3,10 +3,13 @@ import { describe, expect, test } from 'vitest'
 import { Corporation } from '../Corporation'
 import { LocationType } from '../material/LocationType'
 import { MaterialType } from '../material/MaterialType'
-import { SanCard } from '../material/SanCard'
+import { PROPAGANDA_END } from '../material/constants'
+import { SanCard, virusCards } from '../material/SanCard'
 import { CustomMoveType } from './CustomMoveType'
 import { EMPTY_RESOURCES, EMPTY_TURN_FLAGS, Memory } from './Memory'
+import { victoryOutcome } from './helper/victory'
 import { RuleId } from './RuleId'
+import { VictoryType } from './VictoryType'
 import { playAll, testRules } from '../tests/fixture'
 
 describe('PlayCardsRule', () => {
@@ -86,6 +89,42 @@ describe('PlayCardsRule', () => {
 
     rules.play(corrupt!)
     expect(rules.remind(Memory.Resources, Corporation.Moon).corruption).toBe(0)
+  })
+
+  test('corrupting a River card while the Reserve is empty ends the game on the Reserve tie-break', () => {
+    // Full Virus piles, banners on their starting space, pawn on the Central Port: only Corruption differs.
+    const virusPiles = [Corporation.Moon, Corporation.Star].flatMap((player) =>
+      virusCards[player].map((id) => ({ id, location: { type: LocationType.VirusPile, player } }))
+    )
+    const rules = testRules(
+      { id: RuleId.PlayCards, player: Corporation.Moon },
+      {
+        [MaterialType.Card]: [{ id: SanCard.RiverPropaganda1, location: { type: LocationType.River, x: 0 } }, ...virusPiles],
+        [MaterialType.Banner]: [
+          { id: Corporation.Moon, location: { type: LocationType.PropagandaTrack, player: Corporation.Moon, x: 0 } },
+          { id: Corporation.Star, location: { type: LocationType.PropagandaTrack, player: Corporation.Star, x: PROPAGANDA_END } }
+        ],
+        [MaterialType.VirusPawn]: [{ id: 1, location: { type: LocationType.VirusTrack, x: 0 } }]
+      },
+      { [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, corruption: 3 } } }
+    )
+    playAll(rules, [rules.material(MaterialType.Card).index(0).moveItem({ type: LocationType.CorruptionZone, player: Corporation.Moon })])
+    expect(rules.game.rule).toBeUndefined()
+    expect(rules.material(MaterialType.Card).location(LocationType.CorruptionZone).player(Corporation.Moon).length).toBe(1)
+    // Moon leads Corruption only, 1 condition out of 3: a tie.
+    expect(victoryOutcome(rules)).toEqual({ winner: 0, type: VictoryType.Reserve })
+  })
+
+  test('the 12th corruption, taken from the River while the Reserve is empty, is a Corruption victory', () => {
+    const corrupted = Array.from({ length: 11 }, () => ({ id: SanCard.MoonHacking, location: { type: LocationType.CorruptionZone, player: Corporation.Moon } }))
+    const rules = testRules(
+      { id: RuleId.PlayCards, player: Corporation.Moon },
+      { [MaterialType.Card]: [{ id: SanCard.RiverPropaganda1, location: { type: LocationType.River, x: 0 } }, ...corrupted] },
+      { [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, corruption: 3 } } }
+    )
+    playAll(rules, [rules.material(MaterialType.Card).index(0).moveItem({ type: LocationType.CorruptionZone, player: Corporation.Moon })])
+    expect(rules.game.rule).toBeUndefined()
+    expect(victoryOutcome(rules)).toEqual({ winner: Corporation.Moon, type: VictoryType.Corruption })
   })
 
   test('does not offer to corrupt with fewer than 3 Corruption points', () => {

@@ -43,38 +43,54 @@ export function victoryOutcome(rules: SanRules): VictoryOutcome {
     }
   }
 
-  return { winner: reserveTieBreak(rules, a, b), type: VictoryType.Reserve }
+  return { winner: reserveTieBreak(rules), type: VictoryType.Reserve }
 }
 
-/** One of the 3 victory conditions (rules p.22), read as a comparable progress number. */
-type VictoryCondition = (rules: SanRules, player: Corporation) => number
+/** The 3 victory conditions (rules p.22), as opposed to {@link VictoryType.Reserve}. */
+export type VictoryCondition = VictoryType.Corruption | VictoryType.Propaganda | VictoryType.Hacking
+
+export const victoryConditions: VictoryCondition[] = [VictoryType.Corruption, VictoryType.Propaganda, VictoryType.Hacking]
 
 /** Cards corrupted (rules p.14), 0..{@link CORRUPTION_WIN}. */
-const corruptionProgress: VictoryCondition = (rules, player) =>
+export const corruptedCards = (rules: SanRules, player: Corporation): number =>
   rules.material(MaterialType.Card).location(LocationType.CorruptionZone).player(player).length
 
 /** Steps advanced on a Corporation's own Propaganda track (rules p.16), 0..{@link PROPAGANDA_END}. */
-const propagandaProgress: VictoryCondition = (rules, player) => {
+export const propagandaSteps = (rules: SanRules, player: Corporation): number => {
   const direction = propagandaDirection(rules.game, player)
   const bannerX = rules.material(MaterialType.Banner).id(player).getItem()?.location.x ?? 0
   return direction === 1 ? bannerX : PROPAGANDA_END - bannerX
 }
 
-/**
- * Virus cards driven off the opponent's pile (rules p.18), with the pawn's current position on the
- * opponent's card as a finer-grained tie-breaker. One card driven off is weighted above the highest
- * possible partial advance (`virusCardChips(1) = 7`), so it always outweighs any amount of progress
- * still standing on the current one.
- */
-const hackingProgress: VictoryCondition = (rules, player) => {
+/** Virus cards driven off the opponent's pile (rules p.18). */
+export const virusCardsDrivenOff = (rules: SanRules, player: Corporation): number => {
   const opponent = otherCorporation(player)
-  const cardsDrivenOff = virusCards[opponent].length - rules.material(MaterialType.Card).location(LocationType.VirusPile).player(opponent).length
-  const pawnX = rules.material(MaterialType.VirusPawn).getItem()?.location.x ?? 0
-  const partialAdvance = Math.max(0, virusDirection(rules.game, player) * pawnX)
-  return cardsDrivenOff * (virusCardChips(1) + 1) + partialAdvance
+  return virusCards[opponent].length - rules.material(MaterialType.Card).location(LocationType.VirusPile).player(opponent).length
 }
 
-const victoryConditions: VictoryCondition[] = [corruptionProgress, propagandaProgress, hackingProgress]
+/** Spaces the Virus pawn stands on the opponent's current Virus card (0 when it is on the Corporation's own card). */
+export const virusPawnAdvance = (rules: SanRules, player: Corporation): number => {
+  const pawnX = rules.material(MaterialType.VirusPawn).getItem()?.location.x ?? 0
+  return Math.max(0, virusDirection(rules.game, player) * pawnX)
+}
+
+/**
+ * Each victory condition read as a comparable progress number. For Hacking, one card driven off is
+ * weighted above the highest possible partial advance (`virusCardChips(1) = 7`), so it always
+ * outweighs any amount of progress still standing on the current one.
+ */
+const progress: Record<VictoryCondition, (rules: SanRules, player: Corporation) => number> = {
+  [VictoryType.Corruption]: corruptedCards,
+  [VictoryType.Propaganda]: propagandaSteps,
+  [VictoryType.Hacking]: (rules, player) => virusCardsDrivenOff(rules, player) * (virusCardChips(1) + 1) + virusPawnAdvance(rules, player)
+}
+
+/** The Corporation most advanced on one victory condition, or 0 if both are level. */
+export function conditionLeader(rules: SanRules, condition: VictoryCondition): Corporation | 0 {
+  const [a, b] = rules.game.players
+  const diff = progress[condition](rules, a) - progress[condition](rules, b)
+  return diff > 0 ? a : diff < 0 ? b : 0
+}
 
 /**
  * The Reserve ran out (rules p.22): the Corporation most advanced on at least 2 of the 3 victory
@@ -82,15 +98,7 @@ const victoryConditions: VictoryCondition[] = [corruptionProgress, propagandaPro
  * next condition only when the previous one is exactly tied), this counts a majority across all
  * three conditions at once, as the rulebook requires.
  */
-function reserveTieBreak(rules: SanRules, a: Corporation, b: Corporation): Corporation | 0 {
-  let aLeads = 0
-  let bLeads = 0
-  for (const progress of victoryConditions) {
-    const diff = progress(rules, a) - progress(rules, b)
-    if (diff > 0) aLeads++
-    else if (diff < 0) bLeads++
-  }
-  if (aLeads >= 2) return a
-  if (bLeads >= 2) return b
-  return 0
+function reserveTieBreak(rules: SanRules): Corporation | 0 {
+  const leaders = victoryConditions.map((condition) => conditionLeader(rules, condition))
+  return rules.game.players.find((player) => leaders.filter((leader) => leader === player).length >= 2) ?? 0
 }
