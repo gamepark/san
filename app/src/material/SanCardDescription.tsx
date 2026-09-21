@@ -10,9 +10,8 @@ import { MaterialType } from '@gamepark/san/material/MaterialType'
 import { SanCard } from '@gamepark/san/material/SanCard'
 import { CustomMoveType } from '@gamepark/san/rules/CustomMoveType'
 import { RuleId } from '@gamepark/san/rules/RuleId'
-import { CardDescription, ItemContext, ItemMenuButton, MaterialContentProps } from '@gamepark/react-game'
+import { CardDescription, ItemContext, MaterialContentProps } from '@gamepark/react-game'
 import { isCustomMoveType, isDeleteItemType, isMoveItemType, MaterialItem, MaterialMove } from '@gamepark/rules-api'
-import { Trans } from 'react-i18next'
 import { CrossingCostBadge } from './CrossingCostBadge'
 import { eitherChoiceButtons } from './EitherChoiceButtons'
 import { IconMenuButton } from './IconMenuButton'
@@ -187,9 +186,9 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
       // Top-right corner of the card (width 6.3 / height 8.8, so half-width 3.15 / half-height 4.4),
       // inset a bit so it doesn't hang off the edge.
       return (
-        <ItemMenuButton label={<Trans i18nKey="button.buy" />} css={buyButtonCss} x={2.3} y={-5} move={buy}>
+        <IconMenuButton titleKey="button.buy" css={buyButtonCss} x={2.3} y={-5} move={buy}>
           <FontAwesomeIcon icon={faDollarSign} />
-        </ItemMenuButton>
+        </IconMenuButton>
       )
     }
 
@@ -199,9 +198,9 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
       const copy = legalMoves.find((move) => isCustomMoveType(CustomMoveType.CopyRiverCard)(move) && move.data === context.index)
       if (!copy) return
       return (
-        <ItemMenuButton label={<Trans i18nKey="button.copy-river" />} css={copyButtonCss} x={-2.3} y={-5} move={copy}>
+        <IconMenuButton titleKey="button.copy-river" labelAlwaysVisible css={copyButtonCss} x={-2.3} y={-5} move={copy}>
           <FontAwesomeIcon icon={faCopy} />
-        </ItemMenuButton>
+        </IconMenuButton>
       )
     }
 
@@ -211,9 +210,9 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
       const draw = legalMoves.find(isCustomMoveType(CustomMoveType.DrawCard))
       if (!draw) return
       return (
-        <ItemMenuButton label={<Trans i18nKey="button.draw" />} css={drawButtonCss} x={0} y={0} move={draw}>
+        <IconMenuButton titleKey="button.draw" labelAlwaysVisible css={drawButtonCss} x={0} y={0} move={draw}>
           <FontAwesomeIcon icon={faLayerGroup} />
-        </ItemMenuButton>
+        </IconMenuButton>
       )
     }
 

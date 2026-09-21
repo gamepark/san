@@ -3,20 +3,32 @@ import { ItemButtonProps, ItemMenuButton } from '@gamepark/react-game'
 import { HTMLAttributes } from 'react'
 import { Trans } from 'react-i18next'
 
+type IconMenuButtonProps = ItemButtonProps &
+  HTMLAttributes<HTMLButtonElement> & {
+    titleKey: string
+    /** Keep the label on screen instead of revealing it on hover only. */
+    labelAlwaysVisible?: boolean
+  }
+
 /**
- * Icon-only menu button: the framework label is hidden, and only revealed while hovering on devices that
- * can hover (a PC mouse) — never on touch screens.
+ * Menu button with a more readable label than the framework's. By default the label is hidden, and only
+ * revealed while hovering on devices that can hover (a PC mouse) — never on touch screens.
  */
-export const IconMenuButton = ({ titleKey, ...props }: ItemButtonProps & HTMLAttributes<HTMLButtonElement> & { titleKey: string }) => (
-  <ItemMenuButton {...props} css={hoverLabelCss} label={<Trans i18nKey={titleKey} />} />
+export const IconMenuButton = ({ titleKey, labelAlwaysVisible, ...props }: IconMenuButtonProps) => (
+  <ItemMenuButton {...props} css={[labelCss, !labelAlwaysVisible && hoverLabelCss]} label={<Trans i18nKey={titleKey} />} />
 )
 
 /** The label is the button's only `<span>` child (the icon is an `<svg>`). */
+const labelCss = css`
+  > span {
+    /* The framework's rgba(0, 0, 0, 0.5) is hard to read over the card art. */
+    background: rgba(0, 0, 0, 0.85);
+  }
+`
+
 const hoverLabelCss = css`
   > span {
     display: none;
-    /* The framework's rgba(0, 0, 0, 0.5) is hard to read over the card art. */
-    background: rgba(0, 0, 0, 0.85);
   }
 
   @media (hover: hover) {
