@@ -628,20 +628,34 @@ describe('PlayCardsRule', () => {
       expect(rules.remind(Memory.Resources, Corporation.Moon).virus).toBe(0)
     })
 
-    test('unspent charges and pending choices are wiped when a new PlayCards phase starts', () => {
+    test('pending choices and copy chains are forgotten when the PlayCards phase ends', () => {
       const rules = testRules(
         { id: RuleId.PlayCards, player: Corporation.Moon },
         {},
         {
-          [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, draw: 3, destroy: 2 } },
           [Memory.PendingEitherChoices]: [{ itemIndex: 0, options: [] }],
-          [Memory.CopyRiverSources]: [[0]]
+          [Memory.CopyRiverSources]: [[0]],
+          [Memory.TurnFlags]: { ...EMPTY_TURN_FLAGS, singleUseCards: [0] }
         }
       )
-      rules.play(rules.startRule(RuleId.PlayCards))
-      expect(rules.remind(Memory.Resources, Corporation.Moon)).toEqual(EMPTY_RESOURCES)
+      rules.play(rules.startRule(RuleId.BuyCards))
       expect(rules.remind(Memory.PendingEitherChoices)).toBeUndefined()
       expect(rules.remind(Memory.CopyRiverSources)).toBeUndefined()
+      expect(rules.remind(Memory.TurnFlags)).toBeDefined() // still needed by EndTurnRule
+    })
+
+    test('the turn memory is fully forgotten when the game ends during the PlayCards phase', () => {
+      const rules = testRules(
+        { id: RuleId.PlayCards, player: Corporation.Moon },
+        {},
+        {
+          [Memory.Multipliers]: [],
+          [Memory.TurnFlags]: { ...EMPTY_TURN_FLAGS, cardPlayed: true }
+        }
+      )
+      rules.play(rules.endGame())
+      expect(rules.remind(Memory.Multipliers)).toBeUndefined()
+      expect(rules.remind(Memory.TurnFlags)).toBeUndefined()
     })
   })
 })

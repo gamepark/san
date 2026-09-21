@@ -16,9 +16,9 @@ export class ResourcesHelper extends MaterialRulesPart<Corporation, MaterialType
     super(game)
   }
 
-  resources(player = this.player): ResourcesMemory {
+  get resources(): ResourcesMemory {
     // Spread over EMPTY_RESOURCES so a counter added after a game was started reads 0, not undefined.
-    return { ...EMPTY_RESOURCES, ...this.remind<ResourcesMemory>(Memory.Resources, player) }
+    return { ...EMPTY_RESOURCES, ...this.remind<ResourcesMemory>(Memory.Resources, this.player) }
   }
 
   reset(player = this.player) {
@@ -35,10 +35,6 @@ export class ResourcesHelper extends MaterialRulesPart<Corporation, MaterialType
       },
       this.player
     )
-  }
-
-  points(key: keyof ResourcesMemory, player = this.player): number {
-    return this.resources(player)[key]
   }
 
   /** Spend `cost` (1 by default) of a banked counter; unused points are simply lost at end of turn. */

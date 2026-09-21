@@ -60,9 +60,9 @@ const remainingEffects = (rule: PlayCardsRule, t: TFunction): string[] => {
   if (rule.corruptionMoves().length) effects.push(t('pass.effect.corruption'))
   if (rule.propagandaMoves().length) effects.push(t('pass.effect.propaganda'))
   if (rule.virusMoves().length) effects.push(t('pass.effect.virus'))
-  if (rule.drawMoves().length) effects.push(t('pass.effect.draw', { count: rule.resourcesHelper.points('draw') }))
+  if (rule.drawMoves().length) effects.push(t('pass.effect.draw', { count: rule.resourcesHelper.resources.draw }))
   if (rule.destroyMoves().length) {
-    effects.push(t('pass.effect.destroy', { count: Math.min(rule.resourcesHelper.points('destroy'), rule.hand.length) }))
+    effects.push(t('pass.effect.destroy', { count: Math.min(rule.resourcesHelper.resources.destroy, rule.hand.length) }))
   }
   if (rule.corruptFromHandMoves().length) effects.push(t('pass.effect.corrupt-from-hand'))
   if (rule.playFromDiscardMoves().length) effects.push(t('pass.effect.play-from-discard'))

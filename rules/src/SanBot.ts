@@ -130,7 +130,7 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
     if (mercenaryMoves.length) {
       return this.drawBeforeCommittingType(rule, legalMoves) ? this.drawMoves(legalMoves) : this.bestMercenaryTypeMoves(rule, mercenaryMoves)
     }
-    const keepVirusCards = rule.resourcesHelper.points('destroy') > 0 || rule.resourcesHelper.points('corruptFromHand') > 0
+    const keepVirusCards = rule.resourcesHelper.resources.destroy > 0 || rule.resourcesHelper.resources.corruptFromHand > 0
     return keepVirusCards ? [] : moves.filter((move) => isVirusCard(this.cardId(rule, move.itemIndex)))
   }
 
@@ -256,7 +256,7 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
     const myFront = this.frontRiverX(rule, this.player)
     const opponentFront = this.frontRiverX(rule, otherCorporation(this.player))
     if (myFront !== undefined && free.includes(myFront)) {
-      const points = rule.resourcesHelper.points('propaganda')
+      const points = rule.resourcesHelper.resources.propaganda
       const before = this.propagandaSteps(rule, this.player, points, simulation)
       const after = this.propagandaSteps(rule, this.player, points, { ...simulation, slotX: myFront })
       if (after > before) return myFront
@@ -337,11 +337,11 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
 
   private bestEitherOption(rule: PlayCardsRule, options: CardEffect[]): number {
     const find = (type: EffectType) => options.findIndex((effect) => effect.type === type)
-    const resources = rule.resourcesHelper
+    const resources = rule.resourcesHelper.resources
 
     const propaganda = find(EffectType.Propaganda)
     if (propaganda !== -1) {
-      const points = resources.points('propaganda')
+      const points = resources.propaganda
       if (this.propagandaSteps(rule, this.player, points + (options[propaganda].value ?? 0)) > this.propagandaSteps(rule, this.player, points)) {
         return propaganda
       }
@@ -349,7 +349,7 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
 
     const corruption = find(EffectType.Corruption)
     if (corruption !== -1 && rule.freeCorruptionPositions().length) {
-      const points = resources.points('corruption')
+      const points = resources.corruption
       if (Math.floor((points + (options[corruption].value ?? 0)) / CORRUPTION_GROUP) > Math.floor(points / CORRUPTION_GROUP)) {
         return corruption
       }

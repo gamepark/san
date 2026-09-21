@@ -18,6 +18,7 @@ export class EndTurnRule extends SanRule {
   onRuleStart(): MaterialMove[] {
     const player = this.player
     const singleUse = this.turnFlagsHelper.flags.singleUseCards
+    this.turnFlagsHelper.reset()
     const moves: MaterialMove[] = this.playArea.index((index) => singleUse.includes(index)).deleteItems()
     const toDiscard = this.playArea.index((index) => !singleUse.includes(index))
     if (toDiscard.length) moves.push(toDiscard.moveItemsAtOnce({ type: LocationType.Discard, player }))

@@ -98,7 +98,7 @@ export class PlayCardsRule extends SanRule {
    * the one whose banner crossing {@link crossingCost} then discounts (rules, p.14).
    */
   corruptionMoves(): MaterialMove[] {
-    if (this.resourcesHelper.points('corruption') < CORRUPTION_GROUP) return []
+    if (this.resourcesHelper.resources.corruption < CORRUPTION_GROUP) return []
     return this.freeCorruptionPositions().flatMap((position) =>
       this.river.moveItems({ type: LocationType.CorruptionZone, player: this.player, x: position.x, y: position.y })
     )
@@ -106,7 +106,7 @@ export class PlayCardsRule extends SanRule {
 
   /** Once at least 1 charge is banked, offer to corrupt any hand card onto any free Corruption slot, for free. */
   corruptFromHandMoves(): MaterialMove[] {
-    if (this.resourcesHelper.points('corruptFromHand') <= 0) return []
+    if (this.resourcesHelper.resources.corruptFromHand <= 0) return []
     return this.freeCorruptionPositions().flatMap((position) =>
       this.hand.moveItems({ type: LocationType.CorruptionZone, player: this.player, x: position.x, y: position.y })
     )
@@ -130,7 +130,7 @@ export class PlayCardsRule extends SanRule {
     const nextX = x + direction
     if (nextX < 0 || nextX > PROPAGANDA_END) return []
     const crossedRiverX = this.crossedRiverX(x, direction)
-    const points = this.resourcesHelper.points('propaganda')
+    const points = this.resourcesHelper.resources.propaganda
     // Need at least one movement point banked, and enough to cover the (possibly reduced) cost.
     if (points < 1 || points < crossingCost(this, crossedRiverX, this.player)) return []
     return [banner.moveItem({ type: LocationType.PropagandaTrack, player: this.player, x: nextX })]
@@ -150,7 +150,7 @@ export class PlayCardsRule extends SanRule {
    * (handled in {@link beforeItemMove}). Only attacking their next card takes a second move.
    */
   virusMoves(): MaterialMove[] {
-    const points = this.resourcesHelper.points('virus')
+    const points = this.resourcesHelper.resources.virus
     if (points < 1) return []
     const pawn = this.material(MaterialType.VirusPawn)
     const item = pawn.getItem()
@@ -206,25 +206,25 @@ export class PlayCardsRule extends SanRule {
    * from the discard as soon as it runs out, so an empty deck means there is nothing left to draw.
    */
   drawMoves(): MaterialMove[] {
-    if (this.resourcesHelper.points('draw') <= 0 || this.deck.length === 0) return []
+    if (this.resourcesHelper.resources.draw <= 0 || this.deck.length === 0) return []
     return [this.drawCards(this.player, 1)]
   }
 
   /** Once at least 1 charge is banked, offer to send any hand card to the box. */
   destroyMoves(): MaterialMove[] {
-    if (this.resourcesHelper.points('destroy') <= 0) return []
+    if (this.resourcesHelper.resources.destroy <= 0) return []
     return this.hand.deleteItems()
   }
 
   /** Once at least 1 charge is banked, offer to play any eligible discard card. */
   playFromDiscardMoves(): MaterialMove[] {
-    if (this.resourcesHelper.points('playFromDiscard') <= 0) return []
+    if (this.resourcesHelper.resources.playFromDiscard <= 0) return []
     return this.playableCards(this.discard).moveItems({ type: LocationType.PlayArea, player: this.player })
   }
 
   /** Once at least 1 charge is banked, offer to adopt any eligible River card's type and effects. */
   copyRiverMoves(): MaterialMove[] {
-    if (this.resourcesHelper.points('copyRiver') <= 0) return []
+    if (this.resourcesHelper.resources.copyRiver <= 0) return []
     const chain = this.nextCopyChain(Memory.CopyRiverSources)
     return this.copyableRiverCards()
       .index((index) => !chain.includes(index))
@@ -234,7 +234,7 @@ export class PlayCardsRule extends SanRule {
 
   /** Once at least 1 charge is banked, offer to adopt the type and effects of any other card played this turn. */
   copyPlayedMoves(): MaterialMove[] {
-    if (this.resourcesHelper.points('copyPlayed') <= 0) return []
+    if (this.resourcesHelper.resources.copyPlayed <= 0) return []
     const chain = this.nextCopyChain(Memory.CopyPlayedSources)
     return this.copyablePlayedCards()
       .index((index) => !chain.includes(index))

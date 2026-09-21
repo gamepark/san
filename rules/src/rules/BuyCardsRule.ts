@@ -32,7 +32,7 @@ export class BuyCardsRule extends SanRule {
 
   /** River cards the current buying income can afford. */
   affordableCards() {
-    const coins = this.resourcesHelper.points('coins')
+    const coins = this.resourcesHelper.resources.coins
     return this.river.filter<SanCard>((item) => {
       const cost = getCardData(item.id)?.cost
       return cost !== undefined && cost <= coins
