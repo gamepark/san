@@ -25,7 +25,7 @@ interface PendingEitherChoice {
  * play area (see {@link SanRule.playCardEffects}/{@link SanRule.applyEffect}). None of them force
  * an immediate decision: spending a counter — corrupting a card, advancing the banner, moving the
  * Virus pawn, drawing, destroying, corrupting from hand, playing from discard, copying a River
- * card, or picking a side of an "either / or" — is offered here for as long as the counter (or
+ * card or a played card, or picking a side of an "either / or" — is offered here for as long as the counter (or
  * pending choice) is non-zero, interleaved freely with playing more cards.
  *
  * Ending this phase leads to the optional {@link RuleId.BuyCards} phase, then {@link RuleId.EndTurn}.
@@ -38,6 +38,7 @@ export class PlayCardsRule extends SanRule {
     this.forget(Memory.Multipliers)
     this.forget(Memory.PendingEitherChoices)
     this.forget(Memory.CopyRiverSources)
+    this.forget(Memory.CopyPlayedSources)
     return []
   }
 
@@ -52,6 +53,7 @@ export class PlayCardsRule extends SanRule {
     moves.push(...this.corruptFromHandMoves())
     moves.push(...this.playFromDiscardMoves())
     moves.push(...this.copyRiverMoves())
+    moves.push(...this.copyPlayedMoves())
     moves.push(...this.eitherChoiceMoves())
     // Playing a card is mandatory when possible, but a player stuck with no playable card and no
     // spendable resource (no other move at all) must still be able to end the phase — the app then
@@ -199,6 +201,12 @@ export class PlayCardsRule extends SanRule {
     return this.copyableIndexes().map((index) => this.customMove(CustomMoveType.CopyRiverCard, index))
   }
 
+  /** Once at least 1 charge is banked, offer to adopt the type and effects of any other card played this turn. */
+  copyPlayedMoves(): MaterialMove[] {
+    if (this.resourcesHelper.points('copyPlayed') <= 0) return []
+    return this.copyablePlayedIndexes().map((index) => this.customMove(CustomMoveType.CopyPlayedCard, index))
+  }
+
   /** One move per option, for every played card whose "either / or" hasn't been resolved yet. */
   eitherChoiceMoves(): MaterialMove[] {
     const pending = this.remind<PendingEitherChoice[]>(Memory.PendingEitherChoices) ?? []
@@ -301,6 +309,31 @@ export class PlayCardsRule extends SanRule {
       .moveItems({ type: LocationType.Deck, player: opponent, x: 0 })
   }
 
+  /**
+   * Apply the type and effects of the card at `copiedIndex` on behalf of the oldest card still holding
+   * an unspent copy charge (`sourcesKey`, FIFO). If the copied card is Single Use, that source card is
+   * the one sent to the box at end of turn (rules, p.20).
+   */
+  copyCard(copiedIndex: number, sourcesKey: Memory.CopyRiverSources | Memory.CopyPlayedSources): void {
+    const id = this.material(MaterialType.Card).getItem<SanCard>(copiedIndex).id
+    const data = getCardData(id)!
+    if (isMercenaryType(data.type)) this.turnFlagsHelper.lockMercenaryType(data.type)
+
+    const sources = this.remind<number[]>(sourcesKey) ?? []
+    const sourceIndex = sources.shift()
+    this.memorize(sourcesKey, sources)
+    if (sourceIndex === undefined) return
+
+    const effects: CardEffect[] = clone(data.effects)
+    if (effects.some((effect) => effect.type === EffectType.SingleUse)) {
+      this.turnFlagsHelper.addSingleUseCard(sourceIndex)
+    }
+    for (const effect of effects.filter((effect) => effect.type !== EffectType.SingleUse)) {
+      this.applyEffect(sourceIndex, effect)
+    }
+    this.applyMultipliers()
+  }
+
   onCustomMove(move: CustomMove): MaterialMove[] {
     switch (move.type) {
       case CustomMoveType.EndPlayPhase:
@@ -310,28 +343,15 @@ export class PlayCardsRule extends SanRule {
         this.resourcesHelper.spend('draw')
         return [this.drawCards(this.player, 1)]
 
-      case CustomMoveType.CopyRiverCard: {
+      case CustomMoveType.CopyRiverCard:
         this.resourcesHelper.spend('copyRiver')
-        const id = this.material(MaterialType.Card).getItem<SanCard>(move.data as number).id
-        const data = getCardData(id)!
-        if (isMercenaryType(data.type)) this.turnFlagsHelper.lockMercenaryType(data.type)
-
-        const sources = this.remind<number[]>(Memory.CopyRiverSources) ?? []
-        const sourceIndex = sources.shift()
-        this.memorize(Memory.CopyRiverSources, sources)
-
-        const effects: CardEffect[] = clone(data.effects)
-        if (sourceIndex !== undefined && effects.some((effect) => effect.type === EffectType.SingleUse)) {
-          this.turnFlagsHelper.addSingleUseCard(sourceIndex)
-        }
-        if (sourceIndex !== undefined) {
-          for (const effect of effects.filter((effect) => effect.type !== EffectType.SingleUse)) {
-            this.applyEffect(sourceIndex, effect)
-          }
-          this.applyMultipliers()
-        }
+        this.copyCard(move.data as number, Memory.CopyRiverSources)
         return []
-      }
+
+      case CustomMoveType.CopyPlayedCard:
+        this.resourcesHelper.spend('copyPlayed')
+        this.copyCard(move.data as number, Memory.CopyPlayedSources)
+        return []
 
       case CustomMoveType.ChooseEffectOption: {
         const { itemIndex, option } = move.data as { itemIndex: number; option: number }

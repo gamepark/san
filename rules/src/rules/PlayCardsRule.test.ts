@@ -348,7 +348,7 @@ describe('PlayCardsRule', () => {
         { id: RuleId.PlayCards, player: Corporation.Moon },
         {
           [MaterialType.Card]: [
-            { id: SanCard.RiverEquipment3, location: { type: LocationType.Hand, player: Corporation.Moon } }, // Destroy(1)
+            { id: SanCard.RiverEquipment11, location: { type: LocationType.Hand, player: Corporation.Moon } }, // Draw(1) + Destroy(1)
             { id: SanCard.MoonHacking, location: { type: LocationType.Hand, player: Corporation.Moon } }
           ]
         }
@@ -392,7 +392,7 @@ describe('PlayCardsRule', () => {
         { id: RuleId.PlayCards, player: Corporation.Moon },
         {
           [MaterialType.Card]: [
-            { id: SanCard.RiverEquipment4, location: { type: LocationType.Hand, player: Corporation.Moon } }, // PlayFromDiscard
+            { id: SanCard.RiverEquipment3, location: { type: LocationType.Hand, player: Corporation.Moon } }, // PlayFromDiscard
             { id: SanCard.MoonPropaganda, location: { type: LocationType.Discard, player: Corporation.Moon } } // propaganda(1)
           ]
         }
@@ -450,6 +450,52 @@ describe('PlayCardsRule', () => {
       expect(rules.remind(Memory.CopyRiverSources)).toEqual([5]) // the oldest (3) was consumed
       expect(rules.remind(Memory.TurnFlags).singleUseCards).toEqual([3]) // not itemIndex 1, the copied River card
       expect(rules.remind(Memory.Resources, Corporation.Moon).corruption).toBe(6)
+    })
+
+    test('CopyPlayed banks a charge; spending it applies the effects of another card played this turn', () => {
+      const rules = testRules(
+        { id: RuleId.PlayCards, player: Corporation.Moon },
+        {
+          [MaterialType.Card]: [
+            { id: SanCard.RiverPropaganda5, location: { type: LocationType.PlayArea, player: Corporation.Moon } }, // [propaganda(2), draw(2)]
+            { id: SanCard.RiverEquipment4, location: { type: LocationType.Hand, player: Corporation.Moon } } // CopyPlayed
+          ]
+        },
+        { [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, propaganda: 2, draw: 2 } } }
+      )
+      rules.play(rules.material(MaterialType.Card).index(1).moveItem({ type: LocationType.PlayArea, player: Corporation.Moon }))
+      expect(rules.remind(Memory.Resources, Corporation.Moon).copyPlayed).toBe(1)
+      expect(rules.remind(Memory.CopyPlayedSources)).toEqual([1])
+
+      // Only the Propaganda card can be copied: the CopyPlayed card itself is left out.
+      const copies = rules.getLegalMoves(Corporation.Moon).filter(isCustomMoveType(CustomMoveType.CopyPlayedCard))
+      expect(copies.map((move) => move.data)).toEqual([0])
+      rules.play(copies[0])
+      expect(rules.remind(Memory.Resources, Corporation.Moon).copyPlayed).toBe(0)
+      expect(rules.remind(Memory.CopyPlayedSources)).toEqual([])
+      expect(rules.remind(Memory.Resources, Corporation.Moon).propaganda).toBe(4)
+      expect(rules.remind(Memory.Resources, Corporation.Moon).draw).toBe(4)
+      expect(rules.getLegalMoves(Corporation.Moon).some(isCustomMoveType(CustomMoveType.CopyPlayedCard))).toBe(false)
+    })
+
+    test('copying a played Single Use card also sends the CopyPlayed card to the box', () => {
+      const rules = testRules(
+        { id: RuleId.PlayCards, player: Corporation.Moon },
+        {
+          [MaterialType.Card]: [
+            { id: SanCard.RiverEquipment16, location: { type: LocationType.PlayArea, player: Corporation.Moon } }, // [singleUse, corruption(6)]
+            { id: SanCard.RiverEquipment4, location: { type: LocationType.PlayArea, player: Corporation.Moon } } // CopyPlayed
+          ]
+        },
+        {
+          [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, corruption: 6, copyPlayed: 1 } },
+          [Memory.TurnFlags]: { ...EMPTY_TURN_FLAGS, cardPlayed: true, singleUseCards: [0] },
+          [Memory.CopyPlayedSources]: [1]
+        }
+      )
+      rules.play(rules.getLegalMoves(Corporation.Moon).find(isCustomMoveType(CustomMoveType.CopyPlayedCard))!)
+      expect(rules.remind(Memory.TurnFlags).singleUseCards).toEqual([0, 1])
+      expect(rules.remind(Memory.Resources, Corporation.Moon).corruption).toBe(12)
     })
 
     test('a real Either (one option is not a resource gain) offers one button per option, tied to the card that granted it', () => {

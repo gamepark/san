@@ -10,13 +10,12 @@
   "pass.effect.corruption": "Corrompre une carte de la Rivière",
   "pass.effect.propaganda": "Avancer votre bannière sur la piste Propagande",
   "pass.effect.virus": "Déplacer le pion Virus",
-  "pass.effect.draw_one": "Piocher {count} carte",
-  "pass.effect.draw_other": "Piocher {count} cartes",
-  "pass.effect.destroy_one": "Détruire {count} carte de votre main",
-  "pass.effect.destroy_other": "Détruire {count} cartes de votre main",
+  "pass.effect.draw": "Piocher {count, plural, one{# carte} other{# cartes}}",
+  "pass.effect.destroy": "Détruire {count, plural, one{# carte} other{# cartes}} de votre main",
   "pass.effect.corrupt-from-hand": "Corrompre une carte de votre main",
   "pass.effect.play-from-discard": "Jouer une carte de votre défausse",
   "pass.effect.copy-river": "Copier une carte de la Rivière",
+  "pass.effect.copy-played": "Copier une carte jouée",
   "pass.effect.either": "Choisir un effet : {options}",
   "pass.effect.or": "ou",
 
@@ -54,6 +53,7 @@
   "resource.corrupt-from-hand": "Corruptions gratuites",
   "resource.play-from-discard": "Cartes de la défausse à rejouer",
   "resource.copy-river": "Copies de la Rivière",
+  "resource.copy-played": "Copies de cartes jouées",
 
   "card.type.1": "Propagande",
   "card.type.2": "Hacking",
@@ -76,6 +76,10 @@
   "help.hand-bonus-token.desc": "Lorsque votre bannière arrive à l’emplacement d’un jeton Bonus de main, vous gagnez celui-ci et le placez à côté de votre pioche.",
   "help.hand-bonus-token.effect": "Augmente la taille de votre main d’une carte : à chaque phase Recomposer votre main, vous la recomposerez avec une carte de plus.",
 
+  "help.discard.title": "Défausse de {player}",
+  "help.discard.count": "{count, plural, one{# carte} other{# cartes}}, de la plus récente à la plus ancienne.",
+  "help.discard.empty": "La défausse est vide.",
+
   "help.central-port.title": "Port Central",
   "help.central-port.desc": "Sépare, au centre de la piste Virus, la carte Virus de chaque Corporation.",
   "help.central-port.advance": "Faire franchir le Port Central au pion Virus depuis la carte Virus adverse la fait basculer, face cachée, sur la pioche de son propriétaire. Si vous faites basculer la dernière carte de votre adversaire, vous fait remporter la partie par Hacking.",
@@ -85,6 +89,7 @@
   "history.play.virus": "{player} joue une carte Virus.",
   "history.play.discard": "{player} rejoue <card/> depuis sa défausse.",
   "history.copy.river": "{player} copie <card/> de la Rivière.",
+  "history.copy.played": "{player} copie <card/>.",
   "history.corrupt.river": "{player} corrompt <card/>.",
   "history.corrupt.hand": "{player} corrompt <card/> de sa main.",
   "history.propaganda.advance": "{player} avance sa bannière sur la piste Propagande.",
@@ -99,6 +104,7 @@
   "button.advance-propaganda": "Avancer",
   "button.move-virus": "x{steps}",
   "button.copy-river": "Copier",
+  "button.copy-played": "Copier",
   "button.play": "Jouer",
   "button.destroy": "Détruire",
   "button.corrupt": "Corrompre",
@@ -106,5 +112,6 @@
   "help.button.play": "Jouer cette carte",
   "help.button.corrupt": "Corrompre cette carte",
   "help.button.destroy": "Détruire cette carte",
-  "help.button.copy-river": "Copier cette carte"
+  "help.button.copy-river": "Copier cette carte",
+  "help.button.copy-played": "Copier cette carte"
 }

@@ -7,6 +7,7 @@ import { Location } from '@gamepark/rules-api'
 import { useTranslation } from 'react-i18next'
 import {
   coinIcon,
+  copyPlayedIcon,
   copyRiverIcon,
   corruptFromHandIcon,
   corruptionIcon,
@@ -21,7 +22,7 @@ import { fontDisplay } from '../theme/typography'
 
 /**
  * Corruption / Propaganda / Virus / Coin / Draw / Destroy / CorruptFromHand / PlayFromDiscard /
- * CopyRiver counters for a Corporation — moved here from the player panels, next to its Discard
+ * CopyRiver / CopyPlayed counters for a Corporation — moved here from the player panels, next to its Discard
  * pile's own static location (declared on DiscardLocator, always present even while the pile itself
  * is empty). Every card effect banks into one of these the instant it's played (see {@link
  * import('@gamepark/san/rules/SanRule').SanRule.applyEffect}); none of them force an immediate
@@ -47,7 +48,8 @@ export const PlayerResourceCounters = ({ location }: { location: Location }) => 
     { image: destroyIcon, value: resources.destroy, whiteArtwork: true, titleKey: 'resource.destroy' },
     { image: corruptFromHandIcon, value: resources.corruptFromHand, whiteArtwork: true, titleKey: 'resource.corrupt-from-hand' },
     { image: playFromDiscardIcon, value: resources.playFromDiscard, whiteArtwork: true, titleKey: 'resource.play-from-discard' },
-    { image: copyRiverIcon, value: resources.copyRiver, whiteArtwork: true, titleKey: 'resource.copy-river' }
+    { image: copyRiverIcon, value: resources.copyRiver, whiteArtwork: true, titleKey: 'resource.copy-river' },
+    { image: copyPlayedIcon, value: resources.copyPlayed ?? 0, whiteArtwork: true, titleKey: 'resource.copy-played' }
   ].filter((counter) => counter.value > 0)
   if (!counters.length) return null
   const isMoon = player === Corporation.Moon

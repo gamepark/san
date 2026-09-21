@@ -26,6 +26,7 @@ export const SanCardButtons: FC<MaterialHelpProps> = (props) => {
       <CorruptCardButton {...props} />
       <DestroyCardButton {...props} />
       <CopyRiverButton {...props} />
+      <CopyPlayedButton {...props} />
     </div>
   )
 }
@@ -113,6 +114,20 @@ const CopyRiverButton: FC<MaterialHelpProps> = ({ closeDialog, itemIndex }) => {
   return (
     <PlayMoveButton move={move} onPlay={closeDialog}>
       {t('help.button.copy-river')}
+    </PlayMoveButton>
+  )
+}
+
+/** Only for cards played this turn, while a banked CopyPlayed charge remains and this one is still eligible. */
+const CopyPlayedButton: FC<MaterialHelpProps> = ({ closeDialog, itemIndex }) => {
+  const { t } = useTranslation()
+  const move = useLegalMove((move) => isCustomMoveType(CustomMoveType.CopyPlayedCard)(move) && move.data === itemIndex)
+
+  if (!move) return null
+
+  return (
+    <PlayMoveButton move={move} onPlay={closeDialog}>
+      {t('help.button.copy-played')}
     </PlayMoveButton>
   )
 }

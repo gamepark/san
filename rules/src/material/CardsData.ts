@@ -26,7 +26,7 @@ export enum EffectType {
   Multiplier,
   /** At the end of the turn this card goes to the Box instead of the discard. Cannot be declined. */
   SingleUse,
-  /** Copy the type and effects of another card played this turn. (Unused by the printed cards.) */
+  /** Copy the type and effects of another card played this turn. */
   CopyPlayed,
   /** Copy the type and effects of a card currently in the River. */
   CopyRiver,

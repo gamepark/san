@@ -11,7 +11,7 @@ import { SanCard } from '@gamepark/san/material/SanCard'
 import { CustomMoveType } from '@gamepark/san/rules/CustomMoveType'
 import { RuleId } from '@gamepark/san/rules/RuleId'
 import { CardDescription, ItemContext, MaterialContentProps } from '@gamepark/react-game'
-import { isCustomMoveType, isDeleteItemType, isMoveItemType, MaterialItem, MaterialMove } from '@gamepark/rules-api'
+import { isCustomMoveType, isDeleteItemType, isMoveItemType, MaterialItem, MaterialMove, MaterialMoveBuilder } from '@gamepark/rules-api'
 import { ReactNode } from 'react'
 import { CrossingCostBadge } from './CrossingCostBadge'
 import { eitherChoiceButtons } from './EitherChoiceButtons'
@@ -141,10 +141,9 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
 
   /**
    * A short click on a card triggers its one obvious move for {@link RuleId.PlayCards}, instead of
-   * requiring a drag: playing a discard card (to PlayArea — every card effect is a banked, spend-whenever charge now, so
-   * "play from discard" is just another PlayArea move offered in the same phase, not a dedicated
-   * rule step) and corrupting a River card (to CorruptionZone). Hand cards are excluded: a click on
-   * them opens their help, and playing or destroying one goes through its menu buttons instead. Buying ({@link RuleId.BuyCards}) and copying a River
+   * requiring a drag: corrupting a River card (to CorruptionZone). Hand and discard cards are
+   * excluded: a click on a hand card opens its help, one on a discard card opens the discard's help
+   * (see {@link displayHelp}), and playing, destroying or replaying one goes through buttons instead. Buying ({@link RuleId.BuyCards}) and copying a River
    * card/drawing (both {@link CustomMoveType}, not tied to a unique target item in the same way) are
    * deliberately not here: they get their own buttons instead — see {@link getItemMenu}. When a card
    * has more than one legal target (e.g. several free CorruptionZone slots), the framework only
@@ -154,7 +153,9 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
   canShortClick(move: MaterialMove, context: ItemContext) {
     if (context.rules.game.rule?.id !== RuleId.PlayCards) return false
     // A click on a hand card opens its help, as by default: playing or destroying it goes through its menu buttons.
-    if (context.rules.material(MaterialType.Card).getItem(context.index).location.type === LocationType.Hand) return false
+    // A click on a discard card opens the discard's help, where each card can be played.
+    const from = context.rules.material(MaterialType.Card).getItem(context.index).location.type
+    if (from === LocationType.Hand || from === LocationType.Discard) return false
     if (isDeleteItemType(MaterialType.Card)(move)) return move.itemIndex === context.index
     if (!isMoveItemType(MaterialType.Card)(move) || move.itemIndex !== context.index) return false
     return (
@@ -164,6 +165,12 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
     )
   }
 
+  /** A discard card opens the help of the whole discard, which lists every card in it (same as skyrift / mythologies). */
+  displayHelp(item: MaterialItem, context: ItemContext) {
+    if (item.location.type === LocationType.Discard) return MaterialMoveBuilder.displayLocationHelp(item.location)
+    return super.displayHelp(item, context)
+  }
+
   // Buttons are always shown (rather than only on hover/selection) so they stay reachable on
   // touch devices, same convention as rival-cities' AllianceCardDescription.
   menuAlwaysVisible = true
@@ -171,7 +178,8 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
   /**
    * "Acheter" on every River card the current buying income can afford ({@link RuleId.BuyCards}),
    * "Copier" on every River card still copyable this turn (spends a banked
-   * {@link import('@gamepark/san/rules/Memory').ResourcesMemory.copyRiver} charge), "Piocher" on
+   * {@link import('@gamepark/san/rules/Memory').ResourcesMemory.copyRiver} charge) and on every played
+   * card still copyable ({@link import('@gamepark/san/rules/Memory').ResourcesMemory.copyPlayed}), "Piocher" on
    * the top of the deck while a banked {@link import('@gamepark/san/rules/Memory').ResourcesMemory.draw}
    * charge remains, and the "either / or" choice buttons on a played card that still has one pending
    * (see {@link eitherChoiceButtons}) — none of these have a natural drag/short-click target of their
@@ -253,11 +261,56 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
       )
     }
 
+    if (item.location.type === LocationType.Discard) return this.playFromDiscardButton(item, context, legalMoves)
+
     if (item.location.type === LocationType.PlayArea) {
-      return eitherChoiceButtons(context, legalMoves)
+      const copy = legalMoves.find((move) => isCustomMoveType(CustomMoveType.CopyPlayedCard)(move) && move.data === context.index)
+      const choices = eitherChoiceButtons(context, legalMoves)
+      if (!copy) return choices
+      // Straddles the bottom edge of the card (half-height 4.4), clear of the either / or buttons at the top.
+      return (
+        <>
+          {choices}
+          <IconMenuButton titleKey="button.copy-played" labelAlwaysVisible css={copyButtonCss} x={0} y={4.4} move={copy}>
+            <FontAwesomeIcon icon={faCopy} />
+          </IconMenuButton>
+        </>
+      )
     }
 
     return
+  }
+
+  /**
+   * "Jouer" on the top card of the active player's discard while a banked PlayFromDiscard charge lets
+   * them play one of its cards: it opens the discard's help, where the card to play is chosen.
+   */
+  private playFromDiscardButton(item: MaterialItem, context: ItemContext, legalMoves: MaterialMove[]): ReactNode {
+    const cards = context.rules.material(MaterialType.Card)
+    const discard = cards.location(LocationType.Discard).player(item.location.player)
+    if (discard.maxBy((item) => item.location.x ?? 0).getIndex() !== context.index) return
+    const canPlay = legalMoves.some(
+      (move) =>
+        isMoveItemType(MaterialType.Card)(move) &&
+        move.location.type === LocationType.PlayArea &&
+        cards.getItem(move.itemIndex).location.type === LocationType.Discard &&
+        cards.getItem(move.itemIndex).location.player === item.location.player
+    )
+    if (!canPlay) return
+    // Centred on the pile, like "Piocher" on the deck: its edges are crowded by the Virus track buttons.
+    return (
+      <IconMenuButton
+        titleKey="button.play"
+        labelAlwaysVisible
+        css={playButtonCss}
+        x={0}
+        y={0}
+        move={MaterialMoveBuilder.displayLocationHelp(item.location)}
+        options={{ transient: true }}
+      >
+        <FontAwesomeIcon icon={faArrowUp} />
+      </IconMenuButton>
+    )
   }
 
   /**

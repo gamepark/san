@@ -21,6 +21,8 @@ export interface ResourcesMemory {
   playFromDiscard: number
   /** River cards still copyable this turn. */
   copyRiver: number
+  /** Cards played this turn still copyable. */
+  copyPlayed: number
 }
 
 export const EMPTY_RESOURCES: ResourcesMemory = {
@@ -32,13 +34,14 @@ export const EMPTY_RESOURCES: ResourcesMemory = {
   destroy: 0,
   corruptFromHand: 0,
   playFromDiscard: 0,
-  copyRiver: 0
+  copyRiver: 0,
+  copyPlayed: 0
 }
 
 /**
  * Flags/markers for the current turn. Not derivable from `playArea`'s own cards: spending a
- * {@link ResourcesMemory.copyRiver} charge (see {@link import('./PlayCardsRule').PlayCardsRule})
- * can grant `playedMercenaryType` / lift `allTypesAllowed` / flag a card into `singleUseCards`
+ * {@link ResourcesMemory.copyRiver} or {@link ResourcesMemory.copyPlayed} charge (see
+ * {@link import('./PlayCardsRule').PlayCardsRule}) can grant `playedMercenaryType` / lift `allTypesAllowed` / flag a card into `singleUseCards`
  * from a *copied* River card's data, without the copying card's own type or effects ever
  * reflecting it.
  */
@@ -99,5 +102,8 @@ export enum Memory {
    * {@link import('../SanSetup').SanSetup.setupMaterial} and read by
    * {@link import('./EndTurnRule').EndTurnRule.handSize}.
    */
-  FirstGame
+  FirstGame,
+
+  /** Same as {@link Memory.CopyRiverSources}, for the {@link ResourcesMemory.copyPlayed} charges. */
+  CopyPlayedSources
 }

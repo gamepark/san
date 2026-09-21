@@ -4,6 +4,7 @@ import { Corporation } from '@gamepark/san/Corporation'
 import { LocationType } from '@gamepark/san/material/LocationType'
 import { CARD_BORDER_RADIUS, CARD_HEIGHT, CARD_WIDTH, DISCARD_X, DISCARD_Y, playerSide } from './SanLayout'
 import { PlayerResourceCounters } from '../material/PlayerResourceCounters'
+import { DiscardHelp } from './help/DiscardHelp'
 
 /** A Corporation's face-up discard pile, lying on its side past its own Virus pile. */
 class DiscardLocator extends DeckLocator {
@@ -41,6 +42,7 @@ class DiscardCountersLocationDescription extends DropAreaDescription {
   height = CARD_WIDTH
   borderRadius = CARD_BORDER_RADIUS
   content = PlayerResourceCounters
+  help = DiscardHelp
 
   /** Dragging only: a long press on the pile would otherwise buy or discard whichever card happens to be the only candidate. */
   canLongClick(_move: MaterialMove, _location: Location, _context: MaterialContext) {

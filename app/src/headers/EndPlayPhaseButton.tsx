@@ -67,6 +67,7 @@ const remainingEffects = (rule: PlayCardsRule, t: TFunction): string[] => {
   if (rule.corruptFromHandMoves().length) effects.push(t('pass.effect.corrupt-from-hand'))
   if (rule.playFromDiscardMoves().length) effects.push(t('pass.effect.play-from-discard'))
   if (rule.copyRiverMoves().length) effects.push(t('pass.effect.copy-river'))
+  if (rule.copyPlayedMoves().length) effects.push(t('pass.effect.copy-played'))
   const pending = rule.remind<{ itemIndex: number; options: CardEffect[] }[]>(Memory.PendingEitherChoices) ?? []
   for (const choice of pending) {
     effects.push(t('pass.effect.either', { options: choice.options.map((option) => effectLabel(option, t)).join(` ${t('pass.effect.or')} `) }))

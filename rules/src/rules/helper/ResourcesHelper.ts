@@ -17,7 +17,8 @@ export class ResourcesHelper extends MaterialRulesPart<Corporation, MaterialType
   }
 
   resources(player = this.player): ResourcesMemory {
-    return this.remind<ResourcesMemory>(Memory.Resources, player) ?? EMPTY_RESOURCES
+    // Spread over EMPTY_RESOURCES so a counter added after a game was started reads 0, not undefined.
+    return { ...EMPTY_RESOURCES, ...this.remind<ResourcesMemory>(Memory.Resources, player) }
   }
 
   reset(player = this.player) {
@@ -28,7 +29,10 @@ export class ResourcesHelper extends MaterialRulesPart<Corporation, MaterialType
   addPoints(key: keyof ResourcesMemory, amount: number) {
     this.memorize<ResourcesMemory>(
       Memory.Resources,
-      (r) => ({ ...(r ?? EMPTY_RESOURCES), [key]: (r ?? EMPTY_RESOURCES)[key] + amount }),
+      (r) => {
+        const base = { ...EMPTY_RESOURCES, ...r }
+        return { ...base, [key]: base[key] + amount }
+      },
       this.player
     )
   }
@@ -42,7 +46,7 @@ export class ResourcesHelper extends MaterialRulesPart<Corporation, MaterialType
     this.memorize<ResourcesMemory>(
       Memory.Resources,
       (r) => {
-        const base = r ?? EMPTY_RESOURCES
+        const base = { ...EMPTY_RESOURCES, ...r }
         return { ...base, [key]: Math.max(0, base[key] - cost) }
       },
       this.player

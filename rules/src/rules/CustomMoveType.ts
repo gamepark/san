@@ -19,7 +19,9 @@ export enum CustomMoveType {
    * Deal cards from a Corporation's deck to its hand, reshuffling the discard into a new deck as soon
    * as the deck runs out (see {@link import('../SanRules').SanRules}). `data` = {@link DrawData}.
    */
-  Draw
+  Draw,
+  /** Copy a card played this turn, spending a banked {@link import('./Memory').ResourcesMemory.copyPlayed} charge. `data` = the item index of the chosen played card. */
+  CopyPlayedCard
 }
 
 export type DrawData = { player: Corporation; quantity: number }

@@ -7,6 +7,7 @@ import { isCustomMoveType, isDeleteItemType, isMoveItemType, MaterialMove } from
 import { AdvancePropagandaLog } from './AdvancePropagandaLog'
 import { AdvanceVirusLog } from './AdvanceVirusLog'
 import { BuyCardLog } from './BuyCardLog'
+import { CopyPlayedCardLog } from './CopyPlayedCardLog'
 import { CopyRiverCardLog } from './CopyRiverCardLog'
 import { CorruptCardLog } from './CorruptCardLog'
 import { CorruptFromHandLog } from './CorruptFromHandLog'
@@ -68,6 +69,10 @@ export class SanLogDescription implements LogDescription {
 
     if (isCustomMoveType(CustomMoveType.CopyRiverCard)(move)) {
       return { Component: CopyRiverCardLog, player: context.action.playerId, depth: 1 }
+    }
+
+    if (isCustomMoveType(CustomMoveType.CopyPlayedCard)(move)) {
+      return { Component: CopyPlayedCardLog, player: context.action.playerId, depth: 1 }
     }
 
     return undefined

@@ -138,7 +138,6 @@ export abstract class SanRule extends PlayerTurnRule<Corporation, MaterialType, 
         break
 
       case EffectType.SingleUse:
-      case EffectType.CopyPlayed: // unused by the printed cards
         break
 
       case EffectType.Draw:
@@ -162,6 +161,14 @@ export abstract class SanRule extends PlayerTurnRule<Corporation, MaterialType, 
         const sources = this.remind<number[]>(Memory.CopyRiverSources) ?? []
         sources.push(itemIndex)
         this.memorize(Memory.CopyRiverSources, sources)
+        break
+      }
+
+      case EffectType.CopyPlayed: {
+        this.resourcesHelper.addPoints('copyPlayed', 1)
+        const sources = this.remind<number[]>(Memory.CopyPlayedSources) ?? []
+        sources.push(itemIndex)
+        this.memorize(Memory.CopyPlayedSources, sources)
         break
       }
 
@@ -218,6 +225,18 @@ export abstract class SanRule extends PlayerTurnRule<Corporation, MaterialType, 
       const data = getCardData(this.material(MaterialType.Card).getItem<SanCard>(index).id)
       if (!data) return false
       return data.type === CardType.Equipment || this.turnFlagsHelper.mercenaryTypePlayable(data.type)
+    })
+  }
+
+  /**
+   * Play area indexes copyable by a {@link EffectType.CopyPlayed} charge. Their type was already
+   * played this turn, so the one-Mercenary-type restriction never excludes any. Cards that copy a
+   * played card themselves are left out: copying one would only trade the charge for another.
+   */
+  copyablePlayedIndexes(): number[] {
+    return this.playArea.getIndexes().filter((index) => {
+      const data = getCardData(this.material(MaterialType.Card).getItem<SanCard>(index).id)
+      return data !== undefined && !data.effects.some((effect) => effect.type === EffectType.CopyPlayed)
     })
   }
 

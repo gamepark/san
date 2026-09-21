@@ -68,6 +68,7 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
       () => this.playFromDiscardMoves(rule, legalMoves),
       () => this.drawMoves(legalMoves),
       () => this.copyRiverMoves(rule, legalMoves),
+      () => this.copyPlayedMoves(rule, legalMoves),
       () => this.corruptFromHandMoves(rule, legalMoves),
       () => this.destroyMoves(rule, legalMoves),
       () => this.corruptRiverMoves(rule, legalMoves),
@@ -181,6 +182,15 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
   /** Copy the most valuable copyable River card. */
   private copyRiverMoves(rule: PlayCardsRule, legalMoves: MaterialMove[]): MaterialMove[] {
     const moves = legalMoves.filter(isCustomMoveType(CustomMoveType.CopyRiverCard)) as CustomMove[]
+    if (!moves.length) return []
+    const value = (move: CustomMove) => this.cardValue(this.cardId(rule, move.data as number))
+    const best = Math.max(...moves.map(value))
+    return moves.filter((move) => value(move) === best)
+  }
+
+  /** Copy the most valuable card played this turn. */
+  private copyPlayedMoves(rule: PlayCardsRule, legalMoves: MaterialMove[]): MaterialMove[] {
+    const moves = legalMoves.filter(isCustomMoveType(CustomMoveType.CopyPlayedCard)) as CustomMove[]
     if (!moves.length) return []
     const value = (move: CustomMove) => this.cardValue(this.cardId(rule, move.data as number))
     const best = Math.max(...moves.map(value))
