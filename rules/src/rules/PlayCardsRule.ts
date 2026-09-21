@@ -1,4 +1,4 @@
-import { CustomMove, isDeleteItemType, isMoveItemType, ItemMove, Location, Material, MaterialMove } from '@gamepark/rules-api'
+import { CustomMove, isDeleteItemType, isEndGame, isMoveItemType, ItemMove, Location, Material, MaterialMove, RuleMove } from '@gamepark/rules-api'
 import { CardEffect, EffectType, getCardData, isVirusCard, isMercenaryType } from '../material/CardsData'
 import { CardType, SanCard, virusNumber } from '../material/SanCard'
 import { CORRUPTION_GROUP, CORRUPTION_SLOT_CAPACITY, CORRUPTION_SLOTS, PROPAGANDA_END, RIVER_SIZE, virusCardChips } from '../material/constants'
@@ -60,16 +60,6 @@ export class PlayCardsRule extends SanRule {
 
   get deck() {
     return this.material(MaterialType.Card).location(LocationType.Deck).player(this.player)
-  }
-
-  onRuleStart(): MaterialMove[] {
-    this.resourcesHelper.reset()
-    this.turnFlagsHelper.reset()
-    this.forget(Memory.Multipliers)
-    this.forget(Memory.PendingEitherChoices)
-    this.forget(Memory.CopyRiverSources)
-    this.forget(Memory.CopyPlayedSources)
-    return []
   }
 
   getPlayerMoves(): MaterialMove[] {
@@ -616,5 +606,14 @@ export class PlayCardsRule extends SanRule {
       default:
         return []
     }
+  }
+
+  onRuleEnd(move: RuleMove) {
+    this.forget(Memory.Multipliers)
+    this.forget(Memory.PendingEitherChoices)
+    this.forget(Memory.CopyRiverSources)
+    this.forget(Memory.CopyPlayedSources)
+    // The turn flags are read until the end of the turn (see EndTurnRule), unless a victory cuts it short here.
+    if (isEndGame(move)) this.turnFlagsHelper.reset()
   }
 }
