@@ -21,7 +21,13 @@ export enum CustomMoveType {
    */
   Draw,
   /** Copy a card played this turn, spending a banked {@link import('./Memory').ResourcesMemory.copyPlayed} charge. `data` = the item index of the chosen played card. */
-  CopyPlayedCard
+  CopyPlayedCard,
+  /**
+   * Drive the opponent's top Virus card off: the pawn crosses every space left up to their last one,
+   * then steps onto the Central Port, one space per consequence (see {@link
+   * import('./PlayCardsRule').PlayCardsRule.driveOffVirusHops}).
+   */
+  DriveOffVirus
 }
 
 export type DrawData = { player: Corporation; quantity: number }

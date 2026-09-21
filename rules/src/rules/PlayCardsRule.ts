@@ -1,7 +1,7 @@
 import { CustomMove, isDeleteItemType, isMoveItemType, ItemMove, Location, MaterialMove } from '@gamepark/rules-api'
 import { CardEffect, EffectType, getCardData, isVirusCard, isMercenaryType } from '../material/CardsData'
 import { CardType, SanCard } from '../material/SanCard'
-import { CORRUPTION_GROUP, PROPAGANDA_END, RIVER_SIZE, VIRUS_DRIVE_OFF } from '../material/constants'
+import { CORRUPTION_GROUP, PROPAGANDA_END, RIVER_SIZE } from '../material/constants'
 import { LocationType } from '../material/LocationType'
 import { MaterialType } from '../material/MaterialType'
 import { clone } from './clone'
@@ -135,8 +135,8 @@ export class PlayCardsRule extends SanRule {
    *
    * Every space up to the opponent's last one is offered, as far as the banked points allow (each
    * costs its distance, see {@link virusStepsCost}), so the player can spend several points in one
-   * move. Driving the opponent's top card off is also a single move ({@link VIRUS_DRIVE_OFF}): it
-   * crosses every space left on that card plus one more Skull, landing the pawn on the Central Port
+   * move. Driving the opponent's top card off is also a single move ({@link CustomMoveType.DriveOffVirus}):
+   * it crosses every space left on that card plus one more Skull, landing the pawn on the Central Port
    * (handled in {@link beforeItemMove}). Only attacking their next card takes a second move.
    */
   virusMoves(): MaterialMove[] {
@@ -155,23 +155,40 @@ export class PlayCardsRule extends SanRule {
       pawn.moveItem({ type: LocationType.VirusTrack, x: x + dir * (i + 1) })
     )
     if (points > spacesLeft) {
-      moves.push(pawn.moveItem({ type: LocationType.VirusTrack, x: 0, id: VIRUS_DRIVE_OFF }))
+      moves.push(this.customMove(CustomMoveType.DriveOffVirus))
     }
     return moves
   }
 
-  /** Whether moving the pawn from `from` to `to` drives the opponent's top Virus card off (see {@link VIRUS_DRIVE_OFF}). */
+  /** Whether moving the pawn from `from` onto `to` leaves the opponent's card for the Central Port, driving their top Virus card off. */
   isVirusDriveOff(from: number, to: Partial<Location>): boolean {
-    if (to.x !== 0) return false
-    return to.id === VIRUS_DRIVE_OFF || from * virusDirection(this.game, this.player) > 0
+    return to.x === 0 && from * virusDirection(this.game, this.player) > 0
   }
 
-  /** Skull points spent by moving the pawn from `from` to `to`: one per space, plus one for driving the opponent's top card off. */
+  /** Skull points spent by moving the pawn from `from` to `to`: one per space; leaving the opponent's last space for the Central Port is one more. */
   virusStepsCost(from: number, to: Partial<Location>): number {
-    if (this.isVirusDriveOff(from, to)) {
-      return this.virusChips(this.virusOpponent) - virusDirection(this.game, this.player) * from + 1
-    }
+    if (this.isVirusDriveOff(from, to)) return 1
     return Math.abs((to.x ?? 0) - from)
+  }
+
+  /** Skull points spent by {@link CustomMoveType.DriveOffVirus}: every space left up to the opponent's last one, plus one. */
+  get driveOffVirusCost(): number {
+    return this.driveOffVirusHops().length
+  }
+
+  /**
+   * The pawn's single-space moves that drive the opponent's top Virus card off: every space up to their
+   * last one, then the Central Port. Split in steps, so each one animates (a single move onto the
+   * Central Port would not move at all when the pawn already stands there), and the last one sends the
+   * card onto their deck ({@link beforeItemMove}).
+   */
+  driveOffVirusHops(): MaterialMove[] {
+    const pawn = this.material(MaterialType.VirusPawn)
+    const from = pawn.getItem()?.location.x ?? 0
+    const dir = virusDirection(this.game, this.player)
+    const last = dir * this.virusChips(this.virusOpponent)
+    const spaces = Array.from({ length: Math.abs(last - from) }, (_, i) => from + dir * (i + 1))
+    return [...spaces, 0].map((x) => pawn.moveItem({ type: LocationType.VirusTrack, x }))
   }
 
   /** Once at least 1 charge is banked, offer to draw the top card of the deck (reshuffling the discard first if needed). */
@@ -350,6 +367,9 @@ export class PlayCardsRule extends SanRule {
         this.resourcesHelper.spend('copyPlayed')
         this.copyCard(move.data as number, Memory.CopyPlayedSources)
         return []
+
+      case CustomMoveType.DriveOffVirus:
+        return this.driveOffVirusHops()
 
       case CustomMoveType.ChooseEffectOption: {
         const { itemIndex, option } = move.data as { itemIndex: number; option: number }

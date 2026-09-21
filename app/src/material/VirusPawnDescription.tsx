@@ -2,10 +2,11 @@
 import { css } from '@emotion/react'
 import { PropsWithChildren } from 'react'
 import { ItemContext, TokenDescription, useAnimation, useRules } from '@gamepark/react-game'
-import { isMoveItemType, Location, MaterialItem, MaterialMove } from '@gamepark/rules-api'
+import { isCustomMoveType, isMoveItemType, Location, MaterialItem, MaterialMove } from '@gamepark/rules-api'
 import { SanRules } from '@gamepark/san/SanRules'
 import { LocationType } from '@gamepark/san/material/LocationType'
 import { MaterialType } from '@gamepark/san/material/MaterialType'
+import { CustomMoveType } from '@gamepark/san/rules/CustomMoveType'
 import { PlayCardsRule } from '@gamepark/san/rules/PlayCardsRule'
 import { RuleId } from '@gamepark/san/rules/RuleId'
 import hacking from '../images/icons/hacking.png'
@@ -42,15 +43,17 @@ class VirusPawnDescription extends TokenDescription {
    * Skull points it costs. The buttons belong to the pawn's menu, so each is placed by its space's offset
    * from the pawn; it sits on the outer side of the square (left or right half of the card), label outwards.
    * On the Central Port, the button is on the left when the pawn retreats there from the player's own card,
-   * on the right when it drives the opponent's top card off.
+   * on the right when it drives the opponent's top card off ({@link CustomMoveType.DriveOffVirus}).
    */
   getItemMenu(item: MaterialItem, context: ItemContext, legalMoves: MaterialMove[]) {
     if (context.rules.game.rule?.id !== RuleId.PlayCards) return
     const rule = new PlayCardsRule(context.rules.game)
     const from = item.location.x ?? 0
     const pawn = virusTrackLocator.getCoordinates(item.location, context)
+    const port = virusTrackLocator.getCoordinates({ type: LocationType.VirusTrack, x: 0 }, context)
     const moves = legalMoves.filter(isMoveItemType(MaterialType.VirusPawn)).filter((move) => move.location.type === LocationType.VirusTrack)
-    if (!moves.length) return
+    const driveOff = legalMoves.find(isCustomMoveType(CustomMoveType.DriveOffVirus))
+    if (!moves.length && !driveOff) return
     return (
       <HiddenWhileVirusCardLeaves>
         {moves.map((move) => {
@@ -58,31 +61,51 @@ class VirusPawnDescription extends TokenDescription {
           const target = virusTrackLocator.getCoordinates(location, context)
           const to = location.x ?? 0
           const onPort = to === 0
-          const side = onPort ? (rule.isVirusDriveOff(from, location) ? 1 : -1) : virusTrackLocator.getSide(to, context)
-          const steps = rule.virusStepsCost(from, location)
+          const side = onPort ? -1 : virusTrackLocator.getSide(to, context)
           return (
-            <IconMenuButton
-              key={`${to}:${side}`}
-              titleKey="button.move-virus"
-              titleValues={{ steps }}
-              labelAlwaysVisible
-              labelPosition={side < 0 ? 'left' : 'right'}
-              css={virusButtonCss}
+            <VirusButton
+              key={to}
+              move={move}
+              steps={rule.virusStepsCost(from, location)}
+              side={side}
               x={target.x - pawn.x - PAWN_OFFSET.x + side * (onPort ? PORT_BUTTON_OFFSET : BUTTON_OFFSET)}
               y={target.y - pawn.y - PAWN_OFFSET.y}
-              move={move}
-            >
-              <img src={hacking} alt="" css={iconCss} draggable={false} />
-            </IconMenuButton>
+            />
           )
         })}
+        {driveOff && (
+          <VirusButton
+            move={driveOff}
+            steps={rule.driveOffVirusCost}
+            side={1}
+            x={port.x - pawn.x - PAWN_OFFSET.x + PORT_BUTTON_OFFSET}
+            y={port.y - pawn.y - PAWN_OFFSET.y}
+          />
+        )}
       </HiddenWhileVirusCardLeaves>
     )
   }
 }
 
+type VirusButtonProps = { move: MaterialMove; steps: number; side: number; x: number; y: number }
+
+const VirusButton = ({ move, steps, side, x, y }: VirusButtonProps) => (
+  <IconMenuButton
+    titleKey="button.move-virus"
+    titleValues={{ steps }}
+    labelAlwaysVisible
+    labelPosition={side < 0 ? 'left' : 'right'}
+    css={virusButtonCss}
+    x={x}
+    y={y}
+    move={move}
+  >
+    <img src={hacking} alt="" css={iconCss} draggable={false} />
+  </IconMenuButton>
+)
+
 /**
- * Driving the opponent's top Virus card off plays the pawn's move, then sends the card onto their deck. The
+ * Driving the opponent's top Virus card off plays the pawn's hops, then sends the card onto their deck. The
  * legal moves already hold for the next card, but the spaces are still placed on the leaving one until its
  * animation ends: hide the buttons meanwhile, instead of flashing them beside the wrong card.
  */

@@ -1,7 +1,6 @@
 import { isCustomMoveType, isDeleteItemType, isMoveItemType, MaterialMove } from '@gamepark/rules-api'
 import { describe, expect, test } from 'vitest'
 import { Corporation } from '../Corporation'
-import { VIRUS_DRIVE_OFF } from '../material/constants'
 import { LocationType } from '../material/LocationType'
 import { MaterialType } from '../material/MaterialType'
 import { SanCard } from '../material/SanCard'
@@ -150,8 +149,7 @@ describe('PlayCardsRule', () => {
   const virusDriveOffs = (rules: ReturnType<typeof testRules>) =>
     rules
       .getLegalMoves(Corporation.Moon)
-      .filter(isMoveItemType(MaterialType.VirusPawn))
-      .flatMap((move) => (move.location.id === undefined ? [] : [move.location.id]))
+      .filter(isCustomMoveType(CustomMoveType.DriveOffVirus))
 
   test('only offers to advance the Virus pawn towards the opponent, never to retreat', () => {
     expect(virusTargets(virusRules(0, 1))).toEqual([1])
@@ -163,15 +161,22 @@ describe('PlayCardsRule', () => {
   })
 
   test('driving the opponent’s top Virus card off is a single move, once the points cover its last space plus one', () => {
-    expect(virusTargets(virusRules(0, 4))).toEqual([1, 2, 3, 0])
-    expect(virusDriveOffs(virusRules(0, 4))).toEqual([VIRUS_DRIVE_OFF])
+    expect(virusTargets(virusRules(0, 4))).toEqual([1, 2, 3])
+    expect(virusDriveOffs(virusRules(0, 4))).toHaveLength(1)
   })
 
-  test('driving off from afar spends one Skull point per space crossed, plus one', () => {
+  test('driving off from afar hops one space at a time, spending one Skull point per space crossed, plus one', () => {
     const rules = virusRules(-1, 6)
-    const [driveOff] = rules.play(rules.material(MaterialType.VirusPawn).moveItem({ type: LocationType.VirusTrack, x: 0, id: VIRUS_DRIVE_OFF }))
+    const hops = rules.play(rules.customMove(CustomMoveType.DriveOffVirus))
+    expect(hops.map((hop) => isMoveItemType(MaterialType.VirusPawn)(hop) && hop.location.x)).toEqual([0, 1, 2, 3, 0])
+    const driveOff = hops.flatMap((hop) => rules.play(hop))
     expect(rules.remind(Memory.Resources, Corporation.Moon).virus).toBe(1) // 1 (own card) + 3 (Star's Virus 5) + 1
-    expect(driveOff).toMatchObject({ location: { type: LocationType.Deck, player: Corporation.Star } })
+    expect(driveOff).toEqual([expect.objectContaining({ location: { type: LocationType.Deck, player: Corporation.Star } })])
+  })
+
+  test('driving off from the Central Port still moves the pawn, instead of a move onto where it already stands', () => {
+    const rules = virusRules(0, 4)
+    expect(rules.play(rules.customMove(CustomMoveType.DriveOffVirus)).map((hop) => isMoveItemType(MaterialType.VirusPawn)(hop) && hop.location.x)).toEqual([1, 2, 3, 0])
   })
 
   test('counts the spaces from the player’s own card, through the Central Port', () => {

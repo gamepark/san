@@ -366,6 +366,8 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
 
   /** Move the Virus pawn as far as the banked points allow. */
   private virusMoves(rule: PlayCardsRule, legalMoves: MaterialMove[]): MaterialMove[] {
+    const driveOff = legalMoves.filter(isCustomMoveType(CustomMoveType.DriveOffVirus))
+    if (driveOff.length) return driveOff
     const moves = legalMoves.filter(isMoveItemType(MaterialType.VirusPawn))
     if (!moves.length) return []
     const from = rule.material(MaterialType.VirusPawn).getItem()?.location.x ?? 0

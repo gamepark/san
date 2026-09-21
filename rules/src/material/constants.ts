@@ -32,11 +32,3 @@ export const HAND_SIZE = 6
  * costs one more Skull than that (the extra step lands the pawn back on the Central Port).
  */
 export const virusCardChips = (virusNumber: number): number => 8 - virusNumber
-
-/**
- * `location.id` of a Virus pawn move onto the Central Port (`x: 0`) that drives the opponent's top Virus
- * card off — the pawn leaves that card by its far end, however far away it started. Without it, a move
- * onto the Central Port from the player's own card only retreats there. From the opponent's card, a move
- * onto the Central Port always drives the card off.
- */
-export const VIRUS_DRIVE_OFF = 1

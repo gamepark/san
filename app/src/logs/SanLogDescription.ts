@@ -59,7 +59,11 @@ export class SanLogDescription implements LogDescription {
       return { Component: AdvancePropagandaLog, player: move.location.player }
     }
 
-    if (isMoveItemType(MaterialType.VirusPawn)(move) && move.location.type === LocationType.VirusTrack) {
+    // A drive-off's single-space hops are consequences of the DriveOffVirus move, already logged as one advance.
+    if (
+      (isMoveItemType(MaterialType.VirusPawn)(move) && move.location.type === LocationType.VirusTrack && context.consequenceIndex === undefined) ||
+      isCustomMoveType(CustomMoveType.DriveOffVirus)(move)
+    ) {
       return { Component: AdvanceVirusLog, player: context.action.playerId }
     }
 
