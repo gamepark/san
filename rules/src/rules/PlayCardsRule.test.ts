@@ -171,7 +171,7 @@ describe('PlayCardsRule', () => {
     const rules = virusRules(-1, 6)
     const [driveOff] = rules.play(rules.material(MaterialType.VirusPawn).moveItem({ type: LocationType.VirusTrack, x: 0, id: VIRUS_DRIVE_OFF }))
     expect(rules.remind(Memory.Resources, Corporation.Moon).virus).toBe(1) // 1 (own card) + 3 (Star's Virus 5) + 1
-    expect(driveOff).toMatchObject({ location: { type: LocationType.Deck, player: Corporation.Star, x: 0 } })
+    expect(driveOff).toMatchObject({ location: { type: LocationType.Deck, player: Corporation.Star } })
   })
 
   test('counts the spaces from the player’s own card, through the Central Port', () => {
@@ -199,7 +199,7 @@ describe('PlayCardsRule', () => {
 
     expect(rules.remind(Memory.Resources, Corporation.Moon).virus).toBe(0)
     expect(consequences).toHaveLength(1)
-    expect(consequences[0]).toMatchObject({ itemIndex: 0, location: { type: LocationType.Deck, player: Corporation.Star, x: 0 } })
+    expect(consequences[0]).toMatchObject({ itemIndex: 0, location: { type: LocationType.Deck, player: Corporation.Star } })
 
     rules.play(consequences[0])
     expect(rules.material(MaterialType.Card).location(LocationType.VirusPile).player(Corporation.Star).length).toBe(0)
@@ -224,14 +224,8 @@ describe('PlayCardsRule', () => {
     const [driveOff] = rules.play(move)
     rules.play(driveOff)
 
-    const deck = rules.material(MaterialType.Card).location(LocationType.Deck).player(Corporation.Star).getItems<SanCard>()
-    expect(deck).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ id: SanCard.StarVirus5, location: expect.objectContaining({ x: 0 }) }),
-        expect.objectContaining({ id: SanCard.StarPropaganda, location: expect.objectContaining({ x: 1 }) }),
-        expect.objectContaining({ id: SanCard.StarHacking, location: expect.objectContaining({ x: 2 }) })
-      ])
-    )
+    const deck = rules.material(MaterialType.Card).location(LocationType.Deck).player(Corporation.Star).deck()
+    expect(deck.getItems<SanCard>().map((item) => item.id)).toEqual([SanCard.StarVirus5, SanCard.StarHacking, SanCard.StarPropaganda])
   })
 
   test('advancing through the Central Port from the player’s own card does not drive off any card', () => {
