@@ -1,4 +1,4 @@
-import { isDeleteItemType, isMoveItemsAtOnce, isShuffle } from '@gamepark/rules-api'
+import { isCustomMoveType, isDeleteItemType, isMoveItemsAtOnce, isShuffle } from '@gamepark/rules-api'
 import { describe, expect, test } from 'vitest'
 import { Corporation } from '../Corporation'
 import { LocationType } from '../material/LocationType'
@@ -14,7 +14,7 @@ const filler = (n: number, location: { type: LocationType; player?: Corporation 
   Array.from({ length: n }, () => ({ id: SanCard.RiverEquipment1, location }))
 
 describe('EndTurnRule', () => {
-  test('boxes the Single Use cards and discards the rest of the play area, then loops back', () => {
+  test('boxes the Single Use cards and discards the rest of the play area before drawing', () => {
     const rules = testRules(
       { id: RuleId.EndTurn, player: Corporation.Moon },
       {
@@ -26,10 +26,11 @@ describe('EndTurnRule', () => {
       { [Memory.TurnFlags]: { ...EMPTY_TURN_FLAGS, singleUseCards: [1] } }
     )
     const consequences = rules.play(rules.startRule(RuleId.EndTurn))
-    expect(consequences).toHaveLength(3)
-    expect(consequences.some(isDeleteItemType(MaterialType.Card))).toBe(true)
-    expect(consequences.some(isMoveItemsAtOnce)).toBe(true)
-    expect(consequences).toContainEqual(rules.startRule(RuleId.EndTurn))
+    expect(consequences).toHaveLength(4)
+    expect(isDeleteItemType(MaterialType.Card)(consequences[0])).toBe(true)
+    expect(isMoveItemsAtOnce(consequences[1])).toBe(true)
+    expect(isCustomMoveType(CustomMoveType.Draw)(consequences[2])).toBe(true)
+    expect(consequences[3]).toEqual(rules.startPlayerTurn(RuleId.PlayCards, Corporation.Star))
 
     for (const move of consequences) rules.play(move)
     expect(rules.material(MaterialType.Card).location(LocationType.PlayArea).player(Corporation.Moon).length).toBe(0)

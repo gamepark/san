@@ -17,20 +17,15 @@ import { SanRule } from './SanRule'
 export class EndTurnRule extends SanRule {
   onRuleStart(): MaterialMove[] {
     const player = this.player
-
-    if (this.playArea.length > 0) {
-      const singleUse = this.turnFlagsHelper.flags.singleUseCards
-      const moves: MaterialMove[] = []
-      const toBox = this.playArea.index((index) => singleUse.includes(index))
-      if (toBox.length) moves.push(...toBox.deleteItems())
-      const toDiscard = this.playArea.index((index) => !singleUse.includes(index))
-      if (toDiscard.length) moves.push(toDiscard.moveItemsAtOnce({ type: LocationType.Discard, player }))
-      moves.push(this.startRule(RuleId.EndTurn))
-      return moves
-    }
-
+    const singleUse = this.turnFlagsHelper.flags.singleUseCards
+    const moves: MaterialMove[] = this.playArea.index((index) => singleUse.includes(index)).deleteItems()
+    const toDiscard = this.playArea.index((index) => !singleUse.includes(index))
+    if (toDiscard.length) moves.push(toDiscard.moveItemsAtOnce({ type: LocationType.Discard, player }))
+    // The draw is resolved when played, after the discard above: a reshuffle then includes the cards played this turn.
     const deficit = this.handSize - this.hand.length
-    return deficit > 0 ? [this.drawCards(player, deficit), ...this.nextTurn()] : this.nextTurn()
+    if (deficit > 0) moves.push(this.drawCards(player, deficit))
+    moves.push(...this.nextTurn())
+    return moves
   }
 
   nextTurn(): MaterialMove[] {
