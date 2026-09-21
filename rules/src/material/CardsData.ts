@@ -132,8 +132,8 @@ const riverCardsData: Record<SanCard, CardData> = {
   // Equipment — cards/river/Equipment1..18.jpg — crossing cost 4, revenue 0 (except Equipment1)
   [SanCard.RiverEquipment1]: { type: CardType.Equipment, effects: [draw(1)], revenue: 5, cost: 3, crossingCost: 4 },
   [SanCard.RiverEquipment2]: { type: CardType.Equipment, effects: [draw(3)], revenue: 0, cost: 4, crossingCost: 4 },
-  [SanCard.RiverEquipment3]: { type: CardType.Equipment, effects: [{ type: EffectType.Destroy, value: 1 }], revenue: 0, cost: 4, crossingCost: 4 },
-  [SanCard.RiverEquipment4]: { type: CardType.Equipment, effects: [{ type: EffectType.PlayFromDiscard }], revenue: 0, cost: 5, crossingCost: 4 },
+  [SanCard.RiverEquipment3]: { type: CardType.Equipment, effects: [{ type: EffectType.PlayFromDiscard }], revenue: 0, cost: 4, crossingCost: 4 },
+  [SanCard.RiverEquipment4]: { type: CardType.Equipment, effects: [{ type: EffectType.CopyPlayed }], revenue: 0, cost: 5, crossingCost: 4 },
   [SanCard.RiverEquipment5]: { type: CardType.Equipment, effects: [propaganda(3)], revenue: 0, cost: 4, crossingCost: 4 },
   [SanCard.RiverEquipment6]: { type: CardType.Equipment, effects: [virus(3)], revenue: 0, cost: 4, crossingCost: 4 },
   [SanCard.RiverEquipment7]: { type: CardType.Equipment, effects: [corruption(3)], revenue: 0, cost: 4, crossingCost: 4 },
