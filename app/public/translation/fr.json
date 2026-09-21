@@ -82,6 +82,7 @@
   "button.draw": "Piocher",
   "button.advance-virus": "Avancer de {steps}",
   "button.retreat-virus": "Reculer de {steps}",
+  "button.advance-propaganda": "Avancer",
   "button.copy-river": "Copier",
   "button.play": "Jouer",
   "button.destroy": "Détruire",
