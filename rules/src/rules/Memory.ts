@@ -11,7 +11,7 @@ export interface ResourcesMemory {
   propaganda: number
   virus: number
   coins: number
-  /** Cards still drawable from the deck this turn (one {@link import('./CustomMoveType').CustomMoveType.DrawCard} spends one). */
+  /** Cards still drawable from the deck this turn (one {@link import('./CustomMoveType').CustomMoveType.Draw} of the play phase spends one). */
   draw: number
   /** Hand cards still destroyable (to the box) this turn. */
   destroy: number

@@ -364,7 +364,7 @@ describe('PlayCardsRule', () => {
       rules.play(rules.material(MaterialType.Card).index(0).moveItem({ type: LocationType.PlayArea, player: Corporation.Moon }))
       expect(rules.remind(Memory.Resources, Corporation.Moon).draw).toBe(3)
 
-      const draw = rules.getLegalMoves(Corporation.Moon).find(isCustomMoveType(CustomMoveType.DrawCard))
+      const draw = rules.getLegalMoves(Corporation.Moon).find(isCustomMoveType(CustomMoveType.Draw))
       expect(draw).toBeDefined()
       const consequences = rules.play(draw!)
       expect(rules.remind(Memory.Resources, Corporation.Moon).draw).toBe(2)
@@ -372,13 +372,13 @@ describe('PlayCardsRule', () => {
       expect(rules.material(MaterialType.Card).location(LocationType.Hand).player(Corporation.Moon).length).toBe(1)
     })
 
-    test('Draw is not offered once both the deck and the discard are empty, even with a banked charge', () => {
+    test('Draw is not offered on an empty deck, even with a banked charge', () => {
       const rules = testRules(
         { id: RuleId.PlayCards, player: Corporation.Moon },
         {},
         { [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, draw: 1 } } }
       )
-      expect(rules.getLegalMoves(Corporation.Moon).some(isCustomMoveType(CustomMoveType.DrawCard))).toBe(false)
+      expect(rules.getLegalMoves(Corporation.Moon).some(isCustomMoveType(CustomMoveType.Draw))).toBe(false)
     })
 
     test('Destroy banks a charge; spending it deletes a hand card and decrements the charge', () => {

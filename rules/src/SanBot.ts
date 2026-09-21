@@ -145,18 +145,16 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
   }
 
   private drawMoves(legalMoves: MaterialMove[]): MaterialMove[] {
-    return legalMoves.filter(isCustomMoveType(CustomMoveType.DrawCard))
+    return legalMoves.filter(isCustomMoveType(CustomMoveType.Draw))
   }
 
   /**
    * Whether to draw before playing a Mercenary card while no type is committed to yet: the cards drawn
-   * may change which type is the best one. Except when the deck is empty and a discard card can still
-   * be played: drawing would shuffle the discard back into the deck, and that play would be lost.
+   * may change which type is the best one.
    */
   private drawBeforeCommittingType(rule: PlayCardsRule, legalMoves: MaterialMove[]): boolean {
     const flags = rule.turnFlagsHelper.flags
-    if (flags.playedMercenaryType !== undefined || flags.allTypesAllowed || !this.drawMoves(legalMoves).length) return false
-    return rule.deck.length > 0 || !this.cardMoves(rule, legalMoves, LocationType.Discard, LocationType.PlayArea).length
+    return flags.playedMercenaryType === undefined && !flags.allTypesAllowed && this.drawMoves(legalMoves).length > 0
   }
 
   /**

@@ -191,11 +191,13 @@ export class PlayCardsRule extends SanRule {
     return [...spaces, 0].map((x) => pawn.moveItem({ type: LocationType.VirusTrack, x }))
   }
 
-  /** Once at least 1 charge is banked, offer to draw the top card of the deck (reshuffling the discard first if needed). */
+  /**
+   * Once at least 1 charge is banked, offer to draw the top card of the deck. The deck is reshuffled
+   * from the discard as soon as it runs out, so an empty deck means there is nothing left to draw.
+   */
   drawMoves(): MaterialMove[] {
-    if (this.resourcesHelper.points('draw') <= 0) return []
-    if (this.deck.length === 0 && this.discard.length === 0) return []
-    return [this.customMove(CustomMoveType.DrawCard)]
+    if (this.resourcesHelper.points('draw') <= 0 || this.deck.length === 0) return []
+    return [this.drawCards(this.player, 1)]
   }
 
   /** Once at least 1 charge is banked, offer to send any hand card to the box. */
@@ -354,9 +356,9 @@ export class PlayCardsRule extends SanRule {
       case CustomMoveType.EndPlayPhase:
         return [this.startRule(RuleId.BuyCards)]
 
-      case CustomMoveType.DrawCard:
+      case CustomMoveType.Draw:
         this.resourcesHelper.spend('draw')
-        return [this.drawCards(this.player, 1)]
+        return []
 
       case CustomMoveType.CopyRiverCard:
         this.resourcesHelper.spend('copyRiver')

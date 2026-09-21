@@ -142,16 +142,16 @@ describe('SanBot', () => {
     )
     const moves = new SanBot(Corporation.Moon).getLegalMoves(game)
     expect(moves).toHaveLength(1)
-    expect(isCustomMoveType(CustomMoveType.DrawCard)(moves[0])).toBe(true)
+    expect(isCustomMoveType(CustomMoveType.Draw)(moves[0])).toBe(true)
   })
 
-  const discardGame = (deck: boolean) =>
-    testGame(
+  test('draws before committing to a Mercenary type from the discard', () => {
+    const game = testGame(
       { id: RuleId.PlayCards, player: Corporation.Moon },
       {
         [MaterialType.Card]: [
           { id: SanCard.RiverPropaganda3, location: { type: LocationType.Discard, player: Corporation.Moon, x: 0 } },
-          ...(deck ? [{ id: SanCard.MoonHacking, location: { type: LocationType.Deck, player: Corporation.Moon, x: 0 } }] : [])
+          { id: SanCard.MoonHacking, location: { type: LocationType.Deck, player: Corporation.Moon, x: 0 } }
         ]
       },
       {
@@ -159,17 +159,9 @@ describe('SanBot', () => {
         [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, draw: 1, playFromDiscard: 1 } }
       }
     )
-
-  test('draws before committing to a Mercenary type from the discard', () => {
-    const moves = new SanBot(Corporation.Moon).getLegalMoves(discardGame(true))
+    const moves = new SanBot(Corporation.Moon).getLegalMoves(game)
     expect(moves).toHaveLength(1)
-    expect(isCustomMoveType(CustomMoveType.DrawCard)(moves[0])).toBe(true)
-  })
-
-  test('plays from the discard first when the deck is empty, since drawing would reshuffle the discard', () => {
-    const moves = new SanBot(Corporation.Moon).getLegalMoves(discardGame(false))
-    expect(moves).toHaveLength(1)
-    expect(moves[0]).toMatchObject({ itemIndex: 0, location: { type: LocationType.PlayArea } })
+    expect(isCustomMoveType(CustomMoveType.Draw)(moves[0])).toBe(true)
   })
 
   // Moon's banner (step 0) crosses River column 5 first, Star's banner (step 6) crosses column 0 first.

@@ -229,7 +229,7 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
     // Only the active player's own deck: both decks have a card at `x: 0`, so without the player
     // check the "Piocher" button also showed up on the opponent's pile.
     if (item.location.type === LocationType.Deck && item.location.player === context.rules.game.rule?.player && (item.location.x ?? 0) === 0) {
-      const draw = legalMoves.find(isCustomMoveType(CustomMoveType.DrawCard))
+      const draw = legalMoves.find(isCustomMoveType(CustomMoveType.Draw))
       if (!draw) return
       return (
         <IconMenuButton titleKey="button.draw" labelAlwaysVisible css={drawButtonCss} x={0} y={0} move={draw}>

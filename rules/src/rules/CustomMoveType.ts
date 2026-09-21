@@ -13,8 +13,6 @@ export enum CustomMoveType {
   CopyRiverCard,
   /** End the optional "buy cards" phase and move on to the end of turn. */
   EndBuyPhase,
-  /** Draw the top card of the deck, spending a banked {@link import('./Memory').ResourcesMemory.draw} charge. */
-  DrawCard,
   /**
    * Deal cards from a Corporation's deck to its hand, reshuffling the discard into a new deck as soon
    * as the deck runs out (see {@link import('../SanRules').SanRules}). `data` = {@link DrawData}.
