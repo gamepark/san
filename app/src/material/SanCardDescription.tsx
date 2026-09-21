@@ -185,10 +185,10 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
         (move) => isMoveItemType(MaterialType.Card)(move) && move.itemIndex === context.index && move.location.type === LocationType.Discard
       )
       if (!buy) return
-      // Top-right corner of the card (width 6.3 / height 8.8, so half-width 3.15 / half-height 4.4),
-      // inset a bit so it doesn't hang off the edge.
+      // Bottom-right corner of the card (width 6.3 / height 8.8, so half-width 3.15 / half-height 4.4),
+      // next to its printed buying cost, inset a bit so it doesn't hang off the edge.
       return (
-        <IconMenuButton titleKey="button.buy" css={buyButtonCss} x={2.3} y={-5} move={buy}>
+        <IconMenuButton titleKey="button.buy" css={buyButtonCss} x={2.1} y={3.3} move={buy}>
           <FontAwesomeIcon icon={faDollarSign} />
         </IconMenuButton>
       )

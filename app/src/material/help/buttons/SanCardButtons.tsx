@@ -20,21 +20,26 @@ import { useTranslation } from 'react-i18next'
  */
 export const SanCardButtons: FC<MaterialHelpProps> = (props) => {
   return (
-    <>
+    <div css={buttonsCss}>
       <PlayCardButton {...props} />
       <BuyCardButton {...props} />
       <CorruptCardButton {...props} />
       <DestroyCardButton {...props} />
       <CopyRiverButton {...props} />
-    </>
+    </div>
   )
 }
 
-/** Covers playing a hand card and playing a discard card alike — both land on PlayArea. */
+/**
+ * Covers playing a hand card and playing a discard card alike. Excluded during BuyCards, where a move
+ * to Discard is a purchase and is handled by {@link BuyCardButton}.
+ */
 const PlayCardButton: FC<MaterialHelpProps> = ({ closeDialog, itemIndex }) => {
   const { t } = useTranslation()
+  const rules = useRules<SanRules>()!
   const move = useLegalMove(
     (move) =>
+      rules.game.rule?.id !== RuleId.BuyCards &&
       isMoveItemType(MaterialType.Card)(move) &&
       move.itemIndex === itemIndex &&
       (move.location.type === LocationType.PlayArea || move.location.type === LocationType.Discard)
@@ -43,7 +48,7 @@ const PlayCardButton: FC<MaterialHelpProps> = ({ closeDialog, itemIndex }) => {
   if (!move) return null
 
   return (
-    <PlayMoveButton move={move} onPlay={closeDialog} css={marginCss}>
+    <PlayMoveButton move={move} onPlay={closeDialog}>
       {t('help.button.play')}
     </PlayMoveButton>
   )
@@ -63,7 +68,7 @@ const BuyCardButton: FC<MaterialHelpProps> = ({ closeDialog, itemIndex }) => {
   if (!move) return null
 
   return (
-    <PlayMoveButton move={move} onPlay={closeDialog} css={marginCss}>
+    <PlayMoveButton move={move} onPlay={closeDialog}>
       {t('help.button.buy')}
     </PlayMoveButton>
   )
@@ -79,7 +84,7 @@ const CorruptCardButton: FC<MaterialHelpProps> = ({ closeDialog, itemIndex }) =>
   if (moves.length !== 1) return null
 
   return (
-    <PlayMoveButton move={moves[0]} onPlay={closeDialog} css={marginCss}>
+    <PlayMoveButton move={moves[0]} onPlay={closeDialog}>
       {t('help.button.corrupt')}
     </PlayMoveButton>
   )
@@ -92,7 +97,7 @@ const DestroyCardButton: FC<MaterialHelpProps> = ({ closeDialog, itemIndex }) =>
   if (!move) return null
 
   return (
-    <PlayMoveButton move={move} onPlay={closeDialog} css={marginCss}>
+    <PlayMoveButton move={move} onPlay={closeDialog}>
       {t('help.button.destroy')}
     </PlayMoveButton>
   )
@@ -106,12 +111,19 @@ const CopyRiverButton: FC<MaterialHelpProps> = ({ closeDialog, itemIndex }) => {
   if (!move) return null
 
   return (
-    <PlayMoveButton move={move} onPlay={closeDialog} css={marginCss}>
+    <PlayMoveButton move={move} onPlay={closeDialog}>
       {t('help.button.copy-river')}
     </PlayMoveButton>
   )
 }
 
-const marginCss = css`
+const buttonsCss = css`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
   margin-top: 0.5em;
+
+  &:empty {
+    display: none;
+  }
 `
