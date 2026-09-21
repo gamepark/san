@@ -234,7 +234,8 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
       const destroy = legalMoves.find((move) => isDeleteItemType(MaterialType.Card)(move) && move.itemIndex === context.index)
       const corrupt = this.corruptButton(item, context, legalMoves, -2.3, -4.4)
       if (!play && !destroy && !corrupt) return
-      // Straddling the top edge of the card (half-height 4.4).
+      // Play and Corrupt straddle the top edge of the card (half-height 4.4); Destroy sits in the
+      // top-left corner, just below the printed effect icons.
       return (
         <>
           {play && (
@@ -243,7 +244,7 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
             </IconMenuButton>
           )}
           {destroy && (
-            <IconMenuButton titleKey="button.destroy" css={destroyButtonCss} x={2.3} y={-4.4} move={destroy}>
+            <IconMenuButton titleKey="button.destroy" css={destroyButtonCss} x={-1.9} y={-1.6} move={destroy}>
               <FontAwesomeIcon icon={faTrashCan} />
             </IconMenuButton>
           )}

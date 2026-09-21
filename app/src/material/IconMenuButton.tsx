@@ -26,6 +26,14 @@ const labelCss = css`
     /* The framework's rgba(0, 0, 0, 0.5) is hard to read over the card art. */
     background: rgba(0, 0, 0, 0.85);
   }
+
+  /* Lift the hovered button (and its label) above its neighbours, so their buttons don't cover the label.
+     The \`translate\` property composes with the framework's positioning \`transform\` instead of replacing it. */
+  @media (hover: hover) {
+    &:hover {
+      translate: 0 0 1em;
+    }
+  }
 `
 
 const hoverLabelCss = css`
