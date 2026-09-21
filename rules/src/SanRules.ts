@@ -39,8 +39,8 @@ export class SanRules
 {
   rules = {
     [RuleId.PlayCards]: PlayCardsRule,
-    [RuleId.EndTurn]: EndTurnRule,
-    [RuleId.BuyCards]: BuyCardsRule
+    [RuleId.BuyCards]: BuyCardsRule,
+    [RuleId.EndTurn]: EndTurnRule
   }
 
   locationsStrategies = {

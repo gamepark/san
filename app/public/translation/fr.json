@@ -3,6 +3,8 @@
   "header.play.player": "{player} joue des cartes",
   "header.buy.you": "Achetez des cartes de la Rivière ou <end>passez</end>",
   "header.buy.player": "{player} achète des cartes",
+  "header.end-turn.you": "Vous terminez votre tour",
+  "header.end-turn.player": "{player} termine son tour",
   "pass.confirm.remaining": "Vous pouvez encore jouer les effets suivants :",
   "pass.confirm.question": "Voulez-vous renoncer à ces effets ?",
   "pass.confirm.cancel": "Annuler",

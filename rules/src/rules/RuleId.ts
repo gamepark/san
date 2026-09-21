@@ -6,8 +6,8 @@ export enum RuleId {
    * import('./PlayCardsRule').PlayCardsRule}).
    */
   PlayCards = 1,
-  /** End of turn: discard played cards, refill the hand, pass to the opponent. */
-  EndTurn,
   /** Phase 2 of a turn (optional): spend the revenue of the played cards to buy River cards. */
-  BuyCards
+  BuyCards,
+  /** End of turn: discard played cards, refill the hand, pass to the opponent. */
+  EndTurn
 }
