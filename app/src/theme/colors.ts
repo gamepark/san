@@ -27,5 +27,14 @@ export const colors = {
 
   paper: '#F7F7F5',
   paperSoft: '#FBFBFA',
-  ink: '#1A1A1A'
+  ink: '#1A1A1A',
+
+  // Rulebook (app/public/rules-fr.pdf, pixel-picked): white page, the beige of its margin strip and
+  // section bands, a lighter beige for its rules, the ink of its text and the red of its sub-titles.
+  rulePage: '#FFFFFF',
+  ruleBand: '#DAD3C6',
+  ruleBandLight: '#E7E2DA',
+  ruleInk: '#231F20',
+  ruleRed: '#B53848',
+  ruleRedDark: '#8A2A37'
 }

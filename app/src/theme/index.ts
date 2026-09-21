@@ -1,38 +1,52 @@
 import { css } from '@emotion/react'
 import { defaultTheme, GameTheme } from '@gamepark/react-game'
 import { colors } from './colors'
-import { fontBody, fontDisplay } from './typography'
+import { fontBody, fontDisplay, fontRuleBody, fontRuleTitle } from './typography'
 
+/**
+ * Every dialog is laid out like a page of the rulebook (app/public/rules-fr.pdf): a white page with
+ * the beige strip that runs down its left margin, and its text set in the rulebook's condensed face.
+ */
 const dialogContainer = css`
-  box-shadow:
-    0 0 0 0.1em rgba(227, 180, 40, 0.4),
-    0 0.6em 1.5em rgba(0, 0, 0, 0.55);
+  font-family: ${fontRuleBody};
+  border-left: 1.5em solid ${colors.ruleBand};
+  border-radius: 0.3em 1em 1em 0.3em;
+  box-shadow: 0 0.6em 1.5em rgba(0, 0, 0, 0.55);
 `
 
 /**
  * Applied to the text area of every help/rules dialog (the wrapper `description.help` — SanCardHelp,
- * HandBonusTokenHelp, CentralPortHelp — renders into, see MaterialRulesDialogContent.js): without
- * this, the library's own helpDialogContentCss gives it no font-family or heading treatment, so it
- * fell back to the browser default look regardless of theme.dialog.backgroundColor/color.
+ * HandBonusTokenHelp, CentralPortHelp — renders into, see MaterialRulesDialogContent.js), and by the
+ * game's own dialogs (EndPlayPhaseButton). The rulebook's headings: a section title is white comic
+ * capitals on a beige band rounded off at its right end, a sub-title red comic capitals, and a cross
+ * reference red too.
  */
 const dialogContent = css`
-  font-family: ${fontBody};
+  font-family: ${fontRuleBody};
+  color: ${colors.ruleInk};
 
   h2 {
-    font-family: ${fontDisplay};
-    font-weight: 600;
-    color: ${colors.propagandaDark};
-    letter-spacing: 0.02em;
+    font-family: ${fontRuleTitle};
+    font-weight: 400;
+    color: ${colors.rulePage};
+    background: ${colors.ruleBand};
+    border-radius: 0 1em 1em 0;
+    padding: 0.2em 1em 0.1em 0.5em;
+    margin: 0 0 0.6em;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
   }
 
   h3 {
-    font-family: ${fontDisplay};
-    font-weight: 600;
-    color: ${colors.corruptionDark};
-    letter-spacing: 0.02em;
-    border-bottom: 0.08em solid ${colors.corruptionLight};
-    padding-bottom: 0.2em;
-    margin-top: 1em;
+    font-family: ${fontRuleTitle};
+    font-weight: 400;
+    color: ${colors.ruleRed};
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 0.08em solid ${colors.ruleBandLight};
+    padding-bottom: 0.15em;
+    margin: 1em 0 0.4em;
   }
 
   ul {
@@ -40,12 +54,51 @@ const dialogContent = css`
   }
 
   li::marker {
-    color: ${colors.corruptionLight};
+    color: ${colors.ruleRed};
   }
 
   strong,
   b {
-    color: ${colors.hackingDark};
+    color: ${colors.ruleRed};
+  }
+`
+
+/** Buttons inside a dialog: the rulebook's red, lettered in its comic capitals. */
+const dialogButtons = css`
+  background: ${colors.ruleRed} !important;
+  color: ${colors.rulePage} !important;
+  border: 0.1em solid ${colors.ruleRedDark} !important;
+  border-radius: 1em !important;
+  padding: 0.35em 1em 0.25em;
+  font-family: ${fontRuleTitle};
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  box-shadow: 0 0.15em 0.3em rgba(0, 0, 0, 0.25);
+  transition:
+    background 150ms ease,
+    color 150ms ease,
+    transform 120ms ease;
+  outline: none !important;
+
+  &:hover:not(:disabled),
+  &:focus:hover:not(:disabled) {
+    background: ${colors.ruleRedDark} !important;
+  }
+
+  &:focus:not(:hover):not(:disabled) {
+    background: ${colors.ruleRed} !important;
+    border-color: ${colors.ruleInk} !important;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0.05em);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
 `
 
@@ -219,11 +272,11 @@ export const theme: GameTheme = {
   buttons: buttonBase,
   dialog: {
     ...defaultTheme.dialog,
-    backgroundColor: colors.paper,
-    color: colors.ink,
+    backgroundColor: colors.rulePage,
+    color: colors.ruleInk,
     container: dialogContainer,
     content: dialogContent,
-    buttons: buttonBase
+    buttons: dialogButtons
   },
   header: {
     bar: headerBar,
