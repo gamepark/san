@@ -2,6 +2,7 @@ import {
   CompetitiveRank,
   CustomMove,
   FillGapStrategy,
+  HidingStrategy,
   hideItemId,
   hideItemIdToOthers,
   isMoveItemType,
@@ -26,6 +27,9 @@ import { propagandaDirection } from './rules/helper/directions'
 import { victoryOutcome } from './rules/helper/victory'
 import { PlayCardsRule } from './rules/PlayCardsRule'
 import { RuleId } from './rules/RuleId'
+
+/** The Reserve is face down, except its top card, which the rules rotate (`rotation: true`). */
+const hideItemIdUnlessRotated: HidingStrategy = (item) => (item.location.rotation ? [] : ['id'])
 
 /**
  * This class implements the rules of the board game.
@@ -59,7 +63,8 @@ export class SanRules
     [MaterialType.Card]: {
       [LocationType.Deck]: hideItemId,
       [LocationType.Hand]: hideItemIdToOthers,
-      [LocationType.CorruptionZone]: hideItemId
+      [LocationType.CorruptionZone]: hideItemId,
+      [LocationType.Reserve]: hideItemIdUnlessRotated
     }
   }
 
