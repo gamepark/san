@@ -1,8 +1,8 @@
 {
-  "header.play.you": "Jouez une ou plusieurs cartes, puis utilisez leurs effets quand vous le souhaitez. <end>Terminer</end>",
-  "header.play.player": "{player} joue des cartes.",
-  "header.buy.you": "Achetez des cartes de la Rivière avec votre revenu. <end>Terminer</end>",
-  "header.buy.player": "{player} achète des cartes.",
+  "header.play.you": "Jouez des cartes et appliquez leurs effets ou <end>passez</end>",
+  "header.play.player": "{player} joue des cartes",
+  "header.buy.you": "Achetez des cartes de la Rivière ou <end>passez</end>",
+  "header.buy.player": "{player} achète des cartes",
 
   "header.game-over.tie": "Égalité !",
   "header.game-over.you.corruption": "Vous remportez la partie par Corruption !",
