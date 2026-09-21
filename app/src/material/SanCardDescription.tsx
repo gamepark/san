@@ -1,7 +1,9 @@
 import { css } from '@emotion/react'
+import { faArrowUp } from '@fortawesome/free-solid-svg-icons/faArrowUp'
 import { faCopy } from '@fortawesome/free-solid-svg-icons/faCopy'
 import { faDollarSign } from '@fortawesome/free-solid-svg-icons/faDollarSign'
 import { faLayerGroup } from '@fortawesome/free-solid-svg-icons/faLayerGroup'
+import { faTrashCan } from '@fortawesome/free-solid-svg-icons/faTrashCan'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { LocationType } from '@gamepark/san/material/LocationType'
 import { MaterialType } from '@gamepark/san/material/MaterialType'
@@ -13,6 +15,7 @@ import { isCustomMoveType, isDeleteItemType, isMoveItemType, MaterialItem, Mater
 import { Trans } from 'react-i18next'
 import { CrossingCostBadge } from './CrossingCostBadge'
 import { eitherChoiceButtons } from './EitherChoiceButtons'
+import { IconMenuButton } from './IconMenuButton'
 import { SanCardHelp } from './help/SanCardHelp'
 import { CARD_BORDER_RADIUS } from '../locators/SanLayout'
 import { colors } from '../theme/colors'
@@ -137,12 +140,10 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
 
   /**
    * A short click on a card triggers its one obvious move for {@link RuleId.PlayCards}, instead of
-   * requiring a drag: playing a hand card (to PlayArea, or Discard for a Virus card), playing a
-   * discard card (also to PlayArea — every card effect is a banked, spend-whenever charge now, so
+   * requiring a drag: playing a discard card (to PlayArea — every card effect is a banked, spend-whenever charge now, so
    * "play from discard" is just another PlayArea move offered in the same phase, not a dedicated
-   * rule step), corrupting a River or hand card (both to CorruptionZone, whichever is spendable),
-   * and destroying a hand card (a {@link deleteItem} move — there is no box drop zone on the table,
-   * so the click is the whole interaction). Buying ({@link RuleId.BuyCards}) and copying a River
+   * rule step) and corrupting a River card (to CorruptionZone). Hand cards are excluded: a click on
+   * them opens their help, and playing or destroying one goes through its menu buttons instead. Buying ({@link RuleId.BuyCards}) and copying a River
    * card/drawing (both {@link CustomMoveType}, not tied to a unique target item in the same way) are
    * deliberately not here: they get their own buttons instead — see {@link getItemMenu}. When a card
    * has more than one legal target (e.g. several free CorruptionZone slots), the framework only
@@ -151,6 +152,8 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
    */
   canShortClick(move: MaterialMove, context: ItemContext) {
     if (context.rules.game.rule?.id !== RuleId.PlayCards) return false
+    // A click on a hand card opens its help, as by default: playing or destroying it goes through its menu buttons.
+    if (context.rules.material(MaterialType.Card).getItem(context.index).location.type === LocationType.Hand) return false
     if (isDeleteItemType(MaterialType.Card)(move)) return move.itemIndex === context.index
     if (!isMoveItemType(MaterialType.Card)(move) || move.itemIndex !== context.index) return false
     return (
@@ -214,6 +217,32 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
       )
     }
 
+    if (item.location.type === LocationType.Hand) {
+      const play = legalMoves.find(
+        (move) =>
+          isMoveItemType(MaterialType.Card)(move) &&
+          move.itemIndex === context.index &&
+          (move.location.type === LocationType.PlayArea || move.location.type === LocationType.Discard)
+      )
+      const destroy = legalMoves.find((move) => isDeleteItemType(MaterialType.Card)(move) && move.itemIndex === context.index)
+      if (!play && !destroy) return
+      // Straddling the top edge of the card (half-height 4.4).
+      return (
+        <>
+          {play && (
+            <IconMenuButton titleKey="button.play" css={playButtonCss} x={0} y={-4.4} move={play}>
+              <FontAwesomeIcon icon={faArrowUp} />
+            </IconMenuButton>
+          )}
+          {destroy && (
+            <IconMenuButton titleKey="button.destroy" css={destroyButtonCss} x={2.3} y={-4.4} move={destroy}>
+              <FontAwesomeIcon icon={faTrashCan} />
+            </IconMenuButton>
+          )}
+        </>
+      )
+    }
+
     if (item.location.type === LocationType.PlayArea) {
       return eitherChoiceButtons(context, legalMoves)
     }
@@ -264,6 +293,20 @@ const drawButtonCss = css`
 
   &:hover {
     background-color: ${colors.equipmentDark} !important;
+  }
+`
+
+/** Same blue as Buy: the card's main action. */
+const playButtonCss = buyButtonCss
+
+/** Hacking red, for the irreversible removal of the card. */
+const destroyButtonCss = css`
+  background-color: ${colors.hacking} !important;
+  border: 0.1em solid ${colors.paperSoft} !important;
+  color: ${colors.paper} !important;
+
+  &:hover {
+    background-color: ${colors.hackingDark} !important;
   }
 `
 

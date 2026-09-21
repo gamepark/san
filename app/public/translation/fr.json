@@ -83,6 +83,8 @@
   "button.advance-virus": "Avancer de {steps}",
   "button.retreat-virus": "Reculer de {steps}",
   "button.copy-river": "Copier",
+  "button.play": "Jouer",
+  "button.destroy": "Détruire",
   "help.button.buy": "Acheter cette carte",
   "help.button.play": "Jouer cette carte",
   "help.button.corrupt": "Corrompre cette carte",
