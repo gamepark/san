@@ -256,8 +256,7 @@ export class PlayCardsRule extends SanRule {
           return []
         }
         this.resourcesHelper.spend('corruption', CORRUPTION_GROUP)
-        // Refill the emptied River slot; an empty Reserve ends the game (rules, p.22).
-        return this.reserve.length ? [this.reserve.deck().dealOne({ type: LocationType.River })] : [this.endGame()]
+        return this.refillRiver()
       }
 
       if (move.location.type === LocationType.PlayArea && from === LocationType.Discard) {

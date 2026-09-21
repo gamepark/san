@@ -10,7 +10,7 @@ import { MaterialType } from '@gamepark/san/material/MaterialType'
 import { SanCard } from '@gamepark/san/material/SanCard'
 import { CustomMoveType } from '@gamepark/san/rules/CustomMoveType'
 import { RuleId } from '@gamepark/san/rules/RuleId'
-import { CardDescription, ItemContext, MaterialContentProps } from '@gamepark/react-game'
+import { CardDescription, ItemContext, MaterialContentProps, MaterialContext } from '@gamepark/react-game'
 import { isCustomMoveType, isDeleteItemType, isMoveItemType, MaterialItem, MaterialMove, MaterialMoveBuilder } from '@gamepark/rules-api'
 import { ReactNode } from 'react'
 import { CrossingCostBadge } from './CrossingCostBadge'
@@ -163,6 +163,12 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
       move.location.type === LocationType.Discard ||
       move.location.type === LocationType.CorruptionZone
     )
+  }
+
+  /** The Reserve is shown face down, except its top card, which the rules rotate (`rotation: true`). */
+  isFlippedOnTable(item: Partial<MaterialItem>, context: MaterialContext) {
+    if (item.location?.type === LocationType.Reserve && !item.location.rotation) return true
+    return super.isFlippedOnTable(item, context)
   }
 
   /** A discard card opens the help of the whole discard, which lists every card in it (same as skyrift / mythologies). */

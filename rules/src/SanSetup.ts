@@ -107,13 +107,14 @@ export class SanSetup extends MaterialGameSetup<Corporation, MaterialType, Locat
     this.material(MaterialType.VirusPawn).createItem({ id: 1, location: { type: LocationType.VirusTrack, x } })
   }
 
-  /** Shuffle the 48 River cards, reveal 6 as the River, keep the rest face up as the Reserve. */
+  /** Shuffle the 48 River cards, reveal 6 as the River, keep the rest as the Reserve, top card face up. */
   setupRiverAndReserve() {
     this.material(MaterialType.Card).createItems(
       withCopies(riverCards).map((id) => ({ id, location: { type: LocationType.Reserve } }))
     )
     this.material(MaterialType.Card).location(LocationType.Reserve).shuffle()
     this.material(MaterialType.Card).location(LocationType.Reserve).deck().deal({ type: LocationType.River }, RIVER_SIZE)
+    this.material(MaterialType.Card).location(LocationType.Reserve).deck().limit(1).rotateItem(true)
   }
 
   /**

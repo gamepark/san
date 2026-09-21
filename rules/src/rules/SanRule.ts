@@ -81,6 +81,18 @@ export abstract class SanRule extends PlayerTurnRule<Corporation, MaterialType, 
     return this.material(MaterialType.Card).location(LocationType.Reserve)
   }
 
+  /**
+   * Refill an emptied River slot from the top of the Reserve, then turn the new top card face up
+   * (`rotation: true`, the rest of the Reserve is shown face down). An empty Reserve ends the game (rules, p.22).
+   */
+  refillRiver(): MaterialMove[] {
+    const deck = this.reserve.deck()
+    if (!deck.length) return [this.endGame()]
+    const moves: MaterialMove[] = [deck.dealOne({ type: LocationType.River })]
+    if (deck.length) moves.push(deck.limit(1).rotateItem(true))
+    return moves
+  }
+
   /** Deal cards from a Corporation's deck to its hand — the reshuffle of the discard is handled by {@link import('../SanRules').SanRules}. */
   drawCards(player: Corporation, quantity: number): MaterialMove {
     return this.customMove(CustomMoveType.Draw, { player, quantity } satisfies DrawData)

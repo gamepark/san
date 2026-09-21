@@ -44,8 +44,7 @@ export class BuyCardsRule extends SanRule {
     if (isMoveItemType(MaterialType.Card)(move) && move.location.type === LocationType.Discard) {
       const cost = getCardData(this.material(MaterialType.Card).getItem<SanCard>(move.itemIndex).id)?.cost ?? 0
       this.resourcesHelper.spendCoins(cost)
-      // Refill the emptied River slot; an empty Reserve ends the game (rules, p.13 and p.22).
-      return this.reserve.length ? [this.reserve.deck().dealOne({ type: LocationType.River })] : [this.endGame()]
+      return this.refillRiver()
     }
     return []
   }
