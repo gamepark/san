@@ -1,7 +1,9 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react'
-import { ItemContext, TokenDescription } from '@gamepark/react-game'
+import { PropsWithChildren } from 'react'
+import { ItemContext, TokenDescription, useAnimation, useRules } from '@gamepark/react-game'
 import { isMoveItemType, Location, MaterialItem, MaterialMove } from '@gamepark/rules-api'
+import { SanRules } from '@gamepark/san/SanRules'
 import { LocationType } from '@gamepark/san/material/LocationType'
 import { MaterialType } from '@gamepark/san/material/MaterialType'
 import { PlayCardsRule } from '@gamepark/san/rules/PlayCardsRule'
@@ -50,7 +52,7 @@ class VirusPawnDescription extends TokenDescription {
     const moves = legalMoves.filter(isMoveItemType(MaterialType.VirusPawn)).filter((move) => move.location.type === LocationType.VirusTrack)
     if (!moves.length) return
     return (
-      <>
+      <HiddenWhileVirusCardLeaves>
         {moves.map((move) => {
           const location = move.location as Location
           const target = virusTrackLocator.getCoordinates(location, context)
@@ -74,9 +76,24 @@ class VirusPawnDescription extends TokenDescription {
             </IconMenuButton>
           )
         })}
-      </>
+      </HiddenWhileVirusCardLeaves>
     )
   }
+}
+
+/**
+ * Driving the opponent's top Virus card off plays the pawn's move, then sends the card onto their deck. The
+ * legal moves already hold for the next card, but the spaces are still placed on the leaving one until its
+ * animation ends: hide the buttons meanwhile, instead of flashing them beside the wrong card.
+ */
+const HiddenWhileVirusCardLeaves = ({ children }: PropsWithChildren) => {
+  const rules = useRules<SanRules>()
+  const leaving = useAnimation<MaterialMove>(
+    ({ move }) =>
+      isMoveItemType(MaterialType.Card)(move) &&
+      rules?.material(MaterialType.Card).getItem(move.itemIndex)?.location.type === LocationType.VirusPile
+  )
+  return leaving ? null : <>{children}</>
 }
 
 /** Hacking red, like the Virus resource. */
