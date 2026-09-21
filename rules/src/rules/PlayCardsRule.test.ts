@@ -460,7 +460,7 @@ describe('PlayCardsRule', () => {
       )
       rules.play(rules.material(MaterialType.Card).index(0).moveItem({ type: LocationType.PlayArea, player: Corporation.Moon }))
       expect(rules.remind(Memory.Resources, Corporation.Moon).copyRiver).toBe(1)
-      expect(rules.remind(Memory.CopyRiverSources)).toEqual([0]) // itemIndex 0 = the card carrying CopyRiver
+      expect(rules.remind(Memory.CopyRiverSources)).toEqual([[0]]) // itemIndex 0 = the card carrying CopyRiver
 
       const copy = rules.getLegalMoves(Corporation.Moon).find(isCustomMoveType(CustomMoveType.CopyRiverCard))
       expect(copy).toBeDefined()
@@ -481,11 +481,11 @@ describe('PlayCardsRule', () => {
             { id: SanCard.RiverEquipment16, location: { type: LocationType.River, x: 0 } } // itemIndex 1, [singleUse, corruption(6)]
           ]
         },
-        { [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, copyRiver: 2 } }, [Memory.CopyRiverSources]: [3, 5] }
+        { [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, copyRiver: 2 } }, [Memory.CopyRiverSources]: [[3], [5]] }
       )
       const copy = rules.getLegalMoves(Corporation.Moon).find(isCustomMoveType(CustomMoveType.CopyRiverCard))
       rules.play(copy!)
-      expect(rules.remind(Memory.CopyRiverSources)).toEqual([5]) // the oldest (3) was consumed
+      expect(rules.remind(Memory.CopyRiverSources)).toEqual([[5]]) // the oldest (3) was consumed
       expect(rules.remind(Memory.TurnFlags).singleUseCards).toEqual([3]) // not itemIndex 1, the copied River card
       expect(rules.remind(Memory.Resources, Corporation.Moon).corruption).toBe(6)
     })
@@ -503,7 +503,7 @@ describe('PlayCardsRule', () => {
       )
       rules.play(rules.material(MaterialType.Card).index(1).moveItem({ type: LocationType.PlayArea, player: Corporation.Moon }))
       expect(rules.remind(Memory.Resources, Corporation.Moon).copyPlayed).toBe(1)
-      expect(rules.remind(Memory.CopyPlayedSources)).toEqual([1])
+      expect(rules.remind(Memory.CopyPlayedSources)).toEqual([[1]])
 
       // Only the Propaganda card can be copied: the CopyPlayed card itself is left out.
       const copies = rules.getLegalMoves(Corporation.Moon).filter(isCustomMoveType(CustomMoveType.CopyPlayedCard))
@@ -528,11 +528,56 @@ describe('PlayCardsRule', () => {
         {
           [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, corruption: 6, copyPlayed: 1 } },
           [Memory.TurnFlags]: { ...EMPTY_TURN_FLAGS, cardPlayed: true, singleUseCards: [0] },
-          [Memory.CopyPlayedSources]: [1]
+          [Memory.CopyPlayedSources]: [[1]]
         }
       )
       rules.play(rules.getLegalMoves(Corporation.Moon).find(isCustomMoveType(CustomMoveType.CopyPlayedCard))!)
       expect(rules.remind(Memory.TurnFlags).singleUseCards).toEqual([0, 1])
+      expect(rules.remind(Memory.Resources, Corporation.Moon).corruption).toBe(12)
+    })
+
+    test('a copy chain cannot copy back a card already in it', () => {
+      const rules = testRules(
+        { id: RuleId.PlayCards, player: Corporation.Moon },
+        {
+          [MaterialType.Card]: [
+            { id: SanCard.RiverEquipment14, location: { type: LocationType.PlayArea, player: Corporation.Moon } }, // itemIndex 0, CopyRiver
+            { id: SanCard.RiverEquipment4, location: { type: LocationType.River, x: 0 } }, // itemIndex 1, CopyPlayed
+            { id: SanCard.RiverPropaganda5, location: { type: LocationType.PlayArea, player: Corporation.Moon } } // itemIndex 2
+          ]
+        },
+        {
+          [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, copyRiver: 1 } },
+          [Memory.TurnFlags]: { ...EMPTY_TURN_FLAGS, cardPlayed: true },
+          [Memory.CopyRiverSources]: [[0]]
+        }
+      )
+      rules.play(rules.customMove(CustomMoveType.CopyRiverCard, 1))
+      expect(rules.remind(Memory.CopyPlayedSources)).toEqual([[0, 1]])
+      // The CopyRiver card started the chain: copying it back would grant a CopyRiver charge again, forever.
+      const copies = rules.getLegalMoves(Corporation.Moon).filter(isCustomMoveType(CustomMoveType.CopyPlayedCard))
+      expect(copies.map((move) => move.data)).toEqual([2])
+    })
+
+    test('copying a Single Use card at the end of a copy chain boxes the card that started it', () => {
+      const rules = testRules(
+        { id: RuleId.PlayCards, player: Corporation.Moon },
+        {
+          [MaterialType.Card]: [
+            { id: SanCard.RiverEquipment14, location: { type: LocationType.PlayArea, player: Corporation.Moon } }, // itemIndex 0, CopyRiver
+            { id: SanCard.RiverEquipment4, location: { type: LocationType.River, x: 0 } }, // itemIndex 1, CopyPlayed
+            { id: SanCard.RiverEquipment16, location: { type: LocationType.PlayArea, player: Corporation.Moon } } // itemIndex 2, [singleUse, corruption(6)]
+          ]
+        },
+        {
+          [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, corruption: 6, copyRiver: 1 } },
+          [Memory.TurnFlags]: { ...EMPTY_TURN_FLAGS, cardPlayed: true, singleUseCards: [2] },
+          [Memory.CopyRiverSources]: [[0]]
+        }
+      )
+      rules.play(rules.customMove(CustomMoveType.CopyRiverCard, 1))
+      rules.play(rules.customMove(CustomMoveType.CopyPlayedCard, 2))
+      expect(rules.remind(Memory.TurnFlags).singleUseCards).toEqual([2, 0]) // not 1, the copied River card
       expect(rules.remind(Memory.Resources, Corporation.Moon).corruption).toBe(12)
     })
 
@@ -590,7 +635,7 @@ describe('PlayCardsRule', () => {
         {
           [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, draw: 3, destroy: 2 } },
           [Memory.PendingEitherChoices]: [{ itemIndex: 0, options: [] }],
-          [Memory.CopyRiverSources]: [0]
+          [Memory.CopyRiverSources]: [[0]]
         }
       )
       rules.play(rules.startRule(RuleId.PlayCards))

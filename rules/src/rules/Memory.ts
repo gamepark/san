@@ -84,10 +84,11 @@ export enum Memory {
    */
   PendingEitherChoices,
   /**
-   * Item indexes of played cards still holding an unspent {@link ResourcesMemory.copyRiver}
-   * charge, oldest first (FIFO). Spending a charge `shift()`s this list: if the copied card turns
-   * out to be Single Use, the oldest source card is the one flagged into `singleUseCards` instead
-   * of the copied card itself.
+   * One copy chain per unspent {@link ResourcesMemory.copyRiver} charge, oldest first (FIFO). A chain
+   * lists item indexes: first the played card holding the charge, then every card copied along the
+   * way to grant it — none of them can be copied by this charge. Spending a charge `shift()`s this
+   * list: if the copied card turns out to be Single Use, the chain's first card is the one flagged
+   * into `singleUseCards` instead of the copied card itself.
    */
   CopyRiverSources,
   /**

@@ -28,6 +28,12 @@ interface MultiplierState {
   counted: number
 }
 
+/**
+ * Item indexes of one unspent copy charge's chain: `[0]` is the played card holding the charge (the one
+ * boxed if a Single Use card is copied), followed by every card copied along the way to grant it.
+ */
+type CopyChain = number[]
+
 /** One card posed whose "either / or" hasn't been chosen yet — see {@link Memory.PendingEitherChoices}. */
 interface PendingEitherChoice {
   itemIndex: number
@@ -229,13 +235,29 @@ export class PlayCardsRule extends SanRule {
   /** Once at least 1 charge is banked, offer to adopt any eligible River card's type and effects. */
   copyRiverMoves(): MaterialMove[] {
     if (this.resourcesHelper.points('copyRiver') <= 0) return []
-    return this.copyableRiverCards().getIndexes().map((index) => this.customMove(CustomMoveType.CopyRiverCard, index))
+    const chain = this.nextCopyChain(Memory.CopyRiverSources)
+    return this.copyableRiverCards()
+      .index((index) => !chain.includes(index))
+      .getIndexes()
+      .map((index) => this.customMove(CustomMoveType.CopyRiverCard, index))
   }
 
   /** Once at least 1 charge is banked, offer to adopt the type and effects of any other card played this turn. */
   copyPlayedMoves(): MaterialMove[] {
     if (this.resourcesHelper.points('copyPlayed') <= 0) return []
-    return this.copyablePlayedCards().getIndexes().map((index) => this.customMove(CustomMoveType.CopyPlayedCard, index))
+    const chain = this.nextCopyChain(Memory.CopyPlayedSources)
+    return this.copyablePlayedCards()
+      .index((index) => !chain.includes(index))
+      .getIndexes()
+      .map((index) => this.customMove(CustomMoveType.CopyPlayedCard, index))
+  }
+
+  /**
+   * Copy chain of the charge the next copy will spend (FIFO, see {@link copyCard}). A card already in
+   * that chain cannot be copied: two cards copying each other would otherwise grant charges forever.
+   */
+  nextCopyChain(sourcesKey: Memory.CopyRiverSources | Memory.CopyPlayedSources): number[] {
+    return this.remind<CopyChain[]>(sourcesKey)?.[0] ?? []
   }
 
   /** One move per option, for every played card whose "either / or" hasn't been resolved yet. */
@@ -341,24 +363,27 @@ export class PlayCardsRule extends SanRule {
   /**
    * Apply the type and effects of the card at `copiedIndex` on behalf of the oldest card still holding
    * an unspent copy charge (`sourcesKey`, FIFO). If the copied card is Single Use, that source card is
-   * the one sent to the box at end of turn (rules, p.20).
+   * the one sent to the box at end of turn (rules, p.20). A copy charge granted by the copied card
+   * stays on the same source card, so the whole chain resolves on behalf of the card that started it.
    */
   copyCard(copiedIndex: number, sourcesKey: Memory.CopyRiverSources | Memory.CopyPlayedSources): void {
     const id = this.material(MaterialType.Card).getItem<SanCard>(copiedIndex).id
     const data = getCardData(id)!
     if (isMercenaryType(data.type)) this.turnFlagsHelper.lockMercenaryType(data.type)
 
-    const sources = this.remind<number[]>(sourcesKey) ?? []
-    const sourceIndex = sources.shift()
-    this.memorize(sourcesKey, sources)
-    if (sourceIndex === undefined) return
+    const chains = this.remind<CopyChain[]>(sourcesKey) ?? []
+    const spent = chains.shift()
+    this.memorize(sourcesKey, chains)
+    if (spent === undefined) return
+    const sourceIndex = spent[0]
+    const chain = [...spent, copiedIndex]
 
     const effects: CardEffect[] = clone(data.effects)
     if (effects.some((effect) => effect.type === EffectType.SingleUse)) {
       this.turnFlagsHelper.addSingleUseCard(sourceIndex)
     }
     for (const effect of effects.filter((effect) => effect.type !== EffectType.SingleUse)) {
-      this.applyEffect(sourceIndex, effect)
+      this.applyEffect(sourceIndex, effect, chain)
     }
     this.applyMultipliers()
   }
@@ -417,9 +442,10 @@ export class PlayCardsRule extends SanRule {
    * Multiplier/SingleUse/AllTypes apply outright since they have no discrete "moment of use".
    * `itemIndex` is the played card that granted the effect — needed to track which card a CopyRiver
    * charge came from (see {@link import('./Memory').Memory.CopyRiverSources}) and, for Either, which
-   * card the pending choice belongs to.
+   * card the pending choice belongs to. `chain` is the copy chain the effect comes from: just the card
+   * itself when played, the source card then every card copied since when copied.
    */
-  applyEffect(itemIndex: number, effect: CardEffect): void {
+  applyEffect(itemIndex: number, effect: CardEffect, chain: CopyChain = [itemIndex]): void {
     switch (effect.type) {
       case EffectType.Corruption:
       case EffectType.Propaganda:
@@ -459,17 +485,17 @@ export class PlayCardsRule extends SanRule {
 
       case EffectType.CopyRiver: {
         this.resourcesHelper.addPoints('copyRiver', 1)
-        const sources = this.remind<number[]>(Memory.CopyRiverSources) ?? []
-        sources.push(itemIndex)
-        this.memorize(Memory.CopyRiverSources, sources)
+        const chains = this.remind<CopyChain[]>(Memory.CopyRiverSources) ?? []
+        chains.push(chain)
+        this.memorize(Memory.CopyRiverSources, chains)
         break
       }
 
       case EffectType.CopyPlayed: {
         this.resourcesHelper.addPoints('copyPlayed', 1)
-        const sources = this.remind<number[]>(Memory.CopyPlayedSources) ?? []
-        sources.push(itemIndex)
-        this.memorize(Memory.CopyPlayedSources, sources)
+        const chains = this.remind<CopyChain[]>(Memory.CopyPlayedSources) ?? []
+        chains.push(chain)
+        this.memorize(Memory.CopyPlayedSources, chains)
         break
       }
 
