@@ -4,7 +4,8 @@ import { LocationType } from '@gamepark/san/material/LocationType'
 import { MaterialType } from '@gamepark/san/material/MaterialType'
 import { crossingCost } from '@gamepark/san/rules/helper/crossingCost'
 import { SanRules } from '@gamepark/san/SanRules'
-import { useDraggedItem, usePlayerId, useRules } from '@gamepark/react-game'
+import { useAnimation, useDraggedItem, usePlayerId, useRules } from '@gamepark/react-game'
+import { isMoveItemType, MaterialMove } from '@gamepark/rules-api'
 import { colors } from '../theme/colors'
 import { fontDisplay } from '../theme/typography'
 
@@ -21,17 +22,22 @@ import { fontDisplay } from '../theme/typography'
  * a CSS opacity fade, not an unmount: dropping ends the drag a beat before the move settles into
  * `rules`, and unmounting there made the badge pop back in for that instant, then vanish again once
  * the card actually left the River — a visible blink. Fading keeps that instant imperceptible.
+ * It fades the same way while the card is animated out of the River (corrupted, bought…): `rules`
+ * only records the move once the animation ends, so the badge would otherwise travel with the card.
  */
 export const CrossingCostBadge = ({ itemIndex }: { itemIndex?: number }) => {
   const rules = useRules<SanRules>()
   const draggedItem = useDraggedItem<MaterialType>()
   const playerId = usePlayerId<Corporation>()
+  const leaving = useAnimation<MaterialMove>(
+    ({ move }) => isMoveItemType(MaterialType.Card)(move) && move.itemIndex === itemIndex && move.location.type !== LocationType.River
+  )
   if (!rules || itemIndex === undefined) return null
   const item = rules.material(MaterialType.Card).getItem(itemIndex)
   if (!item || item.location.type !== LocationType.River) return null
   const isDragged = draggedItem?.type === MaterialType.Card && draggedItem.index === itemIndex
   return (
-    <span css={[badgeCss, isDragged && draggedCss]}>
+    <span css={[badgeCss, (isDragged || leaving) && hiddenCss]}>
       <span css={triangleCss} />
       <span css={numberCss}>{crossingCost(rules, item.location.x ?? 0, playerId ?? rules.players[0])}</span>
     </span>
@@ -51,7 +57,7 @@ const badgeCss = css`
   pointer-events: none;
 `
 
-const draggedCss = css`
+const hiddenCss = css`
   opacity: 0;
 `
 

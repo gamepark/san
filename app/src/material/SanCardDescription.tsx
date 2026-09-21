@@ -12,11 +12,13 @@ import { CustomMoveType } from '@gamepark/san/rules/CustomMoveType'
 import { RuleId } from '@gamepark/san/rules/RuleId'
 import { CardDescription, ItemContext, MaterialContentProps } from '@gamepark/react-game'
 import { isCustomMoveType, isDeleteItemType, isMoveItemType, MaterialItem, MaterialMove } from '@gamepark/rules-api'
+import { ReactNode } from 'react'
 import { CrossingCostBadge } from './CrossingCostBadge'
 import { eitherChoiceButtons } from './EitherChoiceButtons'
 import { IconMenuButton } from './IconMenuButton'
 import { SanCardHelp } from './help/SanCardHelp'
 import { CARD_BORDER_RADIUS } from '../locators/SanLayout'
+import { corruptionIcon } from '../panels/resourceIcons'
 import { colors } from '../theme/colors'
 import back from '../images/cards/CardBack.jpg'
 import moonPropaganda from '../images/cards/start/MoonPropaganda.jpg'
@@ -196,11 +198,17 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
 
     if (item.location.type === LocationType.River) {
       const copy = legalMoves.find((move) => isCustomMoveType(CustomMoveType.CopyRiverCard)(move) && move.data === context.index)
-      if (!copy) return
+      const corrupt = this.corruptButton(item, context, legalMoves, 2.3, -5)
+      if (!copy && !corrupt) return
       return (
-        <IconMenuButton titleKey="button.copy-river" labelAlwaysVisible css={copyButtonCss} x={-2.3} y={-5} move={copy}>
-          <FontAwesomeIcon icon={faCopy} />
-        </IconMenuButton>
+        <>
+          {copy && (
+            <IconMenuButton titleKey="button.copy-river" labelAlwaysVisible css={copyButtonCss} x={-2.3} y={-5} move={copy}>
+              <FontAwesomeIcon icon={faCopy} />
+            </IconMenuButton>
+          )}
+          {corrupt}
+        </>
       )
     }
 
@@ -224,7 +232,8 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
           (move.location.type === LocationType.PlayArea || move.location.type === LocationType.Discard)
       )
       const destroy = legalMoves.find((move) => isDeleteItemType(MaterialType.Card)(move) && move.itemIndex === context.index)
-      if (!play && !destroy) return
+      const corrupt = this.corruptButton(item, context, legalMoves, -2.3, -4.4)
+      if (!play && !destroy && !corrupt) return
       // Straddling the top edge of the card (half-height 4.4).
       return (
         <>
@@ -238,6 +247,7 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
               <FontAwesomeIcon icon={faTrashCan} />
             </IconMenuButton>
           )}
+          {corrupt}
         </>
       )
     }
@@ -247,6 +257,35 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
     }
 
     return
+  }
+
+  /**
+   * "Corrompre" on a River or hand card that can be corrupted: the card has several legal slots, so the
+   * button only selects it (a transient, local move, unselecting any other card), and the
+   * {@link import('../locators/CorruptionZoneLocator').corruptionZoneLocator} then shows the slots it can
+   * go to — a click on one sends it there. A second click on the button cancels the selection.
+   */
+  private corruptButton(item: MaterialItem, context: ItemContext, legalMoves: MaterialMove[], x: number, y: number): ReactNode {
+    const canCorrupt = legalMoves.some(
+      (move) => isMoveItemType(MaterialType.Card)(move) && move.itemIndex === context.index && move.location.type === LocationType.CorruptionZone
+    )
+    if (!canCorrupt) return
+    const cards = context.rules.material(MaterialType.Card)
+    const moves = item.selected
+      ? [cards.index(context.index).unselectItem()]
+      : [...cards.selected().unselectItems(), cards.index(context.index).selectItem()]
+    return (
+      <IconMenuButton
+        titleKey="button.corrupt"
+        css={[corruptButtonCss, item.selected && selectedCorruptButtonCss]}
+        x={x}
+        y={y}
+        moves={moves}
+        options={{ transient: true }}
+      >
+        <img src={corruptionIcon} alt="" css={iconCss} draggable={false} />
+      </IconMenuButton>
+    )
   }
 
   /** Crossing-cost badge, only meaningful (and only rendered) while the card sits in the River. */
@@ -307,6 +346,34 @@ const destroyButtonCss = css`
   &:hover {
     background-color: ${colors.hackingDark} !important;
   }
+`
+
+/** Corruption gold, like the Corruption resource. */
+const corruptButtonCss = css`
+  background-color: ${colors.corruption} !important;
+  border: 0.1em solid ${colors.paperSoft} !important;
+
+  &:hover {
+    background-color: ${colors.corruptionDark} !important;
+  }
+`
+
+/** While the card is selected, the button stays pressed: its slots are shown, and a click cancels. */
+const selectedCorruptButtonCss = css`
+  background-color: ${colors.corruptionDark} !important;
+  border-color: ${colors.corruptionLight} !important;
+  box-shadow: 0 0 0.3em 0.1em ${colors.corruptionLight};
+`
+
+/**
+ * The Corruption icon's white artwork reads as is on the gold button. An `<img>`, not a `<span>`: the
+ * button's label is styled through `> span` ({@link IconMenuButton}), whose `background` would override it.
+ */
+const iconCss = css`
+  width: 1.1em;
+  height: 1.1em;
+  object-fit: contain;
+  pointer-events: none;
 `
 
 export const sanCardDescription = new SanCardDescription()
