@@ -6,6 +6,8 @@ import { Trans } from 'react-i18next'
 type IconMenuButtonProps = ItemButtonProps &
   HTMLAttributes<HTMLButtonElement> & {
     titleKey: string
+    /** Values interpolated in the {@link titleKey} translation. */
+    titleValues?: Record<string, unknown>
     /** Keep the label on screen instead of revealing it on hover only. */
     labelAlwaysVisible?: boolean
   }
@@ -14,8 +16,8 @@ type IconMenuButtonProps = ItemButtonProps &
  * Menu button with a more readable label than the framework's. By default the label is hidden, and only
  * revealed while hovering on devices that can hover (a PC mouse) — never on touch screens.
  */
-export const IconMenuButton = ({ titleKey, labelAlwaysVisible, ...props }: IconMenuButtonProps) => (
-  <ItemMenuButton {...props} css={[labelCss, !labelAlwaysVisible && hoverLabelCss]} label={<Trans i18nKey={titleKey} />} />
+export const IconMenuButton = ({ titleKey, titleValues, labelAlwaysVisible, ...props }: IconMenuButtonProps) => (
+  <ItemMenuButton {...props} css={[labelCss, !labelAlwaysVisible && hoverLabelCss]} label={<Trans i18nKey={titleKey} values={titleValues} />} />
 )
 
 /** The label is the button's only `<span>` child (the icon is an `<svg>`). */

@@ -1,17 +1,22 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react'
-import { faArrowDown } from '@fortawesome/free-solid-svg-icons/faArrowDown'
-import { faArrowUp } from '@fortawesome/free-solid-svg-icons/faArrowUp'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ItemContext, ItemMenuButton, TokenDescription } from '@gamepark/react-game'
-import { isMoveItemType, MaterialItem, MaterialMove } from '@gamepark/rules-api'
+import { ItemContext, TokenDescription } from '@gamepark/react-game'
+import { isMoveItemType, Location, MaterialItem, MaterialMove } from '@gamepark/rules-api'
 import { LocationType } from '@gamepark/san/material/LocationType'
 import { MaterialType } from '@gamepark/san/material/MaterialType'
-import { virusDirection } from '@gamepark/san/rules/helper/directions'
 import { PlayCardsRule } from '@gamepark/san/rules/PlayCardsRule'
 import { RuleId } from '@gamepark/san/rules/RuleId'
-import { Trans } from 'react-i18next'
+import hacking from '../images/icons/hacking.png'
 import virusPawn from '../images/pawns/VirusPawn.png'
+import { PAWN_OFFSET, virusTrackLocator } from '../locators/VirusTrackLocator'
+import { colors } from '../theme/colors'
+import { IconMenuButton } from './IconMenuButton'
+
+/** Distance (in cm) from a space's centre to its button's: half the yellow square (1.68 wide) + half the button (2 wide) + a small gap. */
+const BUTTON_OFFSET = 0.84 + 1 + 0.1
+
+/** Distance (in cm) from the Central Port's centre to its buttons': clear of the pawn standing there (2.7 wide). */
+const PORT_BUTTON_OFFSET = 1.35 + 1 + 0.2
 
 /** The single Virus pawn moving along the Virus track. */
 class VirusPawnDescription extends TokenDescription {
@@ -31,45 +36,68 @@ class VirusPawnDescription extends TokenDescription {
   menuAlwaysVisible = true
 
   /**
-   * "Avancer de x": the pawn only ever goes one way (towards the opponent's Virus card), so a single
-   * button moves it as far as the banked Skull points allow, up to the last space of that card
-   * (counted from our own card too) — the farthest of {@link PlayCardsRule.virusMoves}. Nearer spaces
-   * stay reachable through the track's own drop zones.
+   * One "xN" button beside every space the pawn can reach ({@link PlayCardsRule.virusMoves}), N being the
+   * Skull points it costs. The buttons belong to the pawn's menu, so each is placed by its space's offset
+   * from the pawn; it sits on the outer side of the square (left or right half of the card), label outwards.
+   * On the Central Port, the button is on the left when the pawn retreats there from the player's own card,
+   * on the right when it drives the opponent's top card off.
    */
   getItemMenu(item: MaterialItem, context: ItemContext, legalMoves: MaterialMove[]) {
     if (context.rules.game.rule?.id !== RuleId.PlayCards) return
     const rule = new PlayCardsRule(context.rules.game)
     const from = item.location.x ?? 0
-    const dir = virusDirection(context.rules.game, rule.player) // +1: our own card is on the negative side
-    let farthest: { move: MaterialMove; steps: number; target: number } | undefined
-    for (const move of legalMoves) {
-      if (!isMoveItemType(MaterialType.VirusPawn)(move) || move.location.type !== LocationType.VirusTrack) continue
-      const target = move.location.x ?? 0
-      const steps = rule.virusStepsCost(from, target)
-      if (!farthest || steps > farthest.steps) farthest = { move, steps, target }
-    }
-    if (!farthest) return
-    // Towards the opponent is "backward" on our own card's numbering: the pawn starts on it and stays on it (or reaches the Port).
-    const backward = from * dir < 0 && farthest.target * dir <= 0
-    return <AdvanceButton move={farthest.move} steps={farthest.steps} backward={backward} />
+    const pawn = virusTrackLocator.getCoordinates(item.location, context)
+    const moves = legalMoves.filter(isMoveItemType(MaterialType.VirusPawn)).filter((move) => move.location.type === LocationType.VirusTrack)
+    if (!moves.length) return
+    return (
+      <>
+        {moves.map((move) => {
+          const location = move.location as Location
+          const target = virusTrackLocator.getCoordinates(location, context)
+          const to = location.x ?? 0
+          const onPort = to === 0
+          const side = onPort ? (rule.isVirusDriveOff(from, location) ? 1 : -1) : virusTrackLocator.getSide(to, context)
+          const steps = rule.virusStepsCost(from, location)
+          return (
+            <IconMenuButton
+              key={`${to}:${side}`}
+              titleKey="button.move-virus"
+              titleValues={{ steps }}
+              labelAlwaysVisible
+              labelPosition={side < 0 ? 'left' : 'right'}
+              css={virusButtonCss}
+              x={target.x - pawn.x - PAWN_OFFSET.x + side * (onPort ? PORT_BUTTON_OFFSET : BUTTON_OFFSET)}
+              y={target.y - pawn.y - PAWN_OFFSET.y}
+              move={move}
+            >
+              <img src={hacking} alt="" css={iconCss} draggable={false} />
+            </IconMenuButton>
+          )
+        })}
+      </>
+    )
   }
 }
 
-/** Small arrow button (up the screen to advance on the opponent's card, down to go back on our own) with its "Avancer de x" / "Reculer de x" label beside it. */
-const AdvanceButton = ({ move, steps, backward }: { move: MaterialMove; steps: number; backward: boolean }) => (
-  <ItemMenuButton move={move} x={0} y={-4} css={advanceButtonCss} label={<Trans i18nKey={backward ? 'button.retreat-virus' : 'button.advance-virus'} values={{ steps }} />}>
-    <FontAwesomeIcon icon={backward ? faArrowDown : faArrowUp} />
-  </ItemMenuButton>
-)
+/** Hacking red, like the Virus resource. */
+const virusButtonCss = css`
+  background-color: ${colors.hacking} !important;
+  border: 0.1em solid ${colors.paperSoft} !important;
 
-/** No `font-size` here: the button's `x`/`y` offsets are in `em`, so it would move it — the icon is shrunk instead. */
-const advanceButtonCss = css`
-  width: 1.3em !important;
-  height: 1.3em !important;
-
-  svg {
-    font-size: 0.7em;
+  &:hover {
+    background-color: ${colors.hackingDark} !important;
   }
+`
+
+/**
+ * The Hacking icon's white artwork reads as is on the red button. An `<img>`, not a `<span>`: the
+ * button's label is styled through `> span` ({@link IconMenuButton}), whose `background` would override it.
+ */
+const iconCss = css`
+  width: 1.1em;
+  height: 1.1em;
+  object-fit: contain;
+  pointer-events: none;
 `
 
 export const virusPawnDescription = new VirusPawnDescription()

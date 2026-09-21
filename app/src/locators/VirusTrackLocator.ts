@@ -43,6 +43,17 @@ const CHIPS: Record<number, { dx: number; dy: number }[]> = {
 }
 
 /**
+ * Shift (in cm) of the pawn image off its space. The pawn art is a standee whose foot is at the bottom of
+ * the image: it is raised by 42% of its height (4.6 cm) so the foot — not the image centre — sits on the
+ * space, then nudged so it stands in the middle of the yellow square. Tune these to drop it exactly on it.
+ *
+ * Kept as a plain `translate3d` in `em`: the animation trajectories only read translations written that
+ * way, so a `%` or `translate()` shift would be dropped at the start and end of a move, and the pawn would
+ * jump.
+ */
+export const PAWN_OFFSET = { x: 0.2, y: 0.3 - 0.42 * 4.6 }
+
+/**
  * Position of the Virus pawn along the Virus track.
  *
  * `location.x` is the signed step from the Central Port (0): positive steps are on the Star's Virus
@@ -56,6 +67,22 @@ class VirusTrackLocator extends Locator {
     if (step === 0) {
       return { x: VIRUS_TRACK_X, y: 0, z: 2 }
     }
+    const { top, chip, turn } = this.square(step, context)
+    return {
+      x: (top.x ?? 0) + turn * chip.dx,
+      y: (top.y ?? 0) + turn * chip.dy,
+      z: 2
+    }
+  }
+
+  /** Which half of its Virus card the space `step` (not the Central Port) is printed on, as seen on screen: -1 left, +1 right. */
+  getSide(step: number, context: MaterialContext): -1 | 1 {
+    const { chip, turn } = this.square(step, context)
+    return turn * chip.dx < 0 ? -1 : 1
+  }
+
+  /** The top Virus card the space `step` is printed on, the space's offset on it, and whether that card is upside down (-1). */
+  private square(step: number, context: MaterialContext) {
     const corporation = step > 0 ? Corporation.Star : Corporation.Moon // whose Virus pile the space is printed on
     const cards = context.rules.material(MaterialType.Card).location(LocationType.VirusPile).player(corporation).length
     // The spaces are printed on the card on top of the pile, which the pile shifts a little off its base.
@@ -64,11 +91,7 @@ class VirusTrackLocator extends Locator {
     const chips = this.topVirusChips(context, corporation)
     const chip = CHIPS[8 - chips]?.[Math.abs(step) - 1] ?? { dx: 0, dy: 0 } // keyed by the number printed on the top card
     const turn = virusPileRotation(pile, context) === 180 ? -1 : 1
-    return {
-      x: (top.x ?? 0) + turn * chip.dx,
-      y: (top.y ?? 0) + turn * chip.dy,
-      z: 2
-    }
+    return { top, chip, turn }
   }
 
   /**
@@ -99,13 +122,9 @@ class VirusTrackLocator extends Locator {
     return 0
   }
 
-  /**
-   * The pawn art is a standee whose foot is at the bottom of the image. Raise it by (almost) half its
-   * height so the foot — not the image centre — sits on the advancement-space chip, then nudge it
-   * (in cm) so it stands in the middle of the yellow square. Tune both to drop it exactly on the square.
-   */
+  /** The pawn stands on its space, see {@link PAWN_OFFSET}. */
   placeItem(item: MaterialItem, context: ItemContext): string[] {
-    return super.placeItem(item, context).concat('translate(0.2em, 0.3em)', 'translateY(-42%)')
+    return super.placeItem(item, context).concat(`translate3d(${PAWN_OFFSET.x}em, ${PAWN_OFFSET.y}em, 0em)`)
   }
 
   getPositionDependencies(_location: Location, context: MaterialContext) {
@@ -127,7 +146,8 @@ class VirusTrackDropDescription extends DropAreaDescription {
     return (
       isMoveItemType(MaterialType.VirusPawn)(move) &&
       move.location.type === LocationType.VirusTrack &&
-      move.location.x === location.x
+      move.location.x === location.x &&
+      move.location.id === location.id
     )
   }
 }

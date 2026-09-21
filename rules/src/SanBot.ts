@@ -1,4 +1,4 @@
-import { isCustomMoveType, isMoveItemType, MaterialGame, MaterialMove, RandomBot } from '@gamepark/rules-api'
+import { isCustomMoveType, isMoveItemType, Location, MaterialGame, MaterialMove, RandomBot } from '@gamepark/rules-api'
 import { Corporation } from './Corporation'
 import { getCardData, isMercenaryType } from './material/CardsData'
 import { LocationType } from './material/LocationType'
@@ -86,7 +86,8 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
     if (isMoveItemType(MaterialType.Card)(move) && move.location.type === LocationType.CorruptionZone) return true
     if (isMoveItemType(MaterialType.Banner)(move) && move.location.type === LocationType.PropagandaTrack) return true
     if (isMoveItemType(MaterialType.VirusPawn)(move) && move.location.type === LocationType.VirusTrack) {
-      return move.location.x === this.virusAdvanceTarget(rule)
+      const target = this.virusAdvanceTarget(rule)
+      return move.location.x === target?.x && move.location.id === target?.id
     }
     return false
   }
@@ -96,14 +97,14 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
    * player's Hacking score (advancing towards, or driving off, the opponent's top Virus card), and the
    * farthest spends the most banked points in a single move.
    */
-  private virusAdvanceTarget(rule: PlayCardsRule): number | undefined {
+  private virusAdvanceTarget(rule: PlayCardsRule): Partial<Location> | undefined {
     const pawn = rule.material(MaterialType.VirusPawn).getItem()
     if (!pawn) return undefined
     const x = pawn.location.x ?? 0
     const targets = rule
       .virusMoves()
       .filter(isMoveItemType(MaterialType.VirusPawn))
-      .map((move) => move.location.x ?? 0)
+      .map((move) => move.location)
     return targets.length ? targets.reduce((far, target) => (rule.virusStepsCost(x, target) > rule.virusStepsCost(x, far) ? target : far)) : undefined
   }
 

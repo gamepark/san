@@ -1,6 +1,7 @@
 import { isCustomMoveType, isDeleteItemType, isMoveItemType, MaterialMove } from '@gamepark/rules-api'
 import { describe, expect, test } from 'vitest'
 import { Corporation } from '../Corporation'
+import { VIRUS_DRIVE_OFF } from '../material/constants'
 import { LocationType } from '../material/LocationType'
 import { MaterialType } from '../material/MaterialType'
 import { SanCard } from '../material/SanCard'
@@ -146,6 +147,11 @@ describe('PlayCardsRule', () => {
       .getLegalMoves(Corporation.Moon)
       .filter(isMoveItemType(MaterialType.VirusPawn))
       .map((move) => move.location.x)
+  const virusDriveOffs = (rules: ReturnType<typeof testRules>) =>
+    rules
+      .getLegalMoves(Corporation.Moon)
+      .filter(isMoveItemType(MaterialType.VirusPawn))
+      .flatMap((move) => (move.location.id === undefined ? [] : [move.location.id]))
 
   test('only offers to advance the Virus pawn towards the opponent, never to retreat', () => {
     expect(virusTargets(virusRules(0, 1))).toEqual([1])
@@ -153,11 +159,24 @@ describe('PlayCardsRule', () => {
 
   test('offers every space up to the opponent’s last one, as far as the banked points allow', () => {
     expect(virusTargets(virusRules(0, 2))).toEqual([1, 2])
-    expect(virusTargets(virusRules(0, 9))).toEqual([1, 2, 3]) // Star's Virus 5 has 3 spaces: stops on the last one
+    expect(virusTargets(virusRules(0, 3))).toEqual([1, 2, 3]) // Star's Virus 5 has 3 spaces: stops on the last one
+  })
+
+  test('driving the opponent’s top Virus card off is a single move, once the points cover its last space plus one', () => {
+    expect(virusTargets(virusRules(0, 4))).toEqual([1, 2, 3, 0])
+    expect(virusDriveOffs(virusRules(0, 4))).toEqual([VIRUS_DRIVE_OFF])
+  })
+
+  test('driving off from afar spends one Skull point per space crossed, plus one', () => {
+    const rules = virusRules(-1, 6)
+    const [driveOff] = rules.play(rules.material(MaterialType.VirusPawn).moveItem({ type: LocationType.VirusTrack, x: 0, id: VIRUS_DRIVE_OFF }))
+    expect(rules.remind(Memory.Resources, Corporation.Moon).virus).toBe(1) // 1 (own card) + 3 (Star's Virus 5) + 1
+    expect(driveOff).toMatchObject({ location: { type: LocationType.Deck, player: Corporation.Star, x: 0 } })
   })
 
   test('counts the spaces from the player’s own card, through the Central Port', () => {
-    expect(virusTargets(virusRules(-2, 9))).toEqual([-1, 0, 1, 2, 3])
+    expect(virusTargets(virusRules(-2, 5))).toEqual([-1, 0, 1, 2, 3])
+    expect(virusDriveOffs(virusRules(-2, 5))).toEqual([])
   })
 
   test('advancing several spaces spends one Skull point per space', () => {
