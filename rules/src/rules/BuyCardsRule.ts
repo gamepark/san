@@ -24,18 +24,17 @@ export class BuyCardsRule extends SanRule {
   }
 
   getPlayerMoves(): MaterialMove[] {
-    const moves: MaterialMove[] = this.affordableCards().map((index) =>
-      this.material(MaterialType.Card).index(index).moveItem({ type: LocationType.Discard, player: this.player })
-    )
-    moves.push(this.customMove(CustomMoveType.EndBuyPhase))
-    return moves
+    return [
+      ...this.affordableCards().moveItems({ type: LocationType.Discard, player: this.player }),
+      this.customMove(CustomMoveType.EndBuyPhase)
+    ]
   }
 
-  /** Item indexes of the River cards the current buying income can afford. */
-  affordableCards(): number[] {
+  /** River cards the current buying income can afford. */
+  affordableCards() {
     const coins = this.resourcesHelper.points('coins')
-    return this.river.getIndexes().filter((index) => {
-      const cost = getCardData(this.material(MaterialType.Card).getItem<SanCard>(index).id)?.cost
+    return this.river.filter<SanCard>((item) => {
+      const cost = getCardData(item.id)?.cost
       return cost !== undefined && cost <= coins
     })
   }

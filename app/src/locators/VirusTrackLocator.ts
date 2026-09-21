@@ -106,7 +106,7 @@ class VirusTrackLocator extends Locator {
       .map((move) => move.location)
   }
 
-  /** Standable advancement spaces on a Corporation's current top Virus card (0 if its pile is empty, matching {@link SanRule.virusChips}). */
+  /** Standable advancement spaces on a Corporation's current top Virus card (0 if its pile is empty, matching PlayCardsRule.virusChips). */
   private topVirusChips(context: MaterialContext, corporation: Corporation): number {
     const numbers = context.rules
       .material(MaterialType.Card)

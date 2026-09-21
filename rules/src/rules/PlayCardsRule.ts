@@ -1,4 +1,4 @@
-import { CustomMove, isDeleteItemType, isMoveItemType, ItemMove, Location, MaterialMove } from '@gamepark/rules-api'
+import { CustomMove, isDeleteItemType, isMoveItemType, ItemMove, Location, Material, MaterialMove } from '@gamepark/rules-api'
 import { CardEffect, EffectType, getCardData, isVirusCard, isMercenaryType } from '../material/CardsData'
 import { CardType, SanCard, virusNumber } from '../material/SanCard'
 import { CORRUPTION_GROUP, CORRUPTION_SLOT_CAPACITY, CORRUPTION_SLOTS, PROPAGANDA_END, RIVER_SIZE, virusCardChips } from '../material/constants'
@@ -90,20 +90,10 @@ export class PlayCardsRule extends SanRule {
 
   /** One move per playable hand card. Virus cards go straight to the discard, the rest to the play area. */
   playCardMoves(): MaterialMove[] {
-    const moves: MaterialMove[] = []
-    for (const index of this.hand.getIndexes()) {
-      const id = this.material(MaterialType.Card).getItem<SanCard>(index).id
-      if (isVirusCard(id)) {
-        moves.push(this.material(MaterialType.Card).index(index).moveItem({ type: LocationType.Discard, player: this.player }))
-        continue
-      }
-      const data = getCardData(id)
-      if (!data) continue
-      if (data.type === CardType.Equipment || this.turnFlagsHelper.mercenaryTypePlayable(data.type)) {
-        moves.push(this.material(MaterialType.Card).index(index).moveItem({ type: LocationType.PlayArea, player: this.player }))
-      }
-    }
-    return moves
+    return [
+      ...this.hand.id<SanCard>(isVirusCard).moveItems({ type: LocationType.Discard, player: this.player }),
+      ...this.playableCards(this.hand).moveItems({ type: LocationType.PlayArea, player: this.player })
+    ]
   }
 
   /**
@@ -233,21 +223,19 @@ export class PlayCardsRule extends SanRule {
   /** Once at least 1 charge is banked, offer to play any eligible discard card. */
   playFromDiscardMoves(): MaterialMove[] {
     if (this.resourcesHelper.points('playFromDiscard') <= 0) return []
-    return this.playableDiscardIndexes().map((index) =>
-      this.material(MaterialType.Card).index(index).moveItem({ type: LocationType.PlayArea, player: this.player })
-    )
+    return this.playableCards(this.discard).moveItems({ type: LocationType.PlayArea, player: this.player })
   }
 
   /** Once at least 1 charge is banked, offer to adopt any eligible River card's type and effects. */
   copyRiverMoves(): MaterialMove[] {
     if (this.resourcesHelper.points('copyRiver') <= 0) return []
-    return this.copyableIndexes().map((index) => this.customMove(CustomMoveType.CopyRiverCard, index))
+    return this.copyableRiverCards().getIndexes().map((index) => this.customMove(CustomMoveType.CopyRiverCard, index))
   }
 
   /** Once at least 1 charge is banked, offer to adopt the type and effects of any other card played this turn. */
   copyPlayedMoves(): MaterialMove[] {
     if (this.resourcesHelper.points('copyPlayed') <= 0) return []
-    return this.copyablePlayedIndexes().map((index) => this.customMove(CustomMoveType.CopyPlayedCard, index))
+    return this.copyablePlayedCards().getIndexes().map((index) => this.customMove(CustomMoveType.CopyPlayedCard, index))
   }
 
   /** One move per option, for every played card whose "either / or" hasn't been resolved yet. */
@@ -532,31 +520,31 @@ export class PlayCardsRule extends SanRule {
     return positions
   }
 
-  /** Discard indexes playable this turn, restricted by the one-Mercenary-type-per-turn rule. */
-  playableDiscardIndexes(): number[] {
-    return this.discard.getIndexes().filter((index) => {
-      const data = getCardData(this.material(MaterialType.Card).getItem<SanCard>(index).id)
+  /** Non-Virus cards among `cards` playable this turn, restricted by the one-Mercenary-type-per-turn rule. */
+  playableCards(cards: Material): Material {
+    return cards.filter<SanCard>((item) => {
+      const data = getCardData(item.id)
       if (!data) return false
       return data.type === CardType.Equipment || this.turnFlagsHelper.mercenaryTypePlayable(data.type)
     })
   }
 
   /**
-   * Play area indexes copyable by a {@link EffectType.CopyPlayed} charge. Their type was already
+   * Play area cards copyable by a {@link EffectType.CopyPlayed} charge. Their type was already
    * played this turn, so the one-Mercenary-type restriction never excludes any. Cards that copy a
    * played card themselves are left out: copying one would only trade the charge for another.
    */
-  copyablePlayedIndexes(): number[] {
-    return this.playArea.getIndexes().filter((index) => {
-      const data = getCardData(this.material(MaterialType.Card).getItem<SanCard>(index).id)
+  copyablePlayedCards(): Material {
+    return this.playArea.filter<SanCard>((item) => {
+      const data = getCardData(item.id)
       return data !== undefined && !data.effects.some((effect) => effect.type === EffectType.CopyPlayed)
     })
   }
 
-  /** River indexes copyable this turn, restricted by the one-Mercenary-type-per-turn rule. */
-  copyableIndexes(): number[] {
-    return this.river.getIndexes().filter((index) => {
-      const data = getCardData(this.material(MaterialType.Card).getItem<SanCard>(index).id)
+  /** River cards copyable this turn, restricted by the one-Mercenary-type-per-turn rule. */
+  copyableRiverCards(): Material {
+    return this.river.filter<SanCard>((item) => {
+      const data = getCardData(item.id)
       if (!data) return false
       return !isMercenaryType(data.type) || this.turnFlagsHelper.mercenaryTypePlayable(data.type)
     })

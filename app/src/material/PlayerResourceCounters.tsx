@@ -25,7 +25,7 @@ import { fontDisplay } from '../theme/typography'
  * CopyRiver / CopyPlayed counters for a Corporation — moved here from the player panels, next to its Discard
  * pile's own static location (declared on DiscardLocator, always present even while the pile itself
  * is empty). Every card effect banks into one of these the instant it's played (see {@link
- * import('@gamepark/san/rules/SanRule').SanRule.applyEffect}); none of them force an immediate
+ * import('@gamepark/san/rules/PlayCardsRule').PlayCardsRule.applyEffect}); none of them force an immediate
  * decision, so each one is only ever shown here while there's still something to spend — a row at 0
  * is hidden rather than printed. Same colours as the crossing-cost badges' Banner code: white on
  * black for Moon, black on grey for Star.

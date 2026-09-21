@@ -7,7 +7,7 @@ import { SanCard } from '../../material/SanCard'
 
 /**
  * Just the `material()` query, common to a live {@link import('@gamepark/rules-api').MaterialRules}
- * instance (the app's `useRules`) and to `this` inside any rules-side `SanRule` — structural typing
+ * instance (the app's `useRules`) and to `this` inside a rules-side rule — structural typing
  * lets {@link crossingCost} take either, without depending on their unrelated class hierarchies.
  */
 type MaterialAccess = { material(type: MaterialType): Material<Corporation, MaterialType, LocationType> }
