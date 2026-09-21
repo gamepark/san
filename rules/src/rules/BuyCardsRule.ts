@@ -42,7 +42,7 @@ export class BuyCardsRule extends SanRule {
   afterItemMove(move: ItemMove): MaterialMove[] {
     if (isMoveItemType(MaterialType.Card)(move) && move.location.type === LocationType.Discard) {
       const cost = getCardData(this.material(MaterialType.Card).getItem<SanCard>(move.itemIndex).id)?.cost ?? 0
-      this.resourcesHelper.spendCoins(cost)
+      this.resourcesHelper.resources.coins -= cost
       return this.refillRiver()
     }
     return []

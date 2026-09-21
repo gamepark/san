@@ -286,7 +286,7 @@ export class PlayCardsRule extends SanRule {
       const pawn = this.material(MaterialType.VirusPawn)
       const from = pawn.getItem()?.location.x ?? 0
       const driveOff = this.isVirusDriveOff(from, move.location)
-      this.resourcesHelper.spend('virus', this.virusStepsCost(from, move.location))
+      this.resourcesHelper.resources.virus -= this.virusStepsCost(from, move.location)
       return driveOff ? this.driveOffTopVirusCard() : []
     }
 
@@ -295,15 +295,15 @@ export class PlayCardsRule extends SanRule {
 
       if (move.location.type === LocationType.CorruptionZone) {
         if (from === LocationType.Hand) {
-          this.resourcesHelper.spend('corruptFromHand')
+          this.resourcesHelper.resources.corruptFromHand--
           return []
         }
-        this.resourcesHelper.spend('corruption', CORRUPTION_GROUP)
+        this.resourcesHelper.resources.corruption -= CORRUPTION_GROUP
         return this.refillRiver()
       }
 
       if (move.location.type === LocationType.PlayArea && from === LocationType.Discard) {
-        this.resourcesHelper.spend('playFromDiscard')
+        this.resourcesHelper.resources.playFromDiscard--
       }
     }
 
@@ -312,7 +312,7 @@ export class PlayCardsRule extends SanRule {
 
   afterItemMove(move: ItemMove): MaterialMove[] {
     if (isDeleteItemType(MaterialType.Card)(move)) {
-      this.resourcesHelper.spend('destroy')
+      this.resourcesHelper.resources.destroy--
       return []
     }
     if (isMoveItemType(MaterialType.Card)(move)) {
@@ -329,7 +329,7 @@ export class PlayCardsRule extends SanRule {
       const direction = propagandaDirection(this.game, this.player)
       const step = move.location.x ?? 0
       const previousStep = step - direction
-      this.resourcesHelper.spend('propaganda', crossingCost(this, this.crossedRiverX(previousStep, direction), this.player))
+      this.resourcesHelper.resources.propaganda -= crossingCost(this, this.crossedRiverX(previousStep, direction), this.player)
       return this.collectHandBonus(step)
     }
     return []
@@ -414,7 +414,7 @@ export class PlayCardsRule extends SanRule {
     const data = getCardData(id)
     if (!data) return []
 
-    if (data.revenue) this.resourcesHelper.addPoints('coins', data.revenue)
+    if (data.revenue) this.resourcesHelper.resources.coins += data.revenue
     if (isMercenaryType(data.type)) this.turnFlagsHelper.lockMercenaryType(data.type)
 
     const effects = clone(data.effects)
@@ -440,7 +440,7 @@ export class PlayCardsRule extends SanRule {
       case EffectType.Corruption:
       case EffectType.Propaganda:
       case EffectType.Virus:
-        this.resourcesHelper.addPoints(POINTS_KEY[effect.type], effect.value ?? 0)
+        this.resourcesHelper.resources[POINTS_KEY[effect.type]] += effect.value ?? 0
         break
 
       case EffectType.Multiplier: {
@@ -458,23 +458,23 @@ export class PlayCardsRule extends SanRule {
         break
 
       case EffectType.Draw:
-        this.resourcesHelper.addPoints('draw', effect.value ?? 1)
+        this.resourcesHelper.resources.draw += effect.value ?? 1
         break
 
       case EffectType.Destroy:
-        this.resourcesHelper.addPoints('destroy', effect.value ?? 1)
+        this.resourcesHelper.resources.destroy += effect.value ?? 1
         break
 
       case EffectType.CorruptFromHand:
-        this.resourcesHelper.addPoints('corruptFromHand', effect.value ?? 1)
+        this.resourcesHelper.resources.corruptFromHand += effect.value ?? 1
         break
 
       case EffectType.PlayFromDiscard:
-        this.resourcesHelper.addPoints('playFromDiscard', 1)
+        this.resourcesHelper.resources.playFromDiscard++
         break
 
       case EffectType.CopyRiver: {
-        this.resourcesHelper.addPoints('copyRiver', 1)
+        this.resourcesHelper.resources.copyRiver++
         const chains = this.remind<CopyChain[]>(Memory.CopyRiverSources) ?? []
         chains.push(chain)
         this.memorize(Memory.CopyRiverSources, chains)
@@ -482,7 +482,7 @@ export class PlayCardsRule extends SanRule {
       }
 
       case EffectType.CopyPlayed: {
-        this.resourcesHelper.addPoints('copyPlayed', 1)
+        this.resourcesHelper.resources.copyPlayed++
         const chains = this.remind<CopyChain[]>(Memory.CopyPlayedSources) ?? []
         chains.push(chain)
         this.memorize(Memory.CopyPlayedSources, chains)
@@ -513,7 +513,7 @@ export class PlayCardsRule extends SanRule {
     for (const multiplier of multipliers) {
       const played = this.countPlayed(multiplier.per)
       if (played > multiplier.counted) {
-        this.resourcesHelper.addPoints(POINTS_KEY[multiplier.gain], (played - multiplier.counted) * multiplier.value)
+        this.resourcesHelper.resources[POINTS_KEY[multiplier.gain]] += (played - multiplier.counted) * multiplier.value
         multiplier.counted = played
       }
     }
@@ -572,16 +572,16 @@ export class PlayCardsRule extends SanRule {
         return [this.startRule(RuleId.BuyCards)]
 
       case CustomMoveType.Draw:
-        this.resourcesHelper.spend('draw')
+        this.resourcesHelper.resources.draw--
         return []
 
       case CustomMoveType.CopyRiverCard:
-        this.resourcesHelper.spend('copyRiver')
+        this.resourcesHelper.resources.copyRiver--
         this.copyCard(move.data as number, Memory.CopyRiverSources)
         return []
 
       case CustomMoveType.CopyPlayedCard:
-        this.resourcesHelper.spend('copyPlayed')
+        this.resourcesHelper.resources.copyPlayed--
         this.copyCard(move.data as number, Memory.CopyPlayedSources)
         return []
 
