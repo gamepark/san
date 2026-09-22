@@ -1,6 +1,6 @@
 {
   "name": "@gamepark/san",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "The rules of San adapted for Game Park",
   "sideEffects": false,
   "type": "module",
