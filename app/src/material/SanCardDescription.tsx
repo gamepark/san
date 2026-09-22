@@ -226,9 +226,12 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
       )
     }
 
-    // Only the active player's own deck: both decks have a card at `x: 0`, so without the player
-    // check the "Piocher" button also showed up on the opponent's pile.
-    if (item.location.type === LocationType.Deck && item.location.player === context.rules.game.rule?.player && (item.location.x ?? 0) === 0) {
+    // On the top card of the active player's own deck — the one it draws (see `deck()`).
+    if (
+      item.location.type === LocationType.Deck &&
+      item.location.player === context.rules.game.rule?.player &&
+      context.rules.material(MaterialType.Card).location(LocationType.Deck).player(item.location.player).deck().getIndex() === context.index
+    ) {
       const draw = legalMoves.find(isCustomMoveType(CustomMoveType.Draw))
       if (!draw) return
       return (
