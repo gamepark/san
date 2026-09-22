@@ -120,6 +120,27 @@ describe('SanBot', () => {
     ).toBe(CardType.Corruption)
   })
 
+  test('commits to Corruption with a grey card still to resolve, then picks Corruption on it', () => {
+    // The starting Equipment is played (its "any resource" pending): 2 Corruption cards + 1 = a group of 3.
+    const game = tieGame(SanCard.MoonCorruption, SanCard.MoonCorruption, SanCard.MoonHacking, SanCard.MoonHacking)
+    game.items[MaterialType.Card]!.push({ id: SanCard.MoonEquipment, location: { type: LocationType.PlayArea, player: Corporation.Moon } })
+    const anyResource = [{ type: EffectType.Propaganda, value: 1 }, { type: EffectType.Virus, value: 1 }, { type: EffectType.Corruption, value: 1 }]
+    game.memory[Memory.PendingEitherChoices] = [{ itemIndex: 10, options: anyResource }]
+    game.memory[Memory.TurnFlags] = { ...EMPTY_TURN_FLAGS, cardPlayed: true }
+    expect(committedType(game)).toBe(CardType.Corruption)
+
+    // Both Corruption cards played; the front River card is now free to cross: Propaganda would advance
+    // the banner, but the group of 3 is what the turn was committed for.
+    const cards = game.items[MaterialType.Card]!
+    cards[5].id = SanCard.MoonPropaganda
+    cards[6].location = cards[7].location = { type: LocationType.PlayArea, player: Corporation.Moon }
+    game.memory[Memory.TurnFlags] = { ...EMPTY_TURN_FLAGS, cardPlayed: true, playedMercenaryType: CardType.Corruption }
+    game.memory[Memory.Resources] = { ...(game.memory[Memory.Resources] as object), [Corporation.Moon]: { ...EMPTY_RESOURCES, corruption: 2 } }
+    const moves = new SanBot(Corporation.Moon).getLegalMoves(game)
+    expect(moves).toHaveLength(1)
+    expect(isCustomMoveType(CustomMoveType.ChooseEffectOption)(moves[0]) && moves[0].data).toEqual({ itemIndex: 10, option: 2 })
+  })
+
   test('prefers a lone Hacking card to more Propaganda cards leaving the banner stuck', () => {
     expect(committedType(tieGame(SanCard.MoonPropaganda, SanCard.MoonPropaganda, SanCard.MoonHacking))).toBe(CardType.Hacking)
   })

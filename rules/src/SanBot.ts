@@ -386,8 +386,9 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
 
   /**
    * Resolve the oldest pending "either / or": Propaganda if it lets the banner advance one more step,
-   * otherwise Corruption if it completes a group of 3, otherwise Virus (drawing, then the first
-   * option, when the card offers neither).
+   * otherwise Corruption if it completes a group of 3 — Corruption first on a turn committed to it,
+   * since that group is what the turn was committed for (see {@link mercenaryTypePriority}) —
+   * otherwise Virus (drawing, then the first option, when the card offers neither).
    */
   private eitherChoiceMoves(rule: PlayCardsRule, legalMoves: MaterialMove[]): MaterialMove[] {
     const moves = legalMoves.filter(isCustomMoveType(CustomMoveType.ChooseEffectOption)) as CustomMove[]
@@ -406,20 +407,24 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
     const find = (type: EffectType) => options.findIndex((effect) => effect.type === type)
     const resources = rule.resourcesHelper.resources
 
-    const propaganda = find(EffectType.Propaganda)
-    if (propaganda !== -1) {
+    const propagandaOption = () => {
+      const propaganda = find(EffectType.Propaganda)
+      if (propaganda === -1) return -1
       const points = resources.propaganda
-      if (this.propagandaSteps(rule, this.player, points + (options[propaganda].value ?? 0)) > this.propagandaSteps(rule, this.player, points)) {
-        return propaganda
-      }
+      const advances = this.propagandaSteps(rule, this.player, points + (options[propaganda].value ?? 0)) > this.propagandaSteps(rule, this.player, points)
+      return advances ? propaganda : -1
     }
-
-    const corruption = find(EffectType.Corruption)
-    if (corruption !== -1 && rule.freeCorruptionPositions().length) {
+    const corruptionOption = () => {
+      const corruption = find(EffectType.Corruption)
+      if (corruption === -1 || !rule.freeCorruptionPositions().length) return -1
       const points = resources.corruption
-      if (Math.floor((points + (options[corruption].value ?? 0)) / CORRUPTION_GROUP) > Math.floor(points / CORRUPTION_GROUP)) {
-        return corruption
-      }
+      const completesGroup = Math.floor((points + (options[corruption].value ?? 0)) / CORRUPTION_GROUP) > Math.floor(points / CORRUPTION_GROUP)
+      return completesGroup ? corruption : -1
+    }
+    const corruptionTurn = rule.turnFlagsHelper.flags.playedMercenaryType === CardType.Corruption
+    for (const option of corruptionTurn ? [corruptionOption, propagandaOption] : [propagandaOption, corruptionOption]) {
+      const index = option()
+      if (index !== -1) return index
     }
 
     for (const type of [EffectType.Virus, EffectType.Draw]) {
