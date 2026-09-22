@@ -11,7 +11,7 @@ import {
 } from '@gamepark/rules-api'
 import { Corporation, otherCorporation } from './Corporation'
 import { CardEffect, EffectType, getCardData, isMercenaryType, isVirusCard } from './material/CardsData'
-import { CORRUPTION_GROUP, PROPAGANDA_END } from './material/constants'
+import { CORRUPTION_GROUP, CORRUPTION_WIN, PROPAGANDA_END, VIRUS_WIN } from './material/constants'
 import { LocationType } from './material/LocationType'
 import { MaterialType } from './material/MaterialType'
 import { CardType, SanCard } from './material/SanCard'
@@ -19,6 +19,7 @@ import { BuyCardsRule } from './rules/BuyCardsRule'
 import { CustomMoveType } from './rules/CustomMoveType'
 import { crossingCost } from './rules/helper/crossingCost'
 import { propagandaDirection } from './rules/helper/directions'
+import { corruptedCards, propagandaSteps as trackSteps, virusCardsDrivenOff } from './rules/helper/victory'
 import { Memory } from './rules/Memory'
 import { PlayCardsRule } from './rules/PlayCardsRule'
 import { RuleId } from './rules/RuleId'
@@ -456,16 +457,34 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
   }
 
   /**
-   * Buy the River card worth the most — its price (see {@link cardValue}) plus what its replacement from
-   * the Reserve does to both banners' crossings (see {@link replacementGain}) — instead of passing;
-   * passes when none is affordable.
+   * Buy the River card worth the most — its price (see {@link cardValue}), its revenue while the game
+   * is young (see {@link revenueWeight}), and what its replacement from the Reserve does to both
+   * banners' crossings (see {@link replacementGain}) — instead of passing; passes when none is affordable.
    */
   private buyCardsMoves(rule: BuyCardsRule, legalMoves: MaterialMove[]): MaterialMove[] {
     const buyMoves = legalMoves.filter(isMoveItemType(MaterialType.Card))
     if (!buyMoves.length) return legalMoves
+    const revenueWeight = this.revenueWeight(new SanRules(rule.game))
     const item = (move: CardMove) => rule.material(MaterialType.Card).getItem<SanCard>(move.itemIndex)
-    const score = (move: CardMove) => this.cardValue(item(move).id) + this.replacementGain(rule, item(move).location.x!)
+    const score = (move: CardMove) =>
+      this.cardValue(item(move).id) + (getCardData(item(move).id)?.revenue ?? 0) * revenueWeight + this.replacementGain(rule, item(move).location.x!)
     const best = Math.max(...buyMoves.map(score))
     return buyMoves.filter((move) => score(move) === best)
+  }
+
+  /**
+   * How much a coin of revenue is worth next to a point of price: 1 at the start of the game, down to 0
+   * once either player is halfway to any victory condition — a card bought then will not be played
+   * often enough to pay for itself.
+   */
+  private revenueWeight(rules: SanRules): number {
+    const progress = Math.max(
+      ...rules.game.players.flatMap((player) => [
+        corruptedCards(rules, player) / CORRUPTION_WIN,
+        trackSteps(rules, player) / PROPAGANDA_END,
+        virusCardsDrivenOff(rules, player) / VIRUS_WIN
+      ])
+    )
+    return Math.max(0, 1 - 2 * progress)
   }
 }

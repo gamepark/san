@@ -4,7 +4,7 @@ import { Corporation } from './Corporation'
 import { EffectType, getCardData } from './material/CardsData'
 import { LocationType } from './material/LocationType'
 import { MaterialType } from './material/MaterialType'
-import { CardType, SanCard } from './material/SanCard'
+import { CardType, SanCard, virusCards } from './material/SanCard'
 import { CustomMoveType } from './rules/CustomMoveType'
 import { EMPTY_RESOURCES, EMPTY_TURN_FLAGS, Memory } from './rules/Memory'
 import { RuleId } from './rules/RuleId'
@@ -376,6 +376,40 @@ describe('SanBot', () => {
     const moves = new SanBot(Corporation.Moon).getLegalMoves(buyGame(SanCard.RiverHacking1))
     expect(moves).toHaveLength(1)
     expect(moves[0]).toMatchObject({ itemIndex: 0 })
+  })
+
+  const revenueGame = (moonBannerX: number) =>
+    testGame(
+      { id: RuleId.BuyCards, player: Corporation.Moon },
+      {
+        [MaterialType.Banner]: [
+          { id: Corporation.Moon, location: { type: LocationType.PropagandaTrack, player: Corporation.Moon, x: moonBannerX } },
+          { id: Corporation.Star, location: { type: LocationType.PropagandaTrack, player: Corporation.Star, x: 6 } }
+        ],
+        [MaterialType.Card]: [
+          { id: SanCard.RiverEquipment1, location: { type: LocationType.River, x: 1 } },
+          { id: SanCard.RiverPropaganda3, location: { type: LocationType.River, x: 3 } },
+          { id: SanCard.RiverEquipment2, location: { type: LocationType.Reserve, x: 0 } },
+          ...[Corporation.Moon, Corporation.Star].flatMap((player) =>
+            virusCards[player].map((id, x) => ({ id, location: { type: LocationType.VirusPile, player, x } }))
+          )
+        ]
+      },
+      { [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, coins: 5 } } }
+    )
+
+  test('values the revenue of a card at the start of the game', () => {
+    // Equipment1: price 3 + revenue 5 beats Propaganda3: price 4 + revenue 2.
+    const moves = new SanBot(Corporation.Moon).getLegalMoves(revenueGame(0))
+    expect(moves).toHaveLength(1)
+    expect(moves[0]).toMatchObject({ itemIndex: 0 })
+  })
+
+  test('no longer values the revenue of a card once a player is halfway to a victory', () => {
+    // Moon's banner is halfway along its track: only the prices count, Propaganda3 (4) beats Equipment1 (3).
+    const moves = new SanBot(Corporation.Moon).getLegalMoves(revenueGame(3))
+    expect(moves).toHaveLength(1)
+    expect(moves[0]).toMatchObject({ itemIndex: 1 })
   })
 
   test('picks Corruption on an "any resource" card when it completes a group of 3 and Propaganda would not advance', () => {
