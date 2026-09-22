@@ -497,6 +497,15 @@ describe('SanBot', () => {
     expect(destroyed(destroyGame(SanCard.MoonEquipment, SanCard.RiverPropaganda3))).toEqual([0])
   })
 
+  test('draws before destroying, the cards drawn may be better targets', () => {
+    const game = destroyGame(SanCard.MoonHacking)
+    game.items[MaterialType.Card]!.push({ id: SanCard.MoonVirus1, location: { type: LocationType.Deck, player: Corporation.Moon, x: 0 } })
+    game.memory[Memory.Resources][Corporation.Moon].draw = 3
+    const moves = new SanBot(Corporation.Moon).getLegalMoves(game)
+    expect(moves.length).toBeGreaterThan(0)
+    for (const move of moves) expect(isCustomMoveType(CustomMoveType.Draw)(move)).toBe(true)
+  })
+
   test('plays the other Equipment cards, which may grant destroy charges, before the starting Equipment', () => {
     const game = destroyGame(SanCard.MoonEquipment, SanCard.RiverEquipment12)
     const moves = new SanBot(Corporation.Moon).getLegalMoves(game)

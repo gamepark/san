@@ -134,7 +134,11 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
     const otherEquipmentMoves = equipmentMoves.filter((move) => !propagandaOnlyMoves.includes(move) && !startEquipmentMoves.includes(move))
     if (otherEquipmentMoves.length) return otherEquipmentMoves
     const destroyMoves = this.destroyMoves(rule, legalMoves)
-    if (destroyMoves.length) return destroyMoves
+    if (destroyMoves.length) {
+      // Destroying only targets the hand: draw first, the cards drawn may be better targets
+      const drawMoves = this.drawMoves(legalMoves)
+      return drawMoves.length ? drawMoves : destroyMoves
+    }
     if (startEquipmentMoves.length) return startEquipmentMoves
     const mercenaryMoves = moves.filter((move) => {
       const type = typeOf(move)
