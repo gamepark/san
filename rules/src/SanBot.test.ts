@@ -248,7 +248,7 @@ describe('SanBot', () => {
         [MaterialType.Card]: [
           { id: SanCard.RiverPropaganda1, location: { type: LocationType.Hand, player: Corporation.Moon } },
           { id: SanCard.RiverPropaganda1, location: { type: LocationType.Hand, player: Corporation.Moon } },
-          { id: SanCard.RiverEquipment5, location: { type: LocationType.Hand, player: Corporation.Moon } }
+          { id: SanCard.RiverEquipment6, location: { type: LocationType.Hand, player: Corporation.Moon } }
         ]
       },
       { [Memory.TurnFlags]: { ...EMPTY_TURN_FLAGS, cardPlayed: true, playedMercenaryType: CardType.Propaganda } }
@@ -410,6 +410,66 @@ describe('SanBot', () => {
     const moves = new SanBot(Corporation.Moon).getLegalMoves(revenueGame(3))
     expect(moves).toHaveLength(1)
     expect(moves[0]).toMatchObject({ itemIndex: 1 })
+  })
+
+  // Moon's banner (step 0) faces River column 5; Star's (step 6) faces column 0.
+  const arrowsGame = (front: SanCard, reserve: SanCard, corruption: number, equipmentLocation: LocationType) =>
+    testGame(
+      { id: RuleId.PlayCards, player: Corporation.Moon },
+      {
+        [MaterialType.Banner]: [
+          { id: Corporation.Moon, location: { type: LocationType.PropagandaTrack, player: Corporation.Moon, x: 0 } },
+          { id: Corporation.Star, location: { type: LocationType.PropagandaTrack, player: Corporation.Star, x: 6 } }
+        ],
+        [MaterialType.Card]: [
+          ...[0, 1, 2, 3, 4].map((x) => ({ id: SanCard.RiverHacking1, location: { type: LocationType.River, x } })),
+          { id: front, location: { type: LocationType.River, x: 5 } },
+          { id: reserve, location: { type: LocationType.Reserve, x: 0 } },
+          { id: SanCard.RiverEquipment5, location: { type: equipmentLocation, player: Corporation.Moon } }
+        ]
+      },
+      {
+        [Memory.TurnFlags]: { ...EMPTY_TURN_FLAGS, cardPlayed: true },
+        [Memory.Resources]: {
+          [Corporation.Moon]: { ...EMPTY_RESOURCES, corruption, propaganda: equipmentLocation === LocationType.PlayArea ? 3 : 0 }
+        }
+      }
+    )
+
+  test('keeps an Equipment giving only Propaganda in hand when the banner cannot advance', () => {
+    // 3 arrows against a crossing cost of 4, and no Corruption to lower it.
+    const moves = new SanBot(Corporation.Moon).getLegalMoves(arrowsGame(SanCard.RiverEquipment1, SanCard.RiverPropaganda3, 0, LocationType.Hand))
+    expect(moves).toHaveLength(1)
+    expect(isCustomMoveType(CustomMoveType.EndPlayPhase)(moves[0])).toBe(true)
+  })
+
+  test('plays an Equipment giving only Propaganda when a Corruption lets the banner advance, then corrupts accordingly', () => {
+    // Corrupting column 5 brings a cost-3 card: 3 arrows cross it, so the corrupted card can go in front of
+    // Star's banner to slow them down.
+    const moves = new SanBot(Corporation.Moon).getLegalMoves(arrowsGame(SanCard.RiverEquipment1, SanCard.RiverPropaganda3, 3, LocationType.Hand))
+    expect(moves).toHaveLength(1)
+    expect(moves[0]).toMatchObject({ itemIndex: 7, location: { type: LocationType.PlayArea } })
+
+    const corruptMoves = new SanBot(Corporation.Moon).getLegalMoves(arrowsGame(SanCard.RiverEquipment1, SanCard.RiverPropaganda3, 3, LocationType.PlayArea))
+    expect(corruptMoves).toHaveLength(1)
+    expect(corruptMoves[0]).toMatchObject({ itemIndex: 5, location: { type: LocationType.CorruptionZone, x: 0 } })
+  })
+
+  test('plays an Equipment giving only Propaganda when only the corrupted card in front of the banner lets it advance', () => {
+    // Column 5 costs 4, the Reserve's top as much: the corrupted card in front of the banner lowers it to 3.
+    const moves = new SanBot(Corporation.Moon).getLegalMoves(arrowsGame(SanCard.RiverEquipment1, SanCard.RiverEquipment2, 3, LocationType.Hand))
+    expect(moves).toHaveLength(1)
+    expect(moves[0]).toMatchObject({ itemIndex: 7, location: { type: LocationType.PlayArea } })
+
+    const corruptMoves = new SanBot(Corporation.Moon).getLegalMoves(arrowsGame(SanCard.RiverEquipment1, SanCard.RiverEquipment2, 3, LocationType.PlayArea))
+    expect(corruptMoves.length).toBeGreaterThan(0)
+    for (const move of corruptMoves) expect(move).toMatchObject({ location: { type: LocationType.CorruptionZone, x: 5 } })
+  })
+
+  test('keeps an Equipment giving only Propaganda in hand when even the best Corruption leaves the banner stuck', () => {
+    // Column 5 costs 6, the Reserve's top as much: the corrupted card alone lowers it to 5 only.
+    const moves = new SanBot(Corporation.Moon).getLegalMoves(arrowsGame(SanCard.RiverHacking1, SanCard.RiverHacking1, 3, LocationType.Hand))
+    expect(moves.some((move) => isMoveItemType(MaterialType.Card)(move) && move.itemIndex === 7 && move.location.type === LocationType.PlayArea)).toBe(false)
   })
 
   test('picks Corruption on an "any resource" card when it completes a group of 3 and Propaganda would not advance', () => {

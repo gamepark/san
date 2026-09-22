@@ -118,15 +118,18 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
   /**
    * Play as many hand cards as possible: Equipment first (it may lift the one-type restriction or draw
    * cards before a type is committed to), then — after spending any banked draw while no type is
-   * committed yet — the best Mercenary type (see {@link bestMercenaryTypeMoves}), then
-   * the Virus cards — unless a destroy / corrupt-from-hand charge is banked: that charge will get rid
+   * committed yet — the best Mercenary type (see {@link bestMercenaryTypeMoves}), then the Equipment
+   * giving nothing but Propaganda, only if the banner can then advance (see {@link canAdvance}) —
+   * otherwise it stays in hand for a later turn —, then the Virus cards — unless a destroy / corrupt-from-hand charge is banked: that charge will get rid
    * of them for good rather than sending them to the discard, to come back later.
    */
   private playFromHandMoves(rule: PlayCardsRule, legalMoves: MaterialMove[]): MaterialMove[] {
     const moves = this.cardMoves(rule, legalMoves, LocationType.Hand, LocationType.PlayArea, LocationType.Discard)
     const typeOf = (move: CardMove) => getCardData(this.cardId(rule, move.itemIndex))?.type
     const equipmentMoves = moves.filter((move) => typeOf(move) === CardType.Equipment)
-    if (equipmentMoves.length) return equipmentMoves
+    const propagandaOnlyMoves = equipmentMoves.filter((move) => this.isPropagandaOnly(this.cardId(rule, move.itemIndex)))
+    const otherEquipmentMoves = equipmentMoves.filter((move) => !propagandaOnlyMoves.includes(move))
+    if (otherEquipmentMoves.length) return otherEquipmentMoves
     const mercenaryMoves = moves.filter((move) => {
       const type = typeOf(move)
       return type !== undefined && isMercenaryType(type)
@@ -135,6 +138,10 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
       if (this.drawBeforeCommittingType(rule, legalMoves)) return this.drawMoves(legalMoves)
       const bestMoves = this.bestMercenaryTypeMoves(rule, mercenaryMoves)
       if (bestMoves.length) return bestMoves
+    }
+    if (propagandaOnlyMoves.length) {
+      const points = this.upcomingPropaganda(rule)
+      if (this.canAdvance(rule, points)) return propagandaOnlyMoves
     }
     const keepVirusCards = rule.resourcesHelper.resources.destroy > 0 || rule.resourcesHelper.resources.corruptFromHand > 0
     return keepVirusCards ? [] : moves.filter((move) => isVirusCard(this.cardId(rule, move.itemIndex)))
@@ -198,8 +205,9 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
     const cards = moves.map((move) => this.cardId(rule, move.itemIndex))
     switch (type) {
       case CardType.Propaganda: {
-        const points = rule.resourcesHelper.resources.propaganda + this.potentialPoints(rule, EffectType.Propaganda, type, cards)
-        return this.propagandaSteps(rule, this.player, points) > 0 ? 3 : 0
+        const points =
+          rule.resourcesHelper.resources.propaganda + this.potentialPoints(rule, EffectType.Propaganda, type, cards) + this.propagandaOnlyHandPoints(rule)
+        return this.canAdvance(rule, points) ? 3 : 0
       }
       case CardType.Corruption: {
         const points = rule.resourcesHelper.resources.corruption + this.potentialPoints(rule, EffectType.Corruption, type, cards)
@@ -229,11 +237,61 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
           return 0
       }
     }
-    const pending = rule.remind<{ options: CardEffect[] }[]>(Memory.PendingEitherChoices) ?? []
     return (
       cards.reduce((sum, id) => sum + (getCardData(id)?.effects ?? []).reduce((cardSum, effect) => cardSum + effectPoints(effect), 0), 0) +
-      pending.reduce((sum, choice) => sum + Math.max(0, ...choice.options.map(effectPoints)), 0)
+      this.pendingPoints(rule, resource)
     )
+  }
+
+  /** The `resource` points the "either / or" choices still pending could bring, taking that side on each. */
+  private pendingPoints(rule: PlayCardsRule, resource: EffectType): number {
+    const pending = rule.remind<{ options: CardEffect[] }[]>(Memory.PendingEitherChoices) ?? []
+    const side = (effect: CardEffect) => (effect.type === resource ? (effect.value ?? 0) : 0)
+    return pending.reduce((sum, choice) => sum + Math.max(0, ...choice.options.map(side)), 0)
+  }
+
+  /** An Equipment card giving nothing but Propaganda points (e.g. "+3 arrows"): useless unless the banner can advance. */
+  private isPropagandaOnly(id: SanCard): boolean {
+    const data = getCardData(id)
+    if (data?.type !== CardType.Equipment) return false
+    return data.effects.some((effect) => effect.type === EffectType.Propaganda) && data.effects.every((effect) => effect.type === EffectType.Propaganda || effect.type === EffectType.SingleUse)
+  }
+
+  /**
+   * The Propaganda points this turn can still count on once the Mercenary cards are played: banked,
+   * pending "either / or" choices, and the {@link isPropagandaOnly} Equipment cards in hand.
+   */
+  private upcomingPropaganda(rule: PlayCardsRule): number {
+    return rule.resourcesHelper.resources.propaganda + this.pendingPoints(rule, EffectType.Propaganda) + this.propagandaOnlyHandPoints(rule)
+  }
+
+  /** The Propaganda points of the {@link isPropagandaOnly} Equipment cards in hand. */
+  private propagandaOnlyHandPoints(rule: PlayCardsRule): number {
+    return rule.hand
+      .getItems<SanCard>()
+      .filter((item) => this.isPropagandaOnly(item.id))
+      .reduce((sum, item) => sum + getCardData(item.id)!.effects.reduce((cardSum, effect) => cardSum + (effect.type === EffectType.Propaganda ? (effect.value ?? 0) : 0), 0), 0)
+  }
+
+  /**
+   * Whether `points` Propaganda points can make the banner cross at least one step this turn, counting
+   * the Corruption the banked points allow: a group of 3 replaces the card in front of the banner with
+   * the top of the Reserve when it is cheaper to cross, and puts the corrupted card in front of the
+   * banner (-1); a corrupt-from-hand charge does the latter only.
+   */
+  private canAdvance(rule: PlayCardsRule, points: number): boolean {
+    if (this.propagandaSteps(rule, this.player, points) > 0) return true
+    const myFront = this.frontRiverX(rule, this.player)
+    if (myFront === undefined) return false
+    const resources = rule.resourcesHelper.resources
+    const freeSlot = rule.freeCorruptionPositions().some((position) => position.x === myFront)
+    const slotX = freeSlot ? myFront : undefined
+    if (resources.corruption >= CORRUPTION_GROUP && rule.freeCorruptionPositions().length) {
+      const next = this.reserveTopCrossingCost(rule)
+      const corruptedRiverX = next !== undefined && next < this.riverCrossingCost(rule, myFront) ? myFront : undefined
+      if (this.propagandaSteps(rule, this.player, points, { corruptedRiverX, slotX }) > 0) return true
+    }
+    return resources.corruptFromHand > 0 && slotX !== undefined && this.propagandaSteps(rule, this.player, points, { slotX }) > 0
   }
 
   /** Copy the most valuable copyable River card. */
@@ -274,8 +332,9 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
   }
 
   /**
-   * Corrupt a River card, knowing its slot is refilled from the top of the (visible) Reserve: the one
-   * whose replacement best lowers the crossing in front of this player's banner and raises the one in
+   * Corrupt a River card, knowing its slot is refilled from the top of the (visible) Reserve: among the
+   * ones letting the banner advance the furthest this turn (Propaganda points still to come included),
+   * the one whose replacement best lowers the crossing in front of this player's banner and raises the one in
    * front of the opponent's (see {@link replacementGain}). When no replacement changes anything, a
    * card in front of neither banner is preferred.
    *
@@ -285,7 +344,11 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
     const moves = this.cardMoves(rule, legalMoves, LocationType.River, LocationType.CorruptionZone)
     if (!moves.length) return []
     const riverX = (move: CardMove) => rule.material(MaterialType.Card).getItem(move.itemIndex).location.x!
-    const columns = [...new Set(moves.map(riverX))]
+    let columns = [...new Set(moves.map(riverX))]
+    const points = this.upcomingPropaganda(rule)
+    const steps = (x: number) => this.propagandaSteps(rule, this.player, points, { corruptedRiverX: x, slotX: this.corruptionSlot(rule, { corruptedRiverX: x }) })
+    const bestSteps = Math.max(...columns.map(steps))
+    if (bestSteps > this.propagandaSteps(rule, this.player, points)) columns = columns.filter((x) => steps(x) === bestSteps)
     const best = Math.max(...columns.map((x) => this.replacementGain(rule, x)))
     let targets = columns.filter((x) => this.replacementGain(rule, x) === best)
     if (best === 0) {
@@ -316,7 +379,7 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
 
   /**
    * Where to put a corrupted card: in front of this player's banner if the discount lets it advance
-   * further with the Propaganda points banked right now, otherwise in front of the opponent's banner
+   * further this turn (see {@link upcomingPropaganda}), otherwise in front of the opponent's banner
    * to slow them down, otherwise in front of this player's banner anyway.
    */
   private corruptionSlot(rule: PlayCardsRule, simulation: CorruptionSimulation): number | undefined {
@@ -324,7 +387,7 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
     const myFront = this.frontRiverX(rule, this.player)
     const opponentFront = this.frontRiverX(rule, otherCorporation(this.player))
     if (myFront !== undefined && free.includes(myFront)) {
-      const points = rule.resourcesHelper.resources.propaganda
+      const points = this.upcomingPropaganda(rule)
       const before = this.propagandaSteps(rule, this.player, points, simulation)
       const after = this.propagandaSteps(rule, this.player, points, { ...simulation, slotX: myFront })
       if (after > before) return myFront
