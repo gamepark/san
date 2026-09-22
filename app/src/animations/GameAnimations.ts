@@ -1,7 +1,7 @@
 import { LocationType } from '@gamepark/san/material/LocationType'
 import { MaterialType } from '@gamepark/san/material/MaterialType'
 import { CustomMoveType } from '@gamepark/san/rules/CustomMoveType'
-import { and, isFromLocation, isMaterial, isMyMove, MaterialContext, MaterialGameAnimations } from '@gamepark/react-game'
+import { and, isFromLocation, isMaterial, isMyMove, isToLocation, MaterialContext, MaterialGameAnimations } from '@gamepark/react-game'
 import { isCustomMoveType, isMoveItemType } from '@gamepark/rules-api'
 import { virusTrackLocator } from '../locators/VirusTrackLocator'
 
@@ -9,6 +9,9 @@ export const gameAnimations = new MaterialGameAnimations()
 
 // Playing one of my own hand cards: the move is already expected, so keep it snappy.
 gameAnimations.configure(and(isMaterial(MaterialType.Card), isFromLocation(LocationType.Hand), isMyMove())).duration(200)
+
+// A corrupted card slides under the hand, which lies over the Corruption slots (HAND_Z = 5): keep its arc below it.
+gameAnimations.configure(and(isMaterial(MaterialType.Card), isToLocation(LocationType.CorruptionZone))).arc(3)
 
 /** Spaces the Virus pawn crosses between `from` and `to`, both excluded. */
 const virusPath = (from: number, to: number): number[] => {

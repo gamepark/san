@@ -111,10 +111,10 @@ export const DISCARD_Y = VIRUS_PILE_Y + CARD_HEIGHT / 2 + 0.5 + CARD_WIDTH / 2
 /**
  * The hand covers most of the Corruption slots: only the top of a corrupted card matters, where its
  * -1/+1 corners are printed, so the hand starts just below that strip on the second card of a slot.
- * It is drawn above them.
+ * It is drawn above them, high enough for a card being corrupted to fly under it (see the Corruption animation).
  */
 export const HAND_Y = CORRUPTION_Y + CORRUPTION_STACK_GAP + 1.7
-export const HAND_Z = 0.5
+export const HAND_Z = 5
 /**
  * A wide, nearly flat fan where each card covers only the white border of the previous one (0.5 cm),
  * leaving its top-right number (which ends 0.6 cm from the edge) in sight.
