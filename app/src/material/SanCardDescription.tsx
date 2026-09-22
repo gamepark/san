@@ -172,7 +172,7 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
   }
 
   /** A discard card opens the help of the whole discard, which lists every card in it (same as skyrift / mythologies). */
-  displayHelp(item: MaterialItem, context: ItemContext) {
+  displayHelp(item: MaterialItem<number, number, SanCard>, context: ItemContext) {
     if (item.location.type === LocationType.Discard) return MaterialMoveBuilder.displayLocationHelp(item.location)
     return super.displayHelp(item, context)
   }

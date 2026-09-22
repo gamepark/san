@@ -3,7 +3,7 @@ import { CardEffect } from '@gamepark/san/material/CardsData'
 import { Memory } from '@gamepark/san/rules/Memory'
 import { PlayCardsRule } from '@gamepark/san/rules/PlayCardsRule'
 import { SanRules } from '@gamepark/san/SanRules'
-import { Dialog, GameTheme, PlayMoveButton, ThemeButton, useRules } from '@gamepark/react-game'
+import { Dialog, PlayMoveButton, ThemeButton, useRules } from '@gamepark/react-game'
 import { MaterialMove } from '@gamepark/rules-api'
 import { TFunction } from 'i18next'
 import { FC, ReactNode, useState } from 'react'
@@ -23,7 +23,7 @@ type Props = {
  */
 export const EndPlayPhaseButton: FC<Props> = ({ move, auto, children }) => {
   const { t } = useTranslation()
-  const theme = useTheme() as GameTheme
+  const theme = useTheme()
   const rules = useRules<SanRules>()!
   const [open, setOpen] = useState(false)
   const effects = move ? remainingEffects(new PlayCardsRule(rules.game), t) : []

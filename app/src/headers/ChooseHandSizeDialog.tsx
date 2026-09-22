@@ -1,6 +1,6 @@
 import { css, useTheme } from '@emotion/react'
 import { ChooseHandSizeData, CustomMoveType } from '@gamepark/san/rules/CustomMoveType'
-import { Dialog, GameTheme, PlayMoveButton, useLegalMoves } from '@gamepark/react-game'
+import { Dialog, PlayMoveButton, useLegalMoves } from '@gamepark/react-game'
 import { CustomMove, isCustomMoveType } from '@gamepark/rules-api'
 import { useTranslation } from 'react-i18next'
 
@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next'
  */
 export const ChooseHandSizeDialog = () => {
   const { t } = useTranslation()
-  const theme = useTheme() as GameTheme
+  const theme = useTheme()
   const moves = useLegalMoves<CustomMove>(isCustomMoveType(CustomMoveType.ChooseHandSize))
 
   return (

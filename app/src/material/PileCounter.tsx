@@ -1,7 +1,6 @@
 import { css } from '@emotion/react'
 import { LocationDescription, MaterialContext, useMaterialContext } from '@gamepark/react-game'
 import { Location } from '@gamepark/rules-api'
-import { LocationType } from '@gamepark/san/material/LocationType'
 import { MaterialType } from '@gamepark/san/material/MaterialType'
 import { CARD_BORDER_RADIUS, CARD_HEIGHT, CARD_WIDTH, playerSide } from '../locators/SanLayout'
 import { colors } from '../theme/colors'
