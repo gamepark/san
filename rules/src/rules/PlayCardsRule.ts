@@ -62,6 +62,11 @@ export class PlayCardsRule extends SanRule {
     return this.material(MaterialType.Card).location(LocationType.Deck).player(this.player)
   }
 
+  onRuleStart(): MaterialMove[] {
+    this.resourcesHelper.reset()
+    return []
+  }
+
   getPlayerMoves(): MaterialMove[] {
     const moves: MaterialMove[] = []
     moves.push(...this.playCardMoves())

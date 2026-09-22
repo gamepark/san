@@ -13,15 +13,18 @@ export class ResourcesHelper extends MaterialRulesPart<Corporation, MaterialType
     super(game)
   }
 
-  /** The counters stored in memory: mutate them directly to gain or spend points. */
+  /** The counters stored in memory (from {@link reset} to {@link clear}): mutate them directly to gain or spend points. */
   get resources(): ResourcesMemory {
-    const stored = this.remind<ResourcesMemory | undefined>(Memory.Resources, this.player)
-    if (stored && Object.keys(EMPTY_RESOURCES).every((key) => key in stored)) return stored
-    // Merged over EMPTY_RESOURCES so a counter added after a game was started reads 0, not undefined.
-    return this.memorize<ResourcesMemory>(Memory.Resources, { ...EMPTY_RESOURCES, ...stored }, this.player)
+    return this.remind<ResourcesMemory>(Memory.Resources, this.player)
   }
 
-  reset(player = this.player) {
-    this.memorize<ResourcesMemory>(Memory.Resources, { ...EMPTY_RESOURCES }, player)
+  /** Start the turn with empty counters. */
+  reset() {
+    this.memorize<ResourcesMemory>(Memory.Resources, { ...EMPTY_RESOURCES }, this.player)
+  }
+
+  /** Unspent resources are lost at end of turn: the player panel then shows none. */
+  clear() {
+    this.forget(Memory.Resources, this.player)
   }
 }

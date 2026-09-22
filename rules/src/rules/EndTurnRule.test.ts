@@ -139,6 +139,6 @@ describe('EndTurnRule', () => {
       { [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, corruption: 2, coins: 3 } } }
     )
     rules.play(rules.startRule(RuleId.EndTurn))
-    expect(rules.remind(Memory.Resources, Corporation.Moon)).toEqual(EMPTY_RESOURCES)
+    expect(rules.remind(Memory.Resources, Corporation.Moon)).toBeUndefined()
   })
 })

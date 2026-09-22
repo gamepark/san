@@ -30,8 +30,7 @@ export class EndTurnRule extends SanRule {
   }
 
   nextTurn(): MaterialMove[] {
-    // Unspent resources are lost at end of turn: clear the panel of the player who just played.
-    this.resourcesHelper.reset()
+    this.resourcesHelper.clear()
     return [this.startPlayerTurn(RuleId.PlayCards, this.nextPlayer)]
   }
 

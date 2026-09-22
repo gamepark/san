@@ -2,6 +2,7 @@ import { MaterialGame, MaterialItem, MaterialMove } from '@gamepark/rules-api'
 import { Corporation } from '../Corporation'
 import { LocationType } from '../material/LocationType'
 import { MaterialType } from '../material/MaterialType'
+import { EMPTY_RESOURCES, Memory } from '../rules/Memory'
 import { RuleId } from '../rules/RuleId'
 import { SanRules } from '../SanRules'
 
@@ -20,7 +21,9 @@ export function testGame(
   items: Items,
   memory: TestMemory = {}
 ): MaterialGame<Corporation, MaterialType, LocationType, RuleId> {
-  return { players: [Corporation.Moon, Corporation.Star], memory, rule, items } as MaterialGame<Corporation, MaterialType, LocationType, RuleId>
+  // Like SanSetup, every player starts with empty resource counters; the test's own counters override them.
+  const resources = { [Corporation.Moon]: { ...EMPTY_RESOURCES }, [Corporation.Star]: { ...EMPTY_RESOURCES }, ...(memory[Memory.Resources] as object) }
+  return { players: [Corporation.Moon, Corporation.Star], memory: { ...memory, [Memory.Resources]: resources }, rule, items } as MaterialGame<Corporation, MaterialType, LocationType, RuleId>
 }
 
 /** Same as {@link testGame}, already wrapped in a fresh {@link SanRules} instance ready to `.play()`. */
