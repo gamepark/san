@@ -117,7 +117,9 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
 
   /**
    * Play as many hand cards as possible: Equipment first (it may lift the one-type restriction or draw
-   * cards before a type is committed to), then — after spending any banked draw while no type is
+   * cards before a type is committed to), then destroy the Virus and starting cards a banked charge
+   * allows — the starting Equipment only comes after that, so that it can be destroyed too — thinning the deck matters more than the points they would bring (see {@link destroyMoves}) —,
+   * then — after spending any banked draw while no type is
    * committed yet — the best Mercenary type (see {@link bestMercenaryTypeMoves}), then the Equipment
    * giving nothing but Propaganda, only if the banner can then advance (see {@link canAdvance}) —
    * otherwise it stays in hand for a later turn —, then the Virus cards — unless a destroy / corrupt-from-hand charge is banked: that charge will get rid
@@ -128,8 +130,12 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
     const typeOf = (move: CardMove) => getCardData(this.cardId(rule, move.itemIndex))?.type
     const equipmentMoves = moves.filter((move) => typeOf(move) === CardType.Equipment)
     const propagandaOnlyMoves = equipmentMoves.filter((move) => this.isPropagandaOnly(this.cardId(rule, move.itemIndex)))
-    const otherEquipmentMoves = equipmentMoves.filter((move) => !propagandaOnlyMoves.includes(move))
+    const startEquipmentMoves = equipmentMoves.filter((move) => this.cardValue(this.cardId(rule, move.itemIndex)) === 0)
+    const otherEquipmentMoves = equipmentMoves.filter((move) => !propagandaOnlyMoves.includes(move) && !startEquipmentMoves.includes(move))
     if (otherEquipmentMoves.length) return otherEquipmentMoves
+    const destroyMoves = this.destroyMoves(rule, legalMoves)
+    if (destroyMoves.length) return destroyMoves
+    if (startEquipmentMoves.length) return startEquipmentMoves
     const mercenaryMoves = moves.filter((move) => {
       const type = typeOf(move)
       return type !== undefined && isMercenaryType(type)
@@ -321,14 +327,22 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
     return moves.filter((move) => move.location.x === slot && this.cardValue(this.cardId(rule, move.itemIndex)) === worst)
   }
 
-  /** Only destroy Virus and starting cards: removing a bought River card from the deck would be a loss. */
+  /**
+   * Only destroy Virus and starting cards — removing a bought River card from the deck would be a
+   * loss: Virus cards first, then starting Mercenary cards, then starting Equipment cards (the most
+   * flexible of them).
+   */
   private destroyMoves(rule: PlayCardsRule, legalMoves: MaterialMove[]): MaterialMove[] {
-    const moves = legalMoves
-      .filter(isDeleteItemType(MaterialType.Card))
-      .filter((move) => this.cardValue(this.cardId(rule, move.itemIndex)) <= 0)
+    const rank = (move: CardMove | MaterialMove) => {
+      const id = this.cardId(rule, (move as CardMove).itemIndex)
+      if (isVirusCard(id)) return 0
+      if (this.cardValue(id) > 0) return undefined
+      return getCardData(id)?.type === CardType.Equipment ? 2 : 1
+    }
+    const moves = legalMoves.filter(isDeleteItemType(MaterialType.Card)).filter((move) => rank(move) !== undefined)
     if (!moves.length) return []
-    const worst = Math.min(...moves.map((move) => this.cardValue(this.cardId(rule, move.itemIndex))))
-    return moves.filter((move) => this.cardValue(this.cardId(rule, move.itemIndex)) === worst)
+    const worst = Math.min(...moves.map((move) => rank(move)!))
+    return moves.filter((move) => rank(move) === worst)
   }
 
   /**

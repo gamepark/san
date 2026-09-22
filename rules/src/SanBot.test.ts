@@ -1,4 +1,4 @@
-import { isCustomMoveType, isMoveItemType, MaterialMove } from '@gamepark/rules-api'
+import { isCustomMoveType, isDeleteItemType, isMoveItemType, MaterialMove } from '@gamepark/rules-api'
 import { describe, expect, test } from 'vitest'
 import { Corporation } from './Corporation'
 import { EffectType, getCardData } from './material/CardsData'
@@ -470,6 +470,38 @@ describe('SanBot', () => {
     // Column 5 costs 6, the Reserve's top as much: the corrupted card alone lowers it to 5 only.
     const moves = new SanBot(Corporation.Moon).getLegalMoves(arrowsGame(SanCard.RiverHacking1, SanCard.RiverHacking1, 3, LocationType.Hand))
     expect(moves.some((move) => isMoveItemType(MaterialType.Card)(move) && move.itemIndex === 7 && move.location.type === LocationType.PlayArea)).toBe(false)
+  })
+
+  const destroyGame = (...hand: SanCard[]) =>
+    testGame(
+      { id: RuleId.PlayCards, player: Corporation.Moon },
+      { [MaterialType.Card]: hand.map((id) => ({ id, location: { type: LocationType.Hand, player: Corporation.Moon } })) },
+      {
+        [Memory.TurnFlags]: { ...EMPTY_TURN_FLAGS, cardPlayed: true },
+        [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, destroy: 1 } }
+      }
+    )
+  const destroyed = (game: ReturnType<typeof testGame>) =>
+    new SanBot(Corporation.Moon).getLegalMoves(game).map((move) => (isDeleteItemType(MaterialType.Card)(move) ? move.itemIndex : undefined))
+
+  test('destroys a starting card rather than play it, never a bought one', () => {
+    expect(destroyed(destroyGame(SanCard.RiverPropaganda3, SanCard.MoonPropaganda, SanCard.MoonPropaganda))).toEqual([1, 2])
+  })
+
+  test('destroys a Virus card before a starting card', () => {
+    expect(destroyed(destroyGame(SanCard.MoonHacking, SanCard.MoonVirus1))).toEqual([1])
+  })
+
+  test('destroys a starting Equipment rather than play it, after the starting Mercenary cards', () => {
+    expect(destroyed(destroyGame(SanCard.MoonEquipment, SanCard.MoonHacking))).toEqual([1])
+    expect(destroyed(destroyGame(SanCard.MoonEquipment, SanCard.RiverPropaganda3))).toEqual([0])
+  })
+
+  test('plays the other Equipment cards, which may grant destroy charges, before the starting Equipment', () => {
+    const game = destroyGame(SanCard.MoonEquipment, SanCard.RiverEquipment12)
+    const moves = new SanBot(Corporation.Moon).getLegalMoves(game)
+    expect(moves.length).toBeGreaterThan(0)
+    for (const move of moves) expect(move).toMatchObject({ itemIndex: 1, location: { type: LocationType.PlayArea } })
   })
 
   test('picks Corruption on an "any resource" card when it completes a group of 3 and Propaganda would not advance', () => {
