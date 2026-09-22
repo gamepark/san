@@ -2,13 +2,18 @@ import { LocationType } from '@gamepark/san/material/LocationType'
 import { MaterialType } from '@gamepark/san/material/MaterialType'
 import { CustomMoveType } from '@gamepark/san/rules/CustomMoveType'
 import { and, isFromLocation, isMaterial, isMyMove, isToLocation, MaterialContext, MaterialGameAnimations } from '@gamepark/react-game'
-import { isCustomMoveType, isMoveItemType } from '@gamepark/rules-api'
+import { isCustomMoveType, isMoveItemType, isShuffle, MoveKind } from '@gamepark/rules-api'
 import { virusTrackLocator } from '../locators/VirusTrackLocator'
 
 export const gameAnimations = new MaterialGameAnimations()
 
 // Playing one of my own hand cards: the move is already expected, so keep it snappy.
 gameAnimations.configure(and(isMaterial(MaterialType.Card), isFromLocation(LocationType.Hand), isMyMove())).duration(200)
+
+// The Draw effect ("Piocher" button): twice as fast as the defaults (1s per move, 1.5s per shuffle), the
+// reshuffle of the discard included. The end-of-turn draw is another action, so it keeps the defaults.
+const isDrawEffect = (context: MaterialContext) => isCustomMoveType(CustomMoveType.Draw)(context.action.move)
+gameAnimations.configure((move, context) => move.kind === MoveKind.ItemMove && isDrawEffect(context)).duration(300)
 
 // A corrupted card slides under the hand, which lies over the Corruption slots (HAND_Z = 5): keep its arc below it.
 gameAnimations.configure(and(isMaterial(MaterialType.Card), isToLocation(LocationType.CorruptionZone))).arc(3)
