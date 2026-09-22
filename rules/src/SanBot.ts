@@ -386,7 +386,7 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
 
   /**
    * Resolve the oldest pending "either / or": Propaganda if it lets the banner advance one more step,
-   * otherwise Corruption if it completes a group of 3 — Corruption first on a turn committed to it,
+   * otherwise Corruption if it completes a group of 3 (both counting the other pending choices) — Corruption first on a turn committed to it,
    * since that group is what the turn was committed for (see {@link mercenaryTypePriority}) —
    * otherwise Virus (drawing, then the first option, when the card offers neither).
    */
@@ -396,29 +396,38 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
     const itemIndex = (moves[0].data as { itemIndex: number }).itemIndex
     const pending = rule.remind<{ itemIndex: number; options: CardEffect[] }[]>(Memory.PendingEitherChoices) ?? []
     const options = pending.find((choice) => choice.itemIndex === itemIndex)?.options ?? []
-    const option = this.bestEitherOption(rule, options)
+    const others = pending.filter((choice) => choice.itemIndex !== itemIndex).map((choice) => choice.options)
+    const option = this.bestEitherOption(rule, options, others)
     return moves.filter((move) => {
       const data = move.data as { itemIndex: number; option: number }
       return data.itemIndex === itemIndex && data.option === option
     })
   }
 
-  private bestEitherOption(rule: PlayCardsRule, options: CardEffect[]): number {
+  /**
+   * `others` are the options of the other pending "either / or": a side that only reaches a banner step
+   * or a group of 3 together with theirs is taken too, the next choices then completing it.
+   */
+  private bestEitherOption(rule: PlayCardsRule, options: CardEffect[], others: CardEffect[][]): number {
     const find = (type: EffectType) => options.findIndex((effect) => effect.type === type)
     const resources = rule.resourcesHelper.resources
+    const later = (type: EffectType) =>
+      others.reduce((sum, choice) => sum + Math.max(0, ...choice.filter((effect) => effect.type === type).map((effect) => effect.value ?? 0)), 0)
 
     const propagandaOption = () => {
       const propaganda = find(EffectType.Propaganda)
       if (propaganda === -1) return -1
       const points = resources.propaganda
-      const advances = this.propagandaSteps(rule, this.player, points + (options[propaganda].value ?? 0)) > this.propagandaSteps(rule, this.player, points)
+      const reachable = points + (options[propaganda].value ?? 0) + later(EffectType.Propaganda)
+      const advances = this.propagandaSteps(rule, this.player, reachable) > this.propagandaSteps(rule, this.player, points)
       return advances ? propaganda : -1
     }
     const corruptionOption = () => {
       const corruption = find(EffectType.Corruption)
       if (corruption === -1 || !rule.freeCorruptionPositions().length) return -1
       const points = resources.corruption
-      const completesGroup = Math.floor((points + (options[corruption].value ?? 0)) / CORRUPTION_GROUP) > Math.floor(points / CORRUPTION_GROUP)
+      const reachable = points + (options[corruption].value ?? 0) + later(EffectType.Corruption)
+      const completesGroup = Math.floor(reachable / CORRUPTION_GROUP) > Math.floor(points / CORRUPTION_GROUP)
       return completesGroup ? corruption : -1
     }
     const corruptionTurn = rule.turnFlagsHelper.flags.playedMercenaryType === CardType.Corruption

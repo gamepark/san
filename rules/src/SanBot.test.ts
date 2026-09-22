@@ -141,6 +141,64 @@ describe('SanBot', () => {
     expect(isCustomMoveType(CustomMoveType.ChooseEffectOption)(moves[0]) && moves[0].data).toEqual({ itemIndex: 10, option: 2 })
   })
 
+  test('picks Corruption on two grey cards that complete a group of 3 only together', () => {
+    // 1 Corruption card played + 2 starting Equipment cards pending: 1 + 1 + 1 = 3.
+    const anyResource = [{ type: EffectType.Propaganda, value: 1 }, { type: EffectType.Virus, value: 1 }, { type: EffectType.Corruption, value: 1 }]
+    const game = testGame(
+      { id: RuleId.PlayCards, player: Corporation.Moon },
+      {
+        [MaterialType.Banner]: [{ id: Corporation.Moon, location: { type: LocationType.PropagandaTrack, player: Corporation.Moon, x: 0 } }],
+        [MaterialType.Card]: [
+          ...[0, 1, 2, 3, 4, 5].map((x) => ({ id: SanCard.RiverPropaganda3, location: { type: LocationType.River, x } })),
+          ...[SanCard.MoonEquipment, SanCard.MoonEquipment, SanCard.MoonCorruption].map((id) => ({
+            id,
+            location: { type: LocationType.PlayArea, player: Corporation.Moon }
+          }))
+        ]
+      },
+      {
+        [Memory.TurnFlags]: { ...EMPTY_TURN_FLAGS, cardPlayed: true, playedMercenaryType: CardType.Corruption },
+        [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, corruption: 1, virus: 0 } },
+        [Memory.PendingEitherChoices]: [
+          { itemIndex: 6, options: anyResource },
+          { itemIndex: 7, options: anyResource }
+        ]
+      }
+    )
+    const moves = new SanBot(Corporation.Moon).getLegalMoves(game)
+    expect(moves).toHaveLength(1)
+    expect(isCustomMoveType(CustomMoveType.ChooseEffectOption)(moves[0]) && moves[0].data).toEqual({ itemIndex: 6, option: 2 })
+  })
+
+  test('picks Propaganda on two grey cards that cross a banner step only together', () => {
+    // 1 Propaganda card played + 2 starting Equipment cards pending: 1 + 1 + 1 = 3, the crossing cost.
+    const anyResource = [{ type: EffectType.Propaganda, value: 1 }, { type: EffectType.Virus, value: 1 }, { type: EffectType.Corruption, value: 1 }]
+    const game = testGame(
+      { id: RuleId.PlayCards, player: Corporation.Moon },
+      {
+        [MaterialType.Banner]: [{ id: Corporation.Moon, location: { type: LocationType.PropagandaTrack, player: Corporation.Moon, x: 0 } }],
+        [MaterialType.Card]: [
+          ...[0, 1, 2, 3, 4, 5].map((x) => ({ id: SanCard.RiverPropaganda3, location: { type: LocationType.River, x } })),
+          ...[SanCard.MoonEquipment, SanCard.MoonEquipment, SanCard.MoonPropaganda].map((id) => ({
+            id,
+            location: { type: LocationType.PlayArea, player: Corporation.Moon }
+          }))
+        ]
+      },
+      {
+        [Memory.TurnFlags]: { ...EMPTY_TURN_FLAGS, cardPlayed: true, playedMercenaryType: CardType.Propaganda },
+        [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, propaganda: 1 } },
+        [Memory.PendingEitherChoices]: [
+          { itemIndex: 6, options: anyResource },
+          { itemIndex: 7, options: anyResource }
+        ]
+      }
+    )
+    const moves = new SanBot(Corporation.Moon).getLegalMoves(game)
+    expect(moves).toHaveLength(1)
+    expect(isCustomMoveType(CustomMoveType.ChooseEffectOption)(moves[0]) && moves[0].data).toEqual({ itemIndex: 6, option: 0 })
+  })
+
   test('prefers a lone Hacking card to more Propaganda cards leaving the banner stuck', () => {
     expect(committedType(tieGame(SanCard.MoonPropaganda, SanCard.MoonPropaganda, SanCard.MoonHacking))).toBe(CardType.Hacking)
   })
