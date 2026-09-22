@@ -20,7 +20,8 @@ export class EndTurnRule extends SanRule {
     const singleUse = this.turnFlagsHelper.flags.singleUseCards
     this.turnFlagsHelper.reset()
     const moves: MaterialMove[] = this.playArea.index((index) => singleUse.includes(index)).deleteItems()
-    const toDiscard = this.playArea.index((index) => !singleUse.includes(index))
+    // Sorted so the played cards keep their play area order in the discard.
+    const toDiscard = this.playArea.index((index) => !singleUse.includes(index)).sort((item) => item.location.x!)
     if (toDiscard.length) moves.push(toDiscard.moveItemsAtOnce({ type: LocationType.Discard, player }))
     // The draw is resolved when played, after the discard above: a reshuffle then includes the cards played this turn.
     const deficit = this.handSize - this.hand.length
