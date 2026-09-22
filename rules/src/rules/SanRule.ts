@@ -1,5 +1,6 @@
 import { MaterialMove, PlayerTurnRule } from '@gamepark/rules-api'
 import { Corporation } from '../Corporation'
+import { RIVER_SIZE } from '../material/constants'
 import { LocationType } from '../material/LocationType'
 import { MaterialType } from '../material/MaterialType'
 import { CustomMoveType, DrawData } from './CustomMoveType'
@@ -29,6 +30,14 @@ export abstract class SanRule extends PlayerTurnRule<Corporation, MaterialType, 
 
   get reserve() {
     return this.material(MaterialType.Card).location(LocationType.Reserve)
+  }
+
+  /** River card physically spanned by a banner step. The Propaganda track is numbered opposite to the
+   * River (step 0 sits at the River's `x = 5` end), so a step and its River column are mirrored:
+   * leaving step `s` towards step `s + 1` crosses River card `RIVER_SIZE - 1 - s`.
+   */
+  crossedRiverX(step: number, direction: 1 | -1): number {
+    return direction === 1 ? RIVER_SIZE - 1 - step : RIVER_SIZE - step
   }
 
   /**

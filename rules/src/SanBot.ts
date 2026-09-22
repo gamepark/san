@@ -15,12 +15,14 @@ import { CORRUPTION_GROUP, PROPAGANDA_END } from './material/constants'
 import { LocationType } from './material/LocationType'
 import { MaterialType } from './material/MaterialType'
 import { CardType, SanCard } from './material/SanCard'
+import { BuyCardsRule } from './rules/BuyCardsRule'
 import { CustomMoveType } from './rules/CustomMoveType'
 import { crossingCost } from './rules/helper/crossingCost'
 import { propagandaDirection } from './rules/helper/directions'
 import { Memory } from './rules/Memory'
 import { PlayCardsRule } from './rules/PlayCardsRule'
 import { RuleId } from './rules/RuleId'
+import { SanRule } from './rules/SanRule'
 import { SanRules } from './SanRules'
 
 type CardMove = MoveItem<Corporation, MaterialType, LocationType>
@@ -38,7 +40,8 @@ interface CorruptionSimulation {
  * move (see {@link playCardsMoves}): play as many hand cards as possible (Equipment first, then a
  * single Mercenary type), play from the discard, draw, copy a River card, corrupt / destroy from hand,
  * corrupt a River card, resolve "either / or" choices, advance the banner, then the Virus pawn as far
- * as possible. It then buys the first River card it can afford rather than passing.
+ * as possible. It then buys the
+ * affordable River card worth the most rather than passing (see {@link buyCardsMoves}).
  */
 export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, LocationType>, MaterialMove<Corporation, MaterialType, LocationType>, Corporation> {
   constructor(playerId: Corporation) {
@@ -51,7 +54,7 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
       case RuleId.PlayCards:
         return this.playCardsMoves(new PlayCardsRule(game), legalMoves)
       case RuleId.BuyCards:
-        return this.buyCardsMoves(legalMoves)
+        return this.buyCardsMoves(new BuyCardsRule(game), legalMoves)
       default:
         return legalMoves
     }
@@ -114,7 +117,7 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
   /**
    * Play as many hand cards as possible: Equipment first (it may lift the one-type restriction or draw
    * cards before a type is committed to), then — after spending any banked draw while no type is
-   * committed yet — the Mercenary type with the most cards in hand, then
+   * committed yet — the best Mercenary type (see {@link bestMercenaryTypeMoves}), then
    * the Virus cards — unless a destroy / corrupt-from-hand charge is banked: that charge will get rid
    * of them for good rather than sending them to the discard, to come back later.
    */
@@ -128,7 +131,9 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
       return type !== undefined && isMercenaryType(type)
     })
     if (mercenaryMoves.length) {
-      return this.drawBeforeCommittingType(rule, legalMoves) ? this.drawMoves(legalMoves) : this.bestMercenaryTypeMoves(rule, mercenaryMoves)
+      if (this.drawBeforeCommittingType(rule, legalMoves)) return this.drawMoves(legalMoves)
+      const bestMoves = this.bestMercenaryTypeMoves(rule, mercenaryMoves)
+      if (bestMoves.length) return bestMoves
     }
     const keepVirusCards = rule.resourcesHelper.resources.destroy > 0 || rule.resourcesHelper.resources.corruptFromHand > 0
     return keepVirusCards ? [] : moves.filter((move) => isVirusCard(this.cardId(rule, move.itemIndex)))
@@ -158,10 +163,13 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
   }
 
   /**
-   * The first Mercenary card played locks the turn to its type (see TurnFlagsHelper.lockMercenaryType):
-   * committing to whichever type has the most cards in hand lets the most of them actually get played.
-   * On a tie, Hacking wins it: its points are spent one at a time, so unlike a Corruption group of 3 or
-   * a variable Propaganda crossing cost, none of them can end up banked and wasted.
+   * The first Mercenary card played locks the turn to its type (see TurnFlagsHelper.lockMercenaryType).
+   * A type is worth committing to only if it achieves something (see {@link mercenaryTypePriority}):
+   * Propaganda must make the banner cross at least one step, Corruption must complete a group of 3,
+   * Hacking always does. Among those, the type with the most cards in hand wins, so that the most of
+   * them actually get played; a tie goes to Propaganda, then Corruption, then Hacking.
+   * When no type achieves anything, a stuck Propaganda is still played (for its revenue), a
+   * Corruption short of a group never is: no move is returned then.
    */
   private bestMercenaryTypeMoves(rule: PlayCardsRule, moves: CardMove[]): CardMove[] {
     const flags = rule.turnFlagsHelper.flags
@@ -171,10 +179,60 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
       const type = getCardData(this.cardId(rule, move.itemIndex))!.type
       movesByType.set(type, [...(movesByType.get(type) ?? []), move])
     }
-    const maxCount = Math.max(...[...movesByType.values()].map((typeMoves) => typeMoves.length))
-    const hackingMoves = movesByType.get(CardType.Hacking)
-    if (hackingMoves?.length === maxCount) return hackingMoves
-    return [...movesByType.values()].find((typeMoves) => typeMoves.length === maxCount)!
+    const types = [...movesByType.entries()].map(([type, typeMoves]) => ({ moves: typeMoves, priority: this.mercenaryTypePriority(rule, type, typeMoves) }))
+    const useful = types.filter((type) => type.priority > 0)
+    const candidates = useful.length ? useful : types.filter((type) => type.priority === 0)
+    if (!candidates.length) return []
+    return candidates.reduce((best, candidate) =>
+      candidate.moves.length > best.moves.length || (candidate.moves.length === best.moves.length && candidate.priority > best.priority) ? candidate : best
+    ).moves
+  }
+
+  /**
+   * What committing the turn to `type` achieves, `moves` being the hand cards of that type the bot can
+   * play: 3 = Propaganda crossing a step, 2 = Corruption completing a group, 1 = Hacking,
+   * 0 = Propaganda leaving the banner stuck, -1 = Corruption short of a group.
+   */
+  private mercenaryTypePriority(rule: PlayCardsRule, type: CardType, moves: CardMove[]): number {
+    const cards = moves.map((move) => this.cardId(rule, move.itemIndex))
+    switch (type) {
+      case CardType.Propaganda: {
+        const points = rule.resourcesHelper.resources.propaganda + this.potentialPoints(rule, EffectType.Propaganda, type, cards)
+        return this.propagandaSteps(rule, this.player, points) > 0 ? 3 : 0
+      }
+      case CardType.Corruption: {
+        const points = rule.resourcesHelper.resources.corruption + this.potentialPoints(rule, EffectType.Corruption, type, cards)
+        return points >= CORRUPTION_GROUP && rule.freeCorruptionPositions().length > 0 ? 2 : -1
+      }
+      default:
+        return 1
+    }
+  }
+
+  /**
+   * The `resource` points playing `cards` (all of Mercenary type `type`) would bring at best: their
+   * plain gains, their Multipliers counting every card of that type played this turn, and the matching
+   * side of their "either / or" — plus that side on the "either / or" choices still pending.
+   */
+  private potentialPoints(rule: PlayCardsRule, resource: EffectType, type: CardType, cards: SanCard[]): number {
+    const playedOfType = rule.playArea.getItems<SanCard>().filter((item) => getCardData(item.id)?.type === type).length
+    const effectPoints = (effect: CardEffect): number => {
+      switch (effect.type) {
+        case resource:
+          return effect.value ?? 0
+        case EffectType.Multiplier:
+          return effect.gain === resource ? (effect.value ?? 1) * (playedOfType + cards.length) : 0
+        case EffectType.Either:
+          return Math.max(0, ...effect.option!.map(effectPoints))
+        default:
+          return 0
+      }
+    }
+    const pending = rule.remind<{ options: CardEffect[] }[]>(Memory.PendingEitherChoices) ?? []
+    return (
+      cards.reduce((sum, id) => sum + (getCardData(id)?.effects ?? []).reduce((cardSum, effect) => cardSum + effectPoints(effect), 0), 0) +
+      pending.reduce((sum, choice) => sum + Math.max(0, ...choice.options.map(effectPoints)), 0)
+    )
   }
 
   /** Copy the most valuable copyable River card. */
@@ -215,35 +273,44 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
   }
 
   /**
-   * Corrupt a River card, knowing its slot is refilled from the top of the (visible) Reserve:
-   * - the card in front of this player's banner, if it costs more to cross than the one replacing it;
-   * - otherwise the card in front of the opponent's banner, if it costs them less than its replacement;
-   * - otherwise any other card, leaving both crossings unchanged.
+   * Corrupt a River card, knowing its slot is refilled from the top of the (visible) Reserve: the one
+   * whose replacement best lowers the crossing in front of this player's banner and raises the one in
+   * front of the opponent's (see {@link replacementGain}). When no replacement changes anything, a
+   * card in front of neither banner is preferred.
    *
    * The receiving slot is chosen by {@link corruptionSlot}.
    */
   private corruptRiverMoves(rule: PlayCardsRule, legalMoves: MaterialMove[]): MaterialMove[] {
     const moves = this.cardMoves(rule, legalMoves, LocationType.River, LocationType.CorruptionZone)
     if (!moves.length) return []
-    const riverX = (move: CardMove) => rule.material(MaterialType.Card).getItem(move.itemIndex).location.x
+    const riverX = (move: CardMove) => rule.material(MaterialType.Card).getItem(move.itemIndex).location.x!
     const columns = [...new Set(moves.map(riverX))]
-    const myFront = this.frontRiverX(rule, this.player)
-    const opponentFront = this.frontRiverX(rule, otherCorporation(this.player))
-    const next = this.reserveTopCrossingCost(rule)
-
-    let targets: (number | undefined)[]
-    if (next !== undefined && myFront !== undefined && columns.includes(myFront) && this.riverCrossingCost(rule, myFront) > next) {
-      targets = [myFront]
-    } else if (next !== undefined && opponentFront !== undefined && columns.includes(opponentFront) && this.riverCrossingCost(rule, opponentFront) < next) {
-      targets = [opponentFront]
-    } else {
-      const others = columns.filter((x) => x !== myFront && x !== opponentFront)
-      targets = others.length ? others : columns
+    const best = Math.max(...columns.map((x) => this.replacementGain(rule, x)))
+    let targets = columns.filter((x) => this.replacementGain(rule, x) === best)
+    if (best === 0) {
+      const fronts = [this.frontRiverX(rule, this.player), this.frontRiverX(rule, otherCorporation(this.player))]
+      const others = targets.filter((x) => !fronts.includes(x))
+      if (others.length) targets = others
     }
     return targets.flatMap((x) => {
       const slot = this.corruptionSlot(rule, { corruptedRiverX: x })
       return moves.filter((move) => riverX(move) === x && move.location.x === slot)
     })
+  }
+
+  /**
+   * What replacing the River card in column `x` with the top of the Reserve (after a corruption or a
+   * purchase) is worth on the Propaganda tracks: the crossing cost it takes off the card in front of
+   * this player's banner, plus the one it adds to the card in front of the opponent's.
+   */
+  private replacementGain(rule: SanRule, x: number): number {
+    const next = this.reserveTopCrossingCost(rule)
+    if (next === undefined) return 0
+    const delta = next - this.riverCrossingCost(rule, x)
+    let gain = 0
+    if (this.frontRiverX(rule, this.player) === x) gain -= delta
+    if (this.frontRiverX(rule, otherCorporation(this.player)) === x) gain += delta
+    return gain
   }
 
   /**
@@ -267,7 +334,7 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
   }
 
   /** River column of the next card a player's banner has to cross, if it has not reached the end of its track. */
-  private frontRiverX(rule: PlayCardsRule, player: Corporation): number | undefined {
+  private frontRiverX(rule: SanRule, player: Corporation): number | undefined {
     const x = rule.material(MaterialType.Banner).id(player).getItem()?.location.x ?? 0
     const direction = propagandaDirection(rule.game, player)
     const next = x + direction
@@ -276,13 +343,13 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
   }
 
   /** Printed crossing cost of the River card in column `x`. */
-  private riverCrossingCost(rule: PlayCardsRule, x: number): number {
+  private riverCrossingCost(rule: SanRule, x: number): number {
     const card = rule.river.getItems<SanCard>().find((item) => item.location.x === x)
     return (card && getCardData(card.id)?.crossingCost) ?? 0
   }
 
   /** Printed crossing cost of the card that will refill the next emptied River slot. */
-  private reserveTopCrossingCost(rule: PlayCardsRule): number | undefined {
+  private reserveTopCrossingCost(rule: SanRule): number | undefined {
     const top = rule.reserve.deck().getItems<SanCard>()[0]
     return top ? (getCardData(top.id)?.crossingCost ?? 0) : undefined
   }
@@ -374,9 +441,17 @@ export class SanBot extends RandomBot<MaterialGame<Corporation, MaterialType, Lo
     return moves.filter((move) => cost(move.location) === farthest)
   }
 
-  /** Buy the first affordable River card on offer instead of passing; passes when none is affordable. */
-  private buyCardsMoves(legalMoves: MaterialMove[]): MaterialMove[] {
+  /**
+   * Buy the River card worth the most — its price (see {@link cardValue}) plus what its replacement from
+   * the Reserve does to both banners' crossings (see {@link replacementGain}) — instead of passing;
+   * passes when none is affordable.
+   */
+  private buyCardsMoves(rule: BuyCardsRule, legalMoves: MaterialMove[]): MaterialMove[] {
     const buyMoves = legalMoves.filter(isMoveItemType(MaterialType.Card))
-    return buyMoves.length ? [buyMoves[0]] : legalMoves
+    if (!buyMoves.length) return legalMoves
+    const item = (move: CardMove) => rule.material(MaterialType.Card).getItem<SanCard>(move.itemIndex)
+    const score = (move: CardMove) => this.cardValue(item(move).id) + this.replacementGain(rule, item(move).location.x!)
+    const best = Math.max(...buyMoves.map(score))
+    return buyMoves.filter((move) => score(move) === best)
   }
 }

@@ -1,7 +1,7 @@
 import { isCustomMoveType, isMoveItemType, MaterialMove } from '@gamepark/rules-api'
 import { describe, expect, test } from 'vitest'
 import { Corporation } from './Corporation'
-import { EffectType } from './material/CardsData'
+import { EffectType, getCardData } from './material/CardsData'
 import { LocationType } from './material/LocationType'
 import { MaterialType } from './material/MaterialType'
 import { CardType, SanCard } from './material/SanCard'
@@ -65,10 +65,9 @@ describe('SanBot', () => {
     expect(isMoveItemType(MaterialType.Card)(moves[0]) && moves[0].location.type === LocationType.Discard).toBe(true)
   })
 
-  test('breaks a tie between two equally-represented Mercenary types in favour of Hacking', () => {
+  test('breaks a tie in favour of Hacking over a Corruption short of a group of 3', () => {
     // Nothing played yet this turn (no Mercenary type locked): both cards would be legal and equally
-    // represented (1 each), but only the Hacking one is guaranteed not to waste its point (Corruption
-    // needs a full group of 3).
+    // represented (1 each), but the single Corruption point cannot corrupt anything.
     const game = testGame(
       { id: RuleId.PlayCards, player: Corporation.Moon },
       {
@@ -81,6 +80,62 @@ describe('SanBot', () => {
     const moves = new SanBot(Corporation.Moon).getLegalMoves(game)
     expect(moves).toHaveLength(1)
     expect(isMoveItemType(MaterialType.Card)(moves[0]) && moves[0].itemIndex).toBe(0)
+  })
+
+  // Moon's banner (step 0) crosses River column 5 first: a Propaganda3 card there costs 3 to cross.
+  const tieGame = (...hand: SanCard[]) =>
+    testGame(
+      { id: RuleId.PlayCards, player: Corporation.Moon },
+      {
+        [MaterialType.Banner]: [{ id: Corporation.Moon, location: { type: LocationType.PropagandaTrack, player: Corporation.Moon, x: 0 } }],
+        [MaterialType.Card]: [
+          ...[0, 1, 2, 3, 4, 5].map((x) => ({ id: SanCard.RiverPropaganda3, location: { type: LocationType.River, x } })),
+          ...hand.map((id) => ({ id, location: { type: LocationType.Hand, player: Corporation.Moon } }))
+        ]
+      }
+    )
+  const committedType = (game: ReturnType<typeof testGame>) => {
+    const moves = new SanBot(Corporation.Moon).getLegalMoves(game)
+    const types = new Set(moves.map((move) => isMoveItemType(MaterialType.Card)(move) && getCardData(game.items[MaterialType.Card]![move.itemIndex].id)?.type))
+    expect(types.size).toBe(1)
+    return [...types][0]
+  }
+
+  test('breaks a tie in favour of Propaganda when the banner crosses a step', () => {
+    // 3 Propaganda points (Propaganda3) cross the cost-3 card; Corruption3 would also complete a group.
+    expect(committedType(tieGame(SanCard.RiverPropaganda3, SanCard.RiverCorruption3, SanCard.MoonHacking))).toBe(CardType.Propaganda)
+  })
+
+  test('breaks a tie in favour of Corruption over Hacking when a group of 3 is complete, never a stuck Propaganda', () => {
+    // 1 Propaganda point cannot cross the cost-3 card: the banner would stay stuck.
+    expect(committedType(tieGame(SanCard.MoonPropaganda, SanCard.RiverCorruption3, SanCard.MoonHacking))).toBe(CardType.Corruption)
+  })
+
+  test('counts a Multiplier with every card of its type when checking a group of 3', () => {
+    // Corruption4 gives 1 point per Corruption card played: 3 cards → 3 + 1 + 1 = 5 points.
+    expect(
+      committedType(
+        tieGame(SanCard.RiverCorruption4, SanCard.MoonCorruption, SanCard.MoonCorruption, SanCard.MoonHacking, SanCard.MoonHacking, SanCard.MoonHacking)
+      )
+    ).toBe(CardType.Corruption)
+  })
+
+  test('prefers a lone Hacking card to more Propaganda cards leaving the banner stuck', () => {
+    expect(committedType(tieGame(SanCard.MoonPropaganda, SanCard.MoonPropaganda, SanCard.MoonHacking))).toBe(CardType.Hacking)
+  })
+
+  test('prefers a lone Hacking card to more Corruption cards short of a group of 3', () => {
+    expect(committedType(tieGame(SanCard.MoonCorruption, SanCard.MoonCorruption, SanCard.MoonHacking))).toBe(CardType.Hacking)
+  })
+
+  test('plays a stuck Propaganda when nothing better is in hand', () => {
+    expect(committedType(tieGame(SanCard.MoonPropaganda, SanCard.MoonCorruption))).toBe(CardType.Propaganda)
+  })
+
+  test('never plays a Corruption short of a group of 3, playing its Virus card instead', () => {
+    const moves = new SanBot(Corporation.Moon).getLegalMoves(tieGame(SanCard.MoonCorruption, SanCard.MoonVirus1))
+    expect(moves).toHaveLength(1)
+    expect(isMoveItemType(MaterialType.Card)(moves[0]) && moves[0].itemIndex).toBe(7)
   })
 
   test('commits to the Mercenary type with the most cards in hand rather than a lone card of another type', () => {
@@ -197,6 +252,51 @@ describe('SanBot', () => {
     const moves = new SanBot(Corporation.Moon).getLegalMoves(corruptionGame(2))
     expect(moves).toHaveLength(1)
     expect(moves[0]).toMatchObject({ itemIndex: 5, location: { type: LocationType.CorruptionZone, x: 5 } })
+  })
+
+  test('corrupts the cheap card in front of the opponent banner when the Reserve holds a costlier one', () => {
+    // Column 0 (cost 3, in front of Star) is replaced by a cost-6 card; column 5 (in front of Moon) would get costlier.
+    const game = corruptionGame(0)
+    for (const item of game.items[MaterialType.Card]!) {
+      if (item.location.type === LocationType.River) item.id = SanCard.RiverPropaganda3
+      if (item.location.type === LocationType.Reserve) item.id = SanCard.RiverHacking1
+    }
+    const moves = new SanBot(Corporation.Moon).getLegalMoves(game)
+    expect(moves.length).toBeGreaterThan(0)
+    for (const move of moves) expect(move).toMatchObject({ itemIndex: 0 })
+  })
+
+  const buyGame = (reserve: SanCard) =>
+    testGame(
+      { id: RuleId.BuyCards, player: Corporation.Moon },
+      {
+        [MaterialType.Banner]: [
+          { id: Corporation.Moon, location: { type: LocationType.PropagandaTrack, player: Corporation.Moon, x: 0 } },
+          { id: Corporation.Star, location: { type: LocationType.PropagandaTrack, player: Corporation.Star, x: 6 } }
+        ],
+        [MaterialType.Card]: [
+          { id: SanCard.RiverPropaganda1, location: { type: LocationType.River, x: 0 } },
+          ...[1, 2, 3, 4].map((x) => ({ id: SanCard.RiverPropaganda3, location: { type: LocationType.River, x } })),
+          { id: SanCard.RiverHacking1, location: { type: LocationType.River, x: 5 } },
+          { id: reserve, location: { type: LocationType.Reserve, x: 0 } }
+        ]
+      },
+      { [Memory.Resources]: { [Corporation.Moon]: { ...EMPTY_RESOURCES, coins: 5 } } }
+    )
+
+  test('buys the cheap card whose replacement lowers the crossing in front of its banner over a pricier one', () => {
+    // Hacking1 (price 2, crossing 6, in front of Moon) replaced by a crossing-3 card: 2 + 3 beats Propaganda3's price 4.
+    const moves = new SanBot(Corporation.Moon).getLegalMoves(buyGame(SanCard.RiverPropaganda1))
+    expect(moves).toHaveLength(1)
+    expect(moves[0]).toMatchObject({ itemIndex: 5 })
+  })
+
+  test('buys the cheap card whose replacement raises the crossing in front of the opponent banner', () => {
+    // Propaganda1 (price 2, crossing 3, in front of Star) replaced by a crossing-6 card: 2 + 3 beats price 4;
+    // Hacking1 in front of Moon would get no cheaper (2 + 0).
+    const moves = new SanBot(Corporation.Moon).getLegalMoves(buyGame(SanCard.RiverHacking1))
+    expect(moves).toHaveLength(1)
+    expect(moves[0]).toMatchObject({ itemIndex: 0 })
   })
 
   test('picks Corruption on an "any resource" card when it completes a group of 3 and Propaganda would not advance', () => {

@@ -1,7 +1,7 @@
 import { CustomMove, isDeleteItemType, isEndGame, isMoveItemType, ItemMove, Location, Material, MaterialMove, RuleMove } from '@gamepark/rules-api'
 import { CardEffect, EffectType, getCardData, isVirusCard, isMercenaryType } from '../material/CardsData'
 import { CardType, SanCard, virusNumber } from '../material/SanCard'
-import { CORRUPTION_GROUP, CORRUPTION_SLOT_CAPACITY, CORRUPTION_SLOTS, PROPAGANDA_END, RIVER_SIZE, virusCardChips } from '../material/constants'
+import { CORRUPTION_GROUP, CORRUPTION_SLOT_CAPACITY, CORRUPTION_SLOTS, PROPAGANDA_END, virusCardChips } from '../material/constants'
 import { Corporation, otherCorporation } from '../Corporation'
 import { LocationType } from '../material/LocationType'
 import { MaterialType } from '../material/MaterialType'
@@ -115,14 +115,6 @@ export class PlayCardsRule extends SanRule {
     return this.freeCorruptionPositions().flatMap((position) =>
       this.hand.moveItems({ type: LocationType.CorruptionZone, player: this.player, x: position.x, y: position.y })
     )
-  }
-
-  /** River card physically spanned by a banner step. The Propaganda track is numbered opposite to the
-   * River (step 0 sits at the River's `x = 5` end), so a step and its River column are mirrored:
-   * leaving step `s` towards step `s + 1` crosses River card `RIVER_SIZE - 1 - s`.
-   */
-  crossedRiverX(step: number, direction: 1 | -1): number {
-    return direction === 1 ? RIVER_SIZE - 1 - step : RIVER_SIZE - step
   }
 
   /** Offer to advance the banner one step when enough movement points cover the crossing cost. */
