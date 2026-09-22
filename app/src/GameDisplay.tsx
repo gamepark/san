@@ -1,6 +1,7 @@
 import { pointerWithin } from '@dnd-kit/core'
 import { css } from '@emotion/react'
 import { DevToolsHub, GameTable } from '@gamepark/react-game'
+import { ChooseHandSizeDialog } from './headers/ChooseHandSizeDialog'
 import { TABLE_HALF_HEIGHT, TABLE_X_MAX, TABLE_X_MIN } from './locators/SanLayout'
 import { PlayerPanels } from './panels/PlayerPanels'
 
@@ -14,6 +15,7 @@ export function GameDisplay() {
         <PlayerPanels />
         {process.env.NODE_ENV === 'development' && <DevToolsHub fabBottom="calc(5em)" />}
       </GameTable>
+      <ChooseHandSizeDialog />
     </>
   )
 }

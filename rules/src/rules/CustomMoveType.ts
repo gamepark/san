@@ -25,7 +25,11 @@ export enum CustomMoveType {
    * then steps onto the Central Port, one space per consequence (see {@link
    * import('./PlayCardsRule').PlayCardsRule.driveOffVirusHops}).
    */
-  DriveOffVirus
+  DriveOffVirus,
+  /** Pick the size of one's own hand for the whole game (see {@link import('./ChooseHandSizeRule').ChooseHandSizeRule}). `data` = {@link ChooseHandSizeData}. */
+  ChooseHandSize
 }
 
 export type DrawData = { player: Corporation; quantity: number }
+
+export type ChooseHandSizeData = { player: Corporation; size: number }

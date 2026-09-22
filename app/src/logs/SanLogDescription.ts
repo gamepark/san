@@ -7,6 +7,7 @@ import { isCustomMoveType, isDeleteItemType, isMoveItemType, MaterialMove } from
 import { AdvancePropagandaLog } from './AdvancePropagandaLog'
 import { AdvanceVirusLog } from './AdvanceVirusLog'
 import { BuyCardLog } from './BuyCardLog'
+import { ChooseHandSizeLog } from './ChooseHandSizeLog'
 import { CopyPlayedCardLog } from './CopyPlayedCardLog'
 import { CopyRiverCardLog } from './CopyRiverCardLog'
 import { CorruptCardLog } from './CorruptCardLog'
@@ -69,6 +70,10 @@ export class SanLogDescription implements LogDescription {
 
     if (isMoveItemType(MaterialType.HandBonusToken)(move) && move.location.type === LocationType.PlayerHandBonus) {
       return { Component: GainHandBonusLog, player: move.location.player, depth: 1 }
+    }
+
+    if (isCustomMoveType(CustomMoveType.ChooseHandSize)(move)) {
+      return { Component: ChooseHandSizeLog, player: context.action.playerId }
     }
 
     if (isCustomMoveType(CustomMoveType.CopyRiverCard)(move)) {

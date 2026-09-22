@@ -20,11 +20,14 @@ export const VIRUS_WIN = 5
 export const CORRUPTION_GROUP = 3
 
 /**
- * Cards a hand is refilled to on a normal table. The "first game" option (rules p.10, p.23) adds 1 for
- * the whole game — see {@link import('../SanOptions').SanOptions.firstGame} and
- * {@link import('../rules/EndTurnRule').EndTurnRule.handSize}.
+ * Cards a hand is refilled to on a normal table. The "first game" setup (rules p.10, p.23) plays with 7
+ * instead, and the asymmetric one lets each player pick their own — see
+ * {@link import('../SanOptions').SanOptions.handSize} and {@link import('../rules/EndTurnRule').EndTurnRule.handSize}.
  */
 export const HAND_SIZE = 6
+
+/** The hand sizes each player can pick with the "free" option ("Mise à niveau", rules p.23). */
+export const HAND_SIZES = [HAND_SIZE, HAND_SIZE + 1, HAND_SIZE + 2]
 
 /**
  * Standable "cases d'avancement" printed on a Virus card = 8 − its number (rulebook p.9, diagram

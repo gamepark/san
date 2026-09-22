@@ -1,5 +1,6 @@
 import { getEnumValues, OptionsSpecV2 } from '@gamepark/rules-api'
 import { Corporation } from './Corporation'
+import { HAND_SIZE } from './material/constants'
 
 /**
  * This is the options for each player in the game.
@@ -12,9 +13,18 @@ type PlayerOptions = { id: Corporation }
  */
 export type SanOptions = {
   players: PlayerOptions[]
-  /** "Première partie" (rules p.10, p.23): hands are refilled to 7 cards instead of 6 for the whole game. */
-  firstGame: boolean
+  /**
+   * Cards a hand is refilled to for the whole game: 6 (the normal game) or 7 (the "first game" setup,
+   * rules p.10, p.23) for both players, or {@link FREE_HAND_SIZE} for each player to pick their own.
+   */
+  handSize: number
 }
+
+/**
+ * The `handSize` option value letting each player pick their own hand size before drawing their first
+ * hand (asymmetric play, see {@link import('./rules/ChooseHandSizeRule').ChooseHandSizeRule}).
+ */
+export const FREE_HAND_SIZE = 0
 
 /**
  * The structure of everything a host can choose before the game starts — and nothing else.
@@ -38,7 +48,7 @@ export const SanOptionsSpecV2: OptionsSpecV2 = {
   players: { min: 2, max: 2 },
   identities: { values: getEnumValues(Corporation) },
   options: {
-    /** "Play with a 7-card hand for the whole game" (rules p.10, p.23) — a plain yes/no, no values to constrain. */
-    firstGame: { kind: 'boolean' }
+    /** 6 (normal game) or 7 cards ("first game", rules p.10, p.23) for both players, or each player's own choice (6 to 8). */
+    handSize: { kind: 'enum', values: [HAND_SIZE, HAND_SIZE + 1, FREE_HAND_SIZE] }
   }
 }

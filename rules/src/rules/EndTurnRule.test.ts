@@ -59,7 +59,7 @@ describe('EndTurnRule', () => {
     expect(rules.game.rule?.player).toBe(Corporation.Star)
   })
 
-  test('refills to 7 cards instead of 6 with the "first game" option (rules p.10)', () => {
+  test('refills to the hand size set up for this player', () => {
     const rules = testRules(
       { id: RuleId.EndTurn, player: Corporation.Moon },
       {
@@ -68,7 +68,7 @@ describe('EndTurnRule', () => {
           ...filler(5, { type: LocationType.Deck, player: Corporation.Moon })
         ]
       },
-      { [Memory.FirstGame]: true }
+      { [Memory.HandSize]: { [Corporation.Moon]: 7, [Corporation.Star]: 8 } }
     )
     playAll(rules, [rules.startRule(RuleId.EndTurn)]) // hand=4, target=7, deficit=3, deck has plenty
     expect(count(rules, LocationType.Hand)).toBe(7)

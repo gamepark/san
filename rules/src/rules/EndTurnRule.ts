@@ -34,9 +34,9 @@ export class EndTurnRule extends SanRule {
     return [this.startPlayerTurn(RuleId.PlayCards, this.nextPlayer)]
   }
 
-  /** 6 cards (7 with the "first game" option, rules p.10), plus one for each collected Hand Bonus token. */
+  /** The hand size set up for this player (6 by default), plus one for each collected Hand Bonus token. */
   get handSize(): number {
-    const base = HAND_SIZE + (this.remind<boolean>(Memory.FirstGame) ? 1 : 0)
+    const base = this.remind<number | undefined>(Memory.HandSize, this.player) ?? HAND_SIZE
     return base + this.material(MaterialType.HandBonusToken).location(LocationType.PlayerHandBonus).player(this.player).length
   }
 }

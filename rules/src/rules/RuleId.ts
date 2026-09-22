@@ -9,5 +9,7 @@ export enum RuleId {
   /** Phase 2 of a turn (optional): spend the revenue of the played cards to buy River cards. */
   BuyCards,
   /** End of turn: discard played cards, refill the hand, pass to the opponent. */
-  EndTurn
+  EndTurn,
+  /** Before the first turn, with the "free" hand size option: each player picks their hand size, then draws it. */
+  ChooseHandSize
 }

@@ -8,7 +8,7 @@ import { getCardCopies, riverCards, SanCard, startCards, virusCards } from './ma
 import { propagandaDirection, virusDirection } from './rules/helper/directions'
 import { Memory } from './rules/Memory'
 import { RuleId } from './rules/RuleId'
-import { SanOptions } from './SanOptions'
+import { FREE_HAND_SIZE, SanOptions } from './SanOptions'
 import { SanRules } from './SanRules'
 
 /** Expands a list of card designs into one entry per physical copy (see {@link getCardCopies}). */
@@ -23,10 +23,12 @@ export class SanSetup extends MaterialGameSetup<Corporation, MaterialType, Locat
   /** Computed once the River exists, reused by {@link setupVirusTracks} and {@link start}. */
   private startingPlayer!: Corporation
 
+  /** Whether each player picks their own hand size (see {@link import('./rules/ChooseHandSizeRule').ChooseHandSizeRule}) before drawing it. */
+  private freeHandSize = false
+
   setupMaterial(options: SanOptions) {
-    // Memorized once for the whole game: EndTurnRule.handSize reads it back at every hand refill.
-    const firstGame = this.memorize(Memory.FirstGame, !!options.firstGame)
-    this.setupDecks(firstGame)
+    this.freeHandSize = options.handSize === FREE_HAND_SIZE
+    this.setupDecks(options.handSize ?? HAND_SIZE)
     this.setupRiverAndReserve()
     this.setupPropagandaTracks()
     // Needs the River in place: it compares the crossing cost of the cards facing each banner.
@@ -40,16 +42,18 @@ export class SanSetup extends MaterialGameSetup<Corporation, MaterialType, Locat
   }
 
   /**
-   * Each Corporation shuffles its 12 start cards face down, then draws its opening hand — 7 cards
-   * instead of 6 with the "first game" option (rules p.10).
+   * Each Corporation shuffles its 12 start cards face down, then draws its opening hand — of the size
+   * the host chose, memorized for EndTurnRule.handSize to read back at every refill. When each player
+   * picks their own, the hands are drawn only once they have chosen.
    */
-  setupDecks(firstGame: boolean) {
-    const handSize = HAND_SIZE + (firstGame ? 1 : 0)
+  setupDecks(handSize: number) {
     for (const player of this.players) {
       this.material(MaterialType.Card).createItems(
         withCopies(startCards[player]).map((id) => ({ id, location: { type: LocationType.Deck, player } }))
       )
       this.material(MaterialType.Card).location(LocationType.Deck).player(player).shuffle()
+      if (this.freeHandSize) continue
+      this.memorize(Memory.HandSize, handSize, player)
       this.material(MaterialType.Card)
         .location(LocationType.Deck)
         .player(player)
@@ -161,6 +165,11 @@ export class SanSetup extends MaterialGameSetup<Corporation, MaterialType, Locat
   }
 
   start() {
-    this.startPlayerTurn(RuleId.PlayCards, this.startingPlayer)
+    if (this.freeHandSize) {
+      this.memorize(Memory.StartingPlayer, this.startingPlayer)
+      this.startSimultaneousRule(RuleId.ChooseHandSize)
+    } else {
+      this.startPlayerTurn(RuleId.PlayCards, this.startingPlayer)
+    }
   }
 }

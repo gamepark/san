@@ -2,6 +2,12 @@
   "identities": "Corporation",
   "identities.1": "Lune",
   "identities.2": "Étoile",
-  "option.firstGame": "Première partie",
-  "option.firstGame.help": "Votre main est recomposée à 7 cartes au lieu de 6."
+  "option.handSize": "Cartes en main",
+  "option.handSize.help": "Nombre de cartes auquel chaque main est recomposée en fin de tour, pendant toute la partie.",
+  "option.handSize.6": "6 cartes",
+  "option.handSize.6.help": "Le jeu normal.",
+  "option.handSize.7": "7 cartes",
+  "option.handSize.7.help": "Recommandé pour une première partie.",
+  "option.handSize.0": "Libre",
+  "option.handSize.0.help": "Chaque joueur choisit en début de partie sa taille de main (6, 7 ou 8 cartes), pour équilibrer une partie entre joueurs de niveaux différents."
 }

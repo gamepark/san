@@ -98,13 +98,19 @@ export enum Memory {
   Multipliers,
 
   /**
-   * Whether this table was set up with the "first game" option (rules p.10, p.23): hands are refilled
-   * to 7 cards instead of 6 for the whole game. Global (no player), set once at
-   * {@link import('../SanSetup').SanSetup.setupMaterial} and read by
+   * The number of cards each player's hand is refilled to, Hand Bonus tokens aside (per player). Set
+   * once, by {@link import('../SanSetup').SanSetup.setupMaterial} from the `handSize` option or by
+   * {@link import('./ChooseHandSizeRule').ChooseHandSizeRule} when each player picks their own, and read by
    * {@link import('./EndTurnRule').EndTurnRule.handSize}.
    */
-  FirstGame,
+  HandSize,
 
   /** Same as {@link Memory.CopyRiverSources}, for the {@link ResourcesMemory.copyPlayed} charges. */
-  CopyPlayedSources
+  CopyPlayedSources,
+
+  /**
+   * The Corporation that takes the first turn, kept by {@link import('../SanSetup').SanSetup} only
+   * while {@link import('./ChooseHandSizeRule').ChooseHandSizeRule} delays that turn.
+   */
+  StartingPlayer
 }

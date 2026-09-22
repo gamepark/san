@@ -21,6 +21,7 @@ import { LocationType } from './material/LocationType'
 import { SanCard } from './material/SanCard'
 import { MaterialType } from './material/MaterialType'
 import { BuyCardsRule } from './rules/BuyCardsRule'
+import { ChooseHandSizeRule } from './rules/ChooseHandSizeRule'
 import { CustomMoveType, DrawData } from './rules/CustomMoveType'
 import { EndTurnRule } from './rules/EndTurnRule'
 import { propagandaDirection } from './rules/helper/directions'
@@ -44,7 +45,8 @@ export class SanRules
   rules = {
     [RuleId.PlayCards]: PlayCardsRule,
     [RuleId.BuyCards]: BuyCardsRule,
-    [RuleId.EndTurn]: EndTurnRule
+    [RuleId.EndTurn]: EndTurnRule,
+    [RuleId.ChooseHandSize]: ChooseHandSizeRule
   }
 
   locationsStrategies = {
