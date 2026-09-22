@@ -276,11 +276,20 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
       const copy = legalMoves.find((move) => isCustomMoveType(CustomMoveType.CopyPlayedCard)(move) && move.data === context.index)
       const choices = eitherChoiceButtons(context, legalMoves)
       if (!copy) return choices
-      // Straddles the bottom edge of the card (half-height 4.4), clear of the either / or buttons at the top.
+      // Beside the card, against its left edge (half-width 3.15) and flush with its top (half-height 4.4):
+      // the 2em button is centred 1em further out, its label extending to the left, away from the card.
       return (
         <>
           {choices}
-          <IconMenuButton titleKey="button.copy-played" labelAlwaysVisible css={copyButtonCss} x={0} y={4.4} move={copy}>
+          <IconMenuButton
+            titleKey="button.copy-played"
+            labelAlwaysVisible
+            labelPosition="left"
+            css={copyButtonCss}
+            x={-4.15}
+            y={-3.4}
+            move={copy}
+          >
             <FontAwesomeIcon icon={faCopy} />
           </IconMenuButton>
         </>
