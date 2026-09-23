@@ -15,6 +15,8 @@ import {
   TABLE_HALF_HEIGHT,
   TABLE_X_MIN
 } from '../locators/SanLayout'
+import MoonPanel from '../images/panels/MoonPanel.jpg'
+import StarPanel from '../images/panels/StarPanel.jpg'
 import { corruptionIcon, propagandaIcon, virusIcon } from './resourceIcons'
 import { colors } from '../theme/colors'
 
@@ -45,7 +47,7 @@ export const PlayerPanels = () => {
         ]
         return (
           <div key={player.id} css={panelPlace(index === 0)}>
-            <StyledPlayerPanel player={player} css={[panelSize, panelColor(player.id)]} activeRing counters={counters} countersPerLine={3} />
+            <StyledPlayerPanel player={player} css={panelSize} backgroundImage={panelBackgrounds[player.id]} activeRing counters={counters} countersPerLine={3} />
           </div>
         )
       })}
@@ -71,20 +73,11 @@ const panelSize = css`
   font-size: ${PLAYER_PANEL_WIDTH / PLAYER_PANEL_EM_WIDTH}em;
 `
 
-/**
- * Background colour matching each Corporation's Banner standee: Star's is light plastic, Moon's is
- * dark. `!important` guards against the panel's own default white background, whose stylesheet rule
- * may otherwise be inserted after this one and win the equal-specificity tie.
- */
-const panelColor = (corporation: Corporation) =>
-  corporation === Corporation.Star
-    ? css`
-        background-color: ${colors.starDark} !important;
-      `
-    : css`
-        background-color: ${colors.moon} !important;
-        color: ${colors.paper} !important;
-      `
+/** Each Corporation's Hand Bonus plate, with its Banner's symbol in the middle (see app/src/images/panels). */
+const panelBackgrounds: Record<Corporation, string> = {
+  [Corporation.Moon]: MoonPanel,
+  [Corporation.Star]: StarPanel
+}
 
 /** Overrides theme.playerPanel.dataBadge's generic gold border with this counter's own resource colour. */
 const counterBorder = (color: string) => css`
