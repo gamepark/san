@@ -2,6 +2,7 @@ import { Corporation } from '@gamepark/san/Corporation'
 import { LocationType } from '@gamepark/san/material/LocationType'
 import { MaterialType } from '@gamepark/san/material/MaterialType'
 import { Locator } from '@gamepark/react-game'
+import { cardAreaLocator } from './CardAreaLocator'
 import { centralPortAreaLocator } from './CentralPortAreaLocator'
 import { corruptionZoneLocator } from './CorruptionZoneLocator'
 import { playerDeckLocator } from './DeckLocator'
@@ -30,4 +31,5 @@ export const Locators: Partial<Record<LocationType, Locator<Corporation, Materia
   [LocationType.PlayerHandBonus]: playerHandBonusLocator,
   [LocationType.VirusTrack]: virusTrackLocator,
   [LocationType.CentralPortArea]: centralPortAreaLocator,
+  [LocationType.CardArea]: cardAreaLocator
 }

@@ -25,4 +25,6 @@ export enum LocationType {
   VirusTrack,
   /** The Central Port tile location, at the middle of the Virus track */
   CentralPortArea,
+  /** An area printed on a card (location.parent = the card, location.id = which area), only focused by the tutorial */
+  CardArea
 }

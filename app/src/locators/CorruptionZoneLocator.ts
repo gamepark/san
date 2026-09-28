@@ -4,6 +4,7 @@ import { LocationType } from '@gamepark/san/material/LocationType'
 import { MaterialType } from '@gamepark/san/material/MaterialType'
 import { PlayCardsRule } from '@gamepark/san/rules/PlayCardsRule'
 import { RuleId } from '@gamepark/san/rules/RuleId'
+import { CorruptionSlotOutline } from './CorruptionSlotOutline'
 import { CARD_BORDER_RADIUS, CARD_HEIGHT, CARD_WIDTH, CORRUPTION_STACK_GAP, CORRUPTION_Y, HAND_Z, playerSide, riverX } from './SanLayout'
 
 /**
@@ -50,6 +51,7 @@ class CorruptionSlotDescription extends DropAreaDescription {
   width = CARD_WIDTH
   height = CARD_HEIGHT
   borderRadius = CARD_BORDER_RADIUS
+  content = CorruptionSlotOutline
 
   /** The hand is drawn over most of the slots (see {@link import('./SanLayout').HAND_Y}): lift the areas above it, so they can be clicked. */
   getLocationTransform(location: Location, context: LocationContext): string[] {
