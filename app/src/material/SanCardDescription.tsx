@@ -12,7 +12,7 @@ import { SanRules } from '@gamepark/san/SanRules'
 import { CustomMoveType } from '@gamepark/san/rules/CustomMoveType'
 import { RuleId } from '@gamepark/san/rules/RuleId'
 import { CardDescription, ItemContext, MaterialContentProps, MaterialContext } from '@gamepark/react-game'
-import { isCustomMoveType, isDeleteItemType, isMoveItemType, MaterialItem, MaterialMove, MaterialMoveBuilder } from '@gamepark/rules-api'
+import { HidingSecretsStrategy, isCustomMoveType, isDeleteItemType, isMoveItemType, MaterialItem, MaterialMove, MaterialMoveBuilder } from '@gamepark/rules-api'
 import { ReactNode } from 'react'
 import { CrossingCostBadge } from './CrossingCostBadge'
 import { eitherChoiceButtons } from './EitherChoiceButtons'
@@ -173,7 +173,8 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
    * The help dialog still relies on the id, so a revealed card can be looked at by clicking it.
    */
   isFlippedOnTable(item: Partial<MaterialItem>, context: MaterialContext) {
-    const strategy = (context.rules as SanRules).hidingStrategies[MaterialType.Card][item.location?.type as LocationType]
+    const strategies: Partial<Record<LocationType, HidingSecretsStrategy>> = (context.rules as SanRules).hidingStrategies[MaterialType.Card]
+    const strategy = strategies[item.location?.type as LocationType]
     if (strategy?.(item as MaterialItem, context.player).includes('id')) return true
     return super.isFlippedOnTable(item, context)
   }

@@ -56,6 +56,7 @@ class BannerDescription extends TokenDescription<number, number, number, Corpora
   getItemExtraCss(item: MaterialItem, context: ItemContext) {
     const state = context.rules.game.tutorial
     if (state && !state.popupClosed && state.step === tutorial.propagandaTrackStep && item.id === context.player) return tutorialGlowCss
+    return undefined
   }
 
   /** No help dialog for the banner: it carries no printed text worth explaining, only its own move. */

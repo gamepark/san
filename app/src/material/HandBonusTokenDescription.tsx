@@ -32,6 +32,7 @@ class HandBonusTokenDescription extends TokenDescription<number, number, number,
       item.location.player === context.player
     )
       return tutorialGlowCss
+    return undefined
   }
 }
 
