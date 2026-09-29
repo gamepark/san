@@ -8,6 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { LocationType } from '@gamepark/san/material/LocationType'
 import { MaterialType } from '@gamepark/san/material/MaterialType'
 import { SanCard } from '@gamepark/san/material/SanCard'
+import { SanRules } from '@gamepark/san/SanRules'
 import { CustomMoveType } from '@gamepark/san/rules/CustomMoveType'
 import { RuleId } from '@gamepark/san/rules/RuleId'
 import { CardDescription, ItemContext, MaterialContentProps, MaterialContext } from '@gamepark/react-game'
@@ -165,9 +166,15 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
     )
   }
 
-  /** The Reserve is shown face down, except its top card, which the rules rotate (`rotation: true`). */
+  /**
+   * A card stays face down on the table wherever the rules hide its id ({@link SanRules.hidingStrategies}): the
+   * Deck, the Corruption zone, the Reserve except its top card, and the other Corporation's hand. Relying on the
+   * id alone is not enough: once the game is over, every id is revealed, which would turn all these cards face up.
+   * The help dialog still relies on the id, so a revealed card can be looked at by clicking it.
+   */
   isFlippedOnTable(item: Partial<MaterialItem>, context: MaterialContext) {
-    if (item.location?.type === LocationType.Reserve && !item.location.rotation) return true
+    const strategy = (context.rules as SanRules).hidingStrategies[MaterialType.Card][item.location?.type as LocationType]
+    if (strategy?.(item as MaterialItem, context.player).includes('id')) return true
     return super.isFlippedOnTable(item, context)
   }
 
