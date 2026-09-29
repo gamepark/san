@@ -8,7 +8,7 @@ export enum CardArea {
   Revenue = 1,
   /** Bottom-centre coin: the Cost to buy the card from the River. */
   Cost,
-  /** Left-edge triangle: the printed crossing cost, with the actual one shown just under it (see CrossingCostBadge). */
+  /** Left-edge triangle: the printed crossing cost (the actual one, CrossingCostBadge, is hidden while the tutorial points at it). */
   CrossingCost
 }
 
@@ -21,7 +21,7 @@ class CardAreaDescription extends LocationDescription {
       case CardArea.Cost:
         return { width: 1.6, height: 1.6 }
       case CardArea.CrossingCost:
-        return { width: 1.9, height: 2.8 }
+        return { width: 1.4, height: 1.4 }
     }
   }
 
@@ -43,7 +43,7 @@ class CardAreaLocator extends Locator {
         return { x: 50, y: 90.5 }
       case CardArea.CrossingCost:
       default:
-        return { x: 15, y: 83 }
+        return { x: 11, y: 76 }
     }
   }
 }

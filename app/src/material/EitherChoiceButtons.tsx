@@ -42,7 +42,6 @@ export const eitherChoiceButtons = (context: ItemContext, legalMoves: MaterialMo
   const cardMoves = legalMoves
     .filter(isCustomMoveType(CustomMoveType.ChooseEffectOption))
     .filter((move) => (move.data as { itemIndex: number }).itemIndex === context.index)
-    .sort((a, b) => (a.data as { option: number }).option - (b.data as { option: number }).option)
   if (!cardMoves.length) return
 
   // Roughly where the card's own printed effect icons sit: a row near the top edge, starting a bit
@@ -51,21 +50,23 @@ export const eitherChoiceButtons = (context: ItemContext, legalMoves: MaterialMo
   // width/6.3 scale.
   // When an option has a quantity, it is shown as the button's label, on its right: spread the
   // buttons further apart so each label fits before the next button.
-  const hasQuantity = cardMoves.some((move) => (choice.options[(move.data as { option: number }).option].value ?? 1) > 1)
+  const hasQuantity = choice.options.some((effect) => (effect.value ?? 1) > 1)
   const gap = hasQuantity ? 2.8 : 1.7
   const start = -2
 
+  // One button per option printed on the card, not per legal move: the buttons keep their usual
+  // place even when some options are not playable (e.g. the tutorial restricts the choice), those
+  // being shown disabled.
   return (
     <>
-      {cardMoves.map((move, i) => {
-        const option = (move.data as { option: number }).option
-        const effect = choice.options[option]
+      {choice.options.map((effect, option) => {
+        const move = cardMoves.find((move) => (move.data as { option: number }).option === option)
         const icon = OPTION_ICON[effect.type]
         return (
           <ItemMenuButton
             key={option}
             move={move}
-            x={start + i * gap}
+            x={start + option * gap}
             y={-3.5}
             labelPosition="right"
             label={(effect.value ?? 1) > 1 ? `×${effect.value}` : undefined}
@@ -89,6 +90,11 @@ const optionButtonCss = css`
   background-color: ${colors.paperSoft} !important;
   border: 0.06em solid ${colors.equipmentDark} !important;
   box-shadow: 0 0.1em 0.2em rgba(0, 0, 0, 0.4);
+
+  &:disabled {
+    cursor: default;
+    background-color: ${colors.starDark} !important;
+  }
 
   /* The quantity label, read over the card art. */
   > span {

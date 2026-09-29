@@ -4,7 +4,19 @@ import { Corporation } from '@gamepark/san/Corporation'
 import { LocationType } from '@gamepark/san/material/LocationType'
 import { CARD_BORDER_RADIUS, CARD_HEIGHT, CARD_WIDTH, DISCARD_X, DISCARD_Y, playerSide } from './SanLayout'
 import { PlayerResourceCounters } from '../material/PlayerResourceCounters'
+import { colors } from '../theme/colors'
+import { focusOutline } from './FocusOutline'
 import { DiscardHelp } from './help/DiscardHelp'
+
+const DiscardOutline = focusOutline(colors.paper, 'rgba(247, 247, 245, 0.15)')
+
+/** The resource counters, and the pile's outline while the tutorial points at it empty. */
+const DiscardContent = ({ location }: { location: Location }) => (
+  <>
+    <DiscardOutline location={location} />
+    <PlayerResourceCounters location={location} />
+  </>
+)
 
 /** A Corporation's face-up discard pile, lying on its side past its own Virus pile. */
 class DiscardLocator extends DeckLocator {
@@ -41,7 +53,7 @@ class DiscardCountersLocationDescription extends DropAreaDescription {
   width = CARD_HEIGHT
   height = CARD_WIDTH
   borderRadius = CARD_BORDER_RADIUS
-  content = PlayerResourceCounters
+  content = DiscardContent
   help = DiscardHelp
 
   /** Dragging only: a long press on the pile would otherwise buy or discard whichever card happens to be the only candidate. */

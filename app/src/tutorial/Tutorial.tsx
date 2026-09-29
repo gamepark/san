@@ -20,7 +20,7 @@ type Game = MaterialGame<number, MaterialType, LocationType>
 type Move = MaterialMove<number, MaterialType, LocationType>
 
 /** The game's white-on-transparent icons, on a disc of their colour so that they read on the popup's light background. */
-const Icon = ({ image, color }: { image: string; color: string }) => <img src={image} alt="" css={iconCss(color)} draggable={false} />
+const Icon = ({ image, color }: { image: string; color: string }) => <img src={image} alt="" css={iconCss(color)} draggable={false}/>
 
 const iconCss = (color: string) => css`
   height: 1.3em;
@@ -39,22 +39,22 @@ const coloredCss = (color: string) => css`
 
 /** Tags available in every `tuto.*` text. */
 const components: Record<string, ReactElement> = {
-  b: <strong />,
-  corruption: <Icon image={corruptionIcon} color={colors.corruption} />,
-  propaganda: <Icon image={propagandaIcon} color={colors.propaganda} />,
-  hacking: <Icon image={virusIcon} color={colors.hacking} />,
-  yellow: <span css={coloredCss(colors.corruptionDark)} />,
-  blue: <span css={coloredCss(colors.propaganda)} />,
-  red: <span css={coloredCss(colors.hacking)} />,
-  grey: <span css={coloredCss(colors.equipment)} />
+  b: <strong/>,
+  corruption: <Icon image={corruptionIcon} color={colors.corruption}/>,
+  propaganda: <Icon image={propagandaIcon} color={colors.propaganda}/>,
+  hacking: <Icon image={virusIcon} color={colors.hacking}/>,
+  yellow: <span css={coloredCss(colors.corruptionDark)}/>,
+  blue: <span css={coloredCss(colors.propaganda)}/>,
+  red: <span css={coloredCss(colors.hacking)}/>,
+  grey: <span css={coloredCss(colors.equipment)}/>
 }
 
-const text = (key: string) => () => <Trans i18nKey={key} components={components} />
+const text = (key: string) => () => <Trans i18nKey={key} components={components}/>
 
 /** Index, in the start Equipment cards' "either" effect, of the option giving that resource. */
 const equipmentOption = (type: EffectType) => getCardData(SanCard.MoonEquipment)!.effects[0].option!.findIndex((effect) => effect.type === type)
 
-export class Tutorial extends MaterialTutorial<number, MaterialType, LocationType> {
+class Tutorial extends MaterialTutorial<number, MaterialType, LocationType> {
   version = 1
   options = { players: [{ id: me }, { id: opponent }], handSize: HAND_SIZE }
   setup = new TutorialSetup()
@@ -140,6 +140,33 @@ export class Tutorial extends MaterialTutorial<number, MaterialType, LocationTyp
     ]
   }
 
+  /** Introduces the banner, which glows during this step ({@link BannerDescription.getItemExtraCss}). */
+  private readonly propagandaTrack: TutorialStep<number, MaterialType, LocationType> = {
+    popup: { text: text('tuto.propaganda-track'), position: { y: -20 } },
+    focus: (game) => ({ materials: [this.material(game, MaterialType.Banner).id(me)] })
+  }
+
+  /**
+   * Explains the printed crossing cost, 4: the badge showing the reduced cost, 3, is hidden during this step
+   * ({@link CrossingCostBadge}), the next one explains the reduction.
+   */
+  private readonly crossingCost: TutorialStep<number, MaterialType, LocationType> = {
+    popup: { text: text('tuto.crossing-cost'), position: { x: 25 } },
+    focus: (game) => ({
+      materials: [this.riverCard(game, FIRST_CROSSING_X), this.material(game, MaterialType.Banner).id(me)],
+      locations: this.cardArea(this.riverCard(game, FIRST_CROSSING_X), CardArea.CrossingCost),
+      margin: { right: 20 }
+    })
+  }
+
+  /** Introduces the Hand bonus tokens, which glow during this step ({@link HandBonusTokenDescription.getItemExtraCss}). */
+  private readonly handBonus: TutorialStep<number, MaterialType, LocationType> = {
+    popup: { text: text('tuto.hand-bonus'), position: { y: 20 } },
+    focus: (game) => ({
+      materials: [this.material(game, MaterialType.Banner).id(me), this.material(game, MaterialType.HandBonusToken).location(LocationType.HandBonusSpot).player(me)]
+    })
+  }
+
   steps: TutorialStep<number, MaterialType, LocationType>[] = [
     { popup: { text: text('tuto.welcome') } },
     { popup: { text: text('tuto.corporations') } },
@@ -155,8 +182,8 @@ export class Tutorial extends MaterialTutorial<number, MaterialType, LocationTyp
       (): TutorialStep<number, MaterialType, LocationType> => ({
         popup: { text: text('tuto.play-corruption'), position: { y: -20 } },
         focus: (game) => ({
-          materials: [this.hand(game).id((id: SanCard) => id === SanCard.MoonCorruption || id === SanCard.MoonEquipment)],
-          margin: { top: 10 }
+          materials: [this.hand(game).id((id: SanCard) => id === SanCard.MoonCorruption || id === SanCard.MoonEquipment), this.playArea(game)],
+          locations: [this.location(LocationType.PlayArea).player(me).location]
         }),
         move: { filter: this.play(SanCard.MoonCorruption, SanCard.MoonEquipment) }
       })
@@ -223,14 +250,22 @@ export class Tutorial extends MaterialTutorial<number, MaterialType, LocationTyp
       })
     },
     {
-      popup: { text: text('tuto.buy'), position: { y: -20 } },
-      focus: (game) => ({ materials: [this.river(game)] }),
+      popup: { text: text('tuto.buy'), position: { y: 12 } },
+      focus: (game) => ({
+        materials: [this.river(game), this.material(game, MaterialType.Card).location(LocationType.Discard).player(me)],
+        locations: [this.location(LocationType.Discard).player(me).location],
+        margin: { right: 1 }
+      }),
       move: { filter: (move) => this.isBuy(move) }
     },
     { move: { filter: isCustomMoveType(CustomMoveType.EndBuyPhase), auto: true, interrupt: (move) => isStartRule(move) && move.id === RuleId.EndTurn } },
     {
-      popup: { text: text('tuto.end-turn'), position: { y: -20 } },
-      focus: (game) => ({ materials: [this.playArea(game), this.hand(game)] }),
+      popup: { text: text('tuto.end-turn') },
+      focus: (game) => ({
+        materials: [this.playArea(game), this.hand(game), this.material(game, MaterialType.Card).location(LocationType.Deck).player(me)],
+        locations: [this.location(LocationType.Deck).player(me).location],
+        margin: { left: 1, right: 1 }
+      }),
       move: {}
     },
     { popup: { text: text('tuto.opponent-turn') } },
@@ -273,22 +308,15 @@ export class Tutorial extends MaterialTutorial<number, MaterialType, LocationTyp
     ...[1, 2, 3].map(
       (): TutorialStep<number, MaterialType, LocationType> => ({
         popup: { text: text('tuto.play-propaganda'), position: { y: -20 } },
-        focus: (game) => ({ materials: [this.hand(game).id(SanCard.MoonPropaganda)], margin: { top: 10 } }),
+        focus: (game) => ({
+          materials: [this.hand(game).id(SanCard.MoonPropaganda), this.playArea(game)],
+          locations: [this.location(LocationType.PlayArea).player(me).location]
+        }),
         move: { filter: this.play(SanCard.MoonPropaganda) }
       })
     ),
-    {
-      popup: { text: text('tuto.propaganda-track'), position: { y: -20 } },
-      focus: (game) => ({ materials: [this.river(game), this.material(game, MaterialType.Banner)] })
-    },
-    {
-      popup: { text: text('tuto.crossing-cost'), position: { x: 25 } },
-      focus: (game) => ({
-        materials: [this.riverCard(game, FIRST_CROSSING_X), this.material(game, MaterialType.Banner).id(me)],
-        locations: this.cardArea(this.riverCard(game, FIRST_CROSSING_X), CardArea.CrossingCost),
-        margin: { right: 20 }
-      })
-    },
+    this.propagandaTrack,
+    this.crossingCost,
     {
       popup: { text: text('tuto.crossing-cost-modifiers'), position: { x: 25 } },
       focus: (game) => ({
@@ -305,16 +333,29 @@ export class Tutorial extends MaterialTutorial<number, MaterialType, LocationTyp
       }),
       move: { filter: isMoveItemType(MaterialType.Banner) }
     },
-    {
-      popup: { text: text('tuto.hand-bonus'), position: { y: 20 } },
-      focus: (game) => ({
-        materials: [this.material(game, MaterialType.Banner).id(me), this.material(game, MaterialType.HandBonusToken).location(LocationType.HandBonusSpot).player(me)]
-      })
-    },
+    this.handBonus,
     {
       popup: { text: text('tuto.propaganda-victory'), position: { y: -20 } },
       focus: (game) => ({ materials: [this.river(game), this.material(game, MaterialType.Banner)] })
     },
     { popup: { text: text('tuto.free-play') } }
   ]
+
+  /** Index of the step introducing the banner. */
+  get propagandaTrackStep() {
+    return this.steps.indexOf(this.propagandaTrack)
+  }
+
+  /** Index of the step introducing the Hand bonus tokens. */
+  get handBonusStep() {
+    return this.steps.indexOf(this.handBonus)
+  }
+
+  /** Index of the step explaining the printed crossing cost. */
+  get crossingCostStep() {
+    return this.steps.indexOf(this.crossingCost)
+  }
 }
+
+/** Shared with the material descriptions that react to a given step. */
+export const tutorial = new Tutorial()

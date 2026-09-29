@@ -9,7 +9,9 @@ import { isMoveItemType, MaterialItem, MaterialMove } from '@gamepark/rules-api'
 import moonBanner from '../images/pawns/MoonBanner.png'
 import starBanner from '../images/pawns/StarBanner.png'
 import { colors } from '../theme/colors'
+import { tutorial } from '../tutorial/Tutorial'
 import { IconMenuButton } from './IconMenuButton'
+import { tutorialGlowCss } from './tutorialGlow'
 
 /** The standee banner each Corporation moves along the Propaganda track. Image id = {@link Corporation}. */
 class BannerDescription extends TokenDescription<number, number, number, Corporation> {
@@ -48,6 +50,12 @@ class BannerDescription extends TokenDescription<number, number, number, Corpora
         <FontAwesomeIcon icon={faArrowRight} />
       </IconMenuButton>
     )
+  }
+
+  /** Glows while the tutorial introduces it (see {@link tutorialGlowCss}). */
+  getItemExtraCss(item: MaterialItem, context: ItemContext) {
+    const state = context.rules.game.tutorial
+    if (state && !state.popupClosed && state.step === tutorial.propagandaTrackStep && item.id === context.player) return tutorialGlowCss
   }
 
   /** No help dialog for the banner: it carries no printed text worth explaining, only its own move. */

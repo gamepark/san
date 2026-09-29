@@ -1,5 +1,7 @@
 import { DropAreaDescription, ListLocator, MaterialContext } from '@gamepark/react-game'
 import { Location } from '@gamepark/rules-api'
+import { colors } from '../theme/colors'
+import { focusOutline } from './FocusOutline'
 import { CARD_BORDER_RADIUS, CARD_WIDTH, PLAY_AREA_DROP_HEIGHT, PLAY_AREA_MAX_COUNT, PLAY_AREA_STACK_GAP, PLAY_AREA_X, playerSide, VIRUS_PILE_Y } from './SanLayout'
 
 /**
@@ -35,7 +37,14 @@ class PlayAreaLocator extends ListLocator {
   }
 
   /** A fixed column, about as tall as the two Virus piles and the Central Port between them. */
-  locationDescription = new DropAreaDescription({ width: CARD_WIDTH, height: PLAY_AREA_DROP_HEIGHT, borderRadius: CARD_BORDER_RADIUS })
+  locationDescription = new PlayAreaDescription()
+}
+
+class PlayAreaDescription extends DropAreaDescription {
+  width = CARD_WIDTH
+  height = PLAY_AREA_DROP_HEIGHT
+  borderRadius = CARD_BORDER_RADIUS
+  content = focusOutline(colors.paper, 'rgba(247, 247, 245, 0.15)')
 }
 
 export const playAreaLocator = new PlayAreaLocator()

@@ -374,7 +374,7 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
       children: (
         <>
           {props.children}
-          <CrossingCostBadge itemIndex={props.itemIndex} />
+          <CrossingCostBadge itemIndex={props.itemIndex} playDown={props.playDown && !props.highlight} />
         </>
       )
     })

@@ -12,7 +12,7 @@ import { Locators } from './locators/Locators'
 import { Material } from './material/Material'
 import { Scoring } from './Scoring'
 import { theme } from './theme'
-import { Tutorial } from './tutorial/Tutorial'
+import { tutorial } from './tutorial/Tutorial'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -28,7 +28,7 @@ createRoot(document.getElementById('root')!).render(
       scoring={Scoring}
       theme={theme}
       ai={ai}
-      tutorial={new Tutorial()}
+      tutorial={tutorial}
     >
       <App />
     </GameProvider>
