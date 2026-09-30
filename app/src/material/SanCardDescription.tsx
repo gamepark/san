@@ -22,14 +22,14 @@ import { CARD_BORDER_RADIUS } from '../locators/SanLayout'
 import { corruptionIcon } from '../panels/resourceIcons'
 import { colors } from '../theme/colors'
 import back from '../images/cards/CardBack.jpg'
-import moonPropaganda from '../images/cards/start/MoonPropaganda.jpg'
-import moonHacking from '../images/cards/start/MoonHacking.jpg'
-import moonCorruption from '../images/cards/start/MoonCorruption.jpg'
-import moonEquipment from '../images/cards/start/MoonEquipment.jpg'
-import starPropaganda from '../images/cards/start/StarPropaganda.jpg'
-import starHacking from '../images/cards/start/StarHacking.jpg'
-import starCorruption from '../images/cards/start/StarCorruption.jpg'
-import starEquipment from '../images/cards/start/StarEquipment.jpg'
+import startPropaganda from '../images/cards/start/Propaganda.jpg'
+import startHacking from '../images/cards/start/Hacking.jpg'
+import startCorruption from '../images/cards/start/Corruption.jpg'
+import startEquipment from '../images/cards/start/Equipment.jpg'
+import startPropagandaRevenue2 from '../images/cards/start/PropagandaRevenue2.jpg'
+import startHackingRevenue2 from '../images/cards/start/HackingRevenue2.jpg'
+import startCorruptionRevenue2 from '../images/cards/start/CorruptionRevenue2.jpg'
+import startEquipmentRevenue2 from '../images/cards/start/EquipmentRevenue2.jpg'
 import moonVirus1 from '../images/cards/virus/MoonVirus1.jpg'
 import moonVirus2 from '../images/cards/virus/MoonVirus2.jpg'
 import moonVirus3 from '../images/cards/virus/MoonVirus3.jpg'
@@ -87,14 +87,22 @@ class SanCardDescription extends CardDescription<number, number, number, SanCard
   backImage = back
 
   images = {
-    [SanCard.MoonPropaganda]: moonPropaganda,
-    [SanCard.MoonHacking]: moonHacking,
-    [SanCard.MoonCorruption]: moonCorruption,
-    [SanCard.MoonEquipment]: moonEquipment,
-    [SanCard.StarPropaganda]: starPropaganda,
-    [SanCard.StarHacking]: starHacking,
-    [SanCard.StarCorruption]: starCorruption,
-    [SanCard.StarEquipment]: starEquipment,
+    [SanCard.MoonPropaganda]: startPropaganda,
+    [SanCard.MoonHacking]: startHacking,
+    [SanCard.MoonCorruption]: startCorruption,
+    [SanCard.MoonEquipment]: startEquipment,
+    [SanCard.StarPropaganda]: startPropaganda,
+    [SanCard.StarHacking]: startHacking,
+    [SanCard.StarCorruption]: startCorruption,
+    [SanCard.StarEquipment]: startEquipment,
+    [SanCard.MoonPropagandaRevenue2]: startPropagandaRevenue2,
+    [SanCard.MoonHackingRevenue2]: startHackingRevenue2,
+    [SanCard.MoonCorruptionRevenue2]: startCorruptionRevenue2,
+    [SanCard.MoonEquipmentRevenue2]: startEquipmentRevenue2,
+    [SanCard.StarPropagandaRevenue2]: startPropagandaRevenue2,
+    [SanCard.StarHackingRevenue2]: startHackingRevenue2,
+    [SanCard.StarCorruptionRevenue2]: startCorruptionRevenue2,
+    [SanCard.StarEquipmentRevenue2]: startEquipmentRevenue2,
     [SanCard.MoonVirus1]: moonVirus1,
     [SanCard.MoonVirus2]: moonVirus2,
     [SanCard.MoonVirus3]: moonVirus3,

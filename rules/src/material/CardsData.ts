@@ -78,27 +78,28 @@ const multiplier = (
 ): CardEffect => ({ type: EffectType.Multiplier, gain, per, value: 1 })
 
 /**
- * The 8 starting-deck designs (3 copies each), from `cards/start/*.jpg`.
- * Each gives 1 point of its resource (Equipment: 1 point of any resource) and 1 Revenue.
+ * The 16 starting-deck designs, from `cards/start/*.jpg`: per Corporation, 4 types in 2 copies with 1 Revenue plus
+ * their "Revenue2" variant, a single copy with 2 Revenue.
+ * Each gives 1 point of its resource (Equipment: 1 point of any resource).
  * Start cards have no crossing cost and are never bought, so no `cost` / `crossingCost`.
  */
 const startCardsData: Record<SanCard, CardData> = {
   [SanCard.MoonPropaganda]: { type: CardType.Propaganda, effects: [propaganda(1)], revenue: 1 },
   [SanCard.MoonHacking]: { type: CardType.Hacking, effects: [virus(1)], revenue: 1 },
   [SanCard.MoonCorruption]: { type: CardType.Corruption, effects: [corruption(1)], revenue: 1 },
-  [SanCard.MoonEquipment]: {
-    type: CardType.Equipment,
-    effects: [either(propaganda(1), virus(1), corruption(1))],
-    revenue: 1
-  },
+  [SanCard.MoonEquipment]: { type: CardType.Equipment, effects: [either(propaganda(1), virus(1), corruption(1))], revenue: 1 },
   [SanCard.StarPropaganda]: { type: CardType.Propaganda, effects: [propaganda(1)], revenue: 1 },
   [SanCard.StarHacking]: { type: CardType.Hacking, effects: [virus(1)], revenue: 1 },
   [SanCard.StarCorruption]: { type: CardType.Corruption, effects: [corruption(1)], revenue: 1 },
-  [SanCard.StarEquipment]: {
-    type: CardType.Equipment,
-    effects: [either(propaganda(1), virus(1), corruption(1))],
-    revenue: 1
-  }
+  [SanCard.StarEquipment]: { type: CardType.Equipment, effects: [either(propaganda(1), virus(1), corruption(1))], revenue: 1 },
+  [SanCard.MoonPropagandaRevenue2]: { type: CardType.Propaganda, effects: [propaganda(1)], revenue: 2 },
+  [SanCard.MoonHackingRevenue2]: { type: CardType.Hacking, effects: [virus(1)], revenue: 2 },
+  [SanCard.MoonCorruptionRevenue2]: { type: CardType.Corruption, effects: [corruption(1)], revenue: 2 },
+  [SanCard.MoonEquipmentRevenue2]: { type: CardType.Equipment, effects: [either(propaganda(1), virus(1), corruption(1))], revenue: 2 },
+  [SanCard.StarPropagandaRevenue2]: { type: CardType.Propaganda, effects: [propaganda(1)], revenue: 2 },
+  [SanCard.StarHackingRevenue2]: { type: CardType.Hacking, effects: [virus(1)], revenue: 2 },
+  [SanCard.StarCorruptionRevenue2]: { type: CardType.Corruption, effects: [corruption(1)], revenue: 2 },
+  [SanCard.StarEquipmentRevenue2]: { type: CardType.Equipment, effects: [either(propaganda(1), virus(1), corruption(1))], revenue: 2 }
 } as Record<SanCard, CardData>
 
 /**

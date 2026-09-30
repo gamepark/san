@@ -1,13 +1,13 @@
 import { Corporation } from '../Corporation'
 
 /**
- * The 51 distinct card designs of San. The printed game has 82 physical cards: several designs are
+ * The 59 distinct card designs of San (51 images: Moon and Star start cards share theirs, see `MATERIAL.md`). The printed game has 82 physical cards: several designs are
  * printed in multiple copies (see {@link cardCopies} and `MATERIAL.md`).
  *
  * Colour ↔ type: blue = Propaganda, red = Hacking, yellow = Corruption, grey = Equipment.
  */
 export enum SanCard {
-  // 2x12 start cards (3 copies of each design, see cardCopies)
+  // 2x12 start cards: 2 copies of each design below, plus 1 copy of its "Revenue2" variant (appended at the end)
   MoonPropaganda = 1,
   MoonHacking,
   MoonCorruption,
@@ -62,7 +62,18 @@ export enum SanCard {
   RiverEquipment15,
   RiverEquipment16,
   RiverEquipment17,
-  RiverEquipment18
+  RiverEquipment18,
+
+  // The third copy of each start card: identical, except that it gives 2 Revenue instead of 1. Appended rather than
+  // placed next to the other start cards so that the ids of the existing designs do not change.
+  MoonPropagandaRevenue2,
+  MoonHackingRevenue2,
+  MoonCorruptionRevenue2,
+  MoonEquipmentRevenue2,
+  StarPropagandaRevenue2,
+  StarHackingRevenue2,
+  StarCorruptionRevenue2,
+  StarEquipmentRevenue2
 }
 
 export enum CardType {
@@ -72,10 +83,16 @@ export enum CardType {
   Equipment
 }
 
-/** The 4 start-card designs of each Corporation (3 physical copies of each, see {@link cardCopies}). */
+/** The 8 start-card designs of each Corporation: 4 types × (Revenue 1 in 2 copies, Revenue 2 in 1 copy), see {@link cardCopies}. */
 export const startCards: Record<Corporation, SanCard[]> = {
-  [Corporation.Moon]: [SanCard.MoonPropaganda, SanCard.MoonHacking, SanCard.MoonCorruption, SanCard.MoonEquipment],
-  [Corporation.Star]: [SanCard.StarPropaganda, SanCard.StarHacking, SanCard.StarCorruption, SanCard.StarEquipment]
+  [Corporation.Moon]: [
+    SanCard.MoonPropaganda, SanCard.MoonHacking, SanCard.MoonCorruption, SanCard.MoonEquipment,
+    SanCard.MoonPropagandaRevenue2, SanCard.MoonHackingRevenue2, SanCard.MoonCorruptionRevenue2, SanCard.MoonEquipmentRevenue2
+  ],
+  [Corporation.Star]: [
+    SanCard.StarPropaganda, SanCard.StarHacking, SanCard.StarCorruption, SanCard.StarEquipment,
+    SanCard.StarPropagandaRevenue2, SanCard.StarHackingRevenue2, SanCard.StarCorruptionRevenue2, SanCard.StarEquipmentRevenue2
+  ]
 }
 
 /** The 5 Virus cards of each Corporation, ordered 1 → 5 (i.e. bottom → top of the setup stack). */
@@ -100,13 +117,13 @@ export const riverCards: SanCard[] = [
 
 /**
  * Number of physical copies of a design. Any design not listed here has a single copy.
- * - start cards: 3 each (24 cards = 12 per Corporation)
+ * - start cards: 2 each for the Revenue 1 designs, 1 for the Revenue 2 ones (24 cards = 12 per Corporation)
  * - River Propaganda / Hacking / Corruption: 2 each (30 cards)
  * - everything else (Virus, River Equipment): 1
  */
 export const cardCopies: Partial<Record<SanCard, number>> = {
-  [SanCard.MoonPropaganda]: 3, [SanCard.MoonHacking]: 3, [SanCard.MoonCorruption]: 3, [SanCard.MoonEquipment]: 3,
-  [SanCard.StarPropaganda]: 3, [SanCard.StarHacking]: 3, [SanCard.StarCorruption]: 3, [SanCard.StarEquipment]: 3,
+  [SanCard.MoonPropaganda]: 2, [SanCard.MoonHacking]: 2, [SanCard.MoonCorruption]: 2, [SanCard.MoonEquipment]: 2,
+  [SanCard.StarPropaganda]: 2, [SanCard.StarHacking]: 2, [SanCard.StarCorruption]: 2, [SanCard.StarEquipment]: 2,
   [SanCard.RiverPropaganda1]: 2, [SanCard.RiverPropaganda2]: 2, [SanCard.RiverPropaganda3]: 2, [SanCard.RiverPropaganda4]: 2, [SanCard.RiverPropaganda5]: 2,
   [SanCard.RiverHacking1]: 2, [SanCard.RiverHacking2]: 2, [SanCard.RiverHacking3]: 2, [SanCard.RiverHacking4]: 2, [SanCard.RiverHacking5]: 2,
   [SanCard.RiverCorruption1]: 2, [SanCard.RiverCorruption2]: 2, [SanCard.RiverCorruption3]: 2, [SanCard.RiverCorruption4]: 2, [SanCard.RiverCorruption5]: 2

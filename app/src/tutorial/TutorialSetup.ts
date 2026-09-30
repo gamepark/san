@@ -35,8 +35,9 @@ const river: { x: number; id: SanCard }[] = [
 
 /**
  * Scripted opening:
- * - the player (Moon) starts, with 2 Corruption, 1 Equipment and 3 Propaganda cards: 3 Corruption symbols on the
- *   first turn, then 3 Propaganda symbols on the second;
+ * - the player (Moon) starts, with 2 Corruption, 1 Equipment and 3 Propaganda cards: 3 Corruption symbols (and a Revenue
+ *   of 3) on the first turn, then 3 Propaganda symbols on the second — only 2 Propaganda designs give 1 Revenue, the third
+ *   one gives 2, which is harmless since the tutorial ends before that turn's purchases;
  * - the opponent (Star) gets 2 Hacking and 1 Equipment cards: 3 Hacking symbols, enough to drive the player's Virus 5
  *   card off, since the Virus pawn starts on its first space;
  * - everything else is random.
@@ -50,7 +51,7 @@ export class TutorialSetup extends SanSetup {
       SanCard.MoonEquipment,
       SanCard.MoonPropaganda,
       SanCard.MoonPropaganda,
-      SanCard.MoonPropaganda
+      SanCard.MoonPropagandaRevenue2
     ])
     this.prepareHand(opponent, [SanCard.StarHacking, SanCard.StarHacking, SanCard.StarEquipment])
   }

@@ -309,10 +309,10 @@ class Tutorial extends MaterialTutorial<number, MaterialType, LocationType> {
       (): TutorialStep<number, MaterialType, LocationType> => ({
         popup: { text: text('tuto.play-propaganda'), position: { y: -20 } },
         focus: (game) => ({
-          materials: [this.hand(game).id(SanCard.MoonPropaganda), this.playArea(game)],
+          materials: [this.hand(game).id((id: SanCard) => id === SanCard.MoonPropaganda || id === SanCard.MoonPropagandaRevenue2), this.playArea(game)],
           locations: [this.location(LocationType.PlayArea).player(me).location]
         }),
-        move: { filter: this.play(SanCard.MoonPropaganda) }
+        move: { filter: this.play(SanCard.MoonPropaganda, SanCard.MoonPropagandaRevenue2) }
       })
     ),
     this.propagandaTrack,

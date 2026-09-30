@@ -12,7 +12,8 @@ All 82 cards share the same back: `cards/CardBack.jpg`.
 
 | Image | Copies | Total |
 |-------|--------|-------|
-| `cards/start/{Moon,Star}{Propaganda,Hacking,Corruption,Equipment}.jpg` | 3 each | 24 (12 per Corporation) |
+| `cards/start/{Propaganda,Hacking,Corruption,Equipment}.jpg` | 2 per Corporation | 16 |
+| `cards/start/{Propaganda,Hacking,Corruption,Equipment}Revenue2.jpg` | 1 per Corporation | 8 |
 | `cards/virus/{Moon,Star}Virus1..5.jpg` | 1 each | 10 (5 per Corporation) |
 | `cards/river/Propaganda1..5.jpg` | 2 each | 10 |
 | `cards/river/Hacking1..5.jpg` | 2 each | 10 |
@@ -21,6 +22,15 @@ All 82 cards share the same back: `cards/CardBack.jpg`.
 
 The 48 River cards are the last four rows. Each Corporation starts with the 12 cards of its colour
 plus its 5 Virus cards.
+
+The 3 copies of a start card are not identical: the third one shows **+2** Revenue in its top-right
+badge instead of +1 (the artwork varies slightly between copies too, without any gameplay effect).
+That third copy is the `…Revenue2` design.
+
+Printed start cards carry their Corporation's symbol (crescent or star) at the bottom. The images
+leave it out so that both Corporations share the same 8 files: `SanCard` still has a Moon and a Star
+id for each design, since the owner matters to the rules, but `SanCardDescription` maps both to the
+same image.
 
 Colour ↔ type: **blue = Propaganda**, **red = Hacking**, **yellow = Corruption**, **grey = Equipment**.
 Corporation: `Moon` = crescent, `Star` = star (see `rules/src/Corporation.ts`).
@@ -48,9 +58,9 @@ production PDFs or in the rulebook diagrams:
 
 | Printed number | Image |
 |-----|-----|
-| 1-3 / 4-6 / 7-9 / 10-12 | `start/Moon` Propaganda / Hacking / Corruption / Equipment |
+| 1-3 / 4-6 / 7-9 / 10-12 | `start/` Propaganda / Hacking / Corruption / Equipment, Moon (the 3rd of each is `…Revenue2`) |
 | 13-17 | `virus/MoonVirus` 5 → 1 (decreasing) |
-| 18-20 / 21-23 / 24-26 / 27-29 | `start/Star` Propaganda / Hacking / Corruption / Equipment |
+| 18-20 / 21-23 / 24-26 / 27-29 | `start/` Propaganda / Hacking / Corruption / Equipment, Star (the 3rd of each is `…Revenue2`) |
 | 30-34 | `virus/StarVirus` 5 → 1 |
 | 35-44 | `river/Propaganda1..5` (consecutive pairs) |
 | 45-54 | `river/Hacking1..5` (consecutive pairs) |
@@ -68,7 +78,13 @@ marketing PNGs, which are 3D renders. Tools: `pdftoppm` (poppler), ImageMagick, 
   design, not a cropping mistake. The back is full-bleed.
 - **Card number removal**: the number was the *only* text in the PDF (everything else is raster), so
   it was dropped at the PDF level by removing the `BT…ET` blocks with `pikepdf`, then rendered. No
-  pixel retouching. Copies of a same design then match bit for bit.
+  pixel retouching. Copies of a same design then match bit for bit — check it with
+  `magick compare -fuzz 3% -metric AE` on every group of copies: a non-zero count means a variant.
+- **Corporation symbol removal** (start cards only): the symbol is its own small image (`/Im2`) drawn
+  after its drop shadow (the Form `/Fm1`); both `Do` operators were removed the same way. Moon and Star
+  pages then match bit for bit. Two slightly different renders of the artwork exist in the PDF (Moon
+  Hacking p.5, Corruption p.7 / p.24-25 vs p.8-9 / p.26); the images keep a pair that matches except for
+  the Revenue badge (Propaganda p.18/20, Hacking p.21/23, Corruption p.8/9, Equipment p.27/29).
 - **Punchboard**: masks obtained by labelling the connected components of
   `PUNCHBOARD_SAN_DIECUT.pdf` (the die-cut paths), dilated by 2 px, applied as alpha over
   `PUNCHBOARD_SAN_RECTO.pdf`.
