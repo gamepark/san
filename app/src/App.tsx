@@ -39,14 +39,26 @@ export function App() {
 
 // Live log: top center, just below the header bar. Entries have no pointer-events of their own, and
 // this wrapper adds none either, so it never blocks clicks on the board underneath.
+// The framework's log container doubles this font size: 1.5em gives entries 3em, the size of the menus.
+// Each entry holds on one line: the wrapper takes the width of the longest one, and the descendant
+// selector outweighs the framework's `white-space: pre-wrap` on the entry.
 const liveLogCss = css`
   position: absolute;
-  top: 7.5em; // header is 7em tall
+  top: 5em; // 7.5 root em at this 1.5em font size: header is 7em tall
   left: 50%;
   transform: translateX(-50%);
-  width: 26em;
-  max-width: 85vw;
-  font-size: calc(1em * var(--gp-scale));
+  width: max-content;
+  max-width: 95vw;
+  font-size: calc(1.5em * var(--gp-scale));
   z-index: 20;
   pointer-events: none;
+
+  div {
+    white-space: nowrap;
+  }
+
+  // The entry (container > item > entry) only pads its left side: balance it now that its width fits the text
+  > div > div > div {
+    padding-right: 1em;
+  }
 `
