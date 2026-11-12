@@ -1,5 +1,13 @@
 {
   "identities": "Konzern",
   "identities.1": "Mond",
-  "identities.2": "Stern"
+  "identities.2": "Stern",
+  "option.handSize": "Handkarten",
+  "option.handSize.help": "Anzahl der Karten, auf die jede Hand am Ende des Zuges aufgefüllt wird, für die gesamte Partie.",
+  "option.handSize.6": "6 Karten",
+  "option.handSize.6.help": "Das normale Spiel.",
+  "option.handSize.7": "7 Karten",
+  "option.handSize.7.help": "Empfohlen für die erste Partie.",
+  "option.handSize.0": "Frei",
+  "option.handSize.0.help": "Jeder Spieler wählt zu Beginn der Partie seine Handgröße (6, 7 oder 8 Karten), um eine Partie zwischen Spielern unterschiedlicher Erfahrung auszugleichen."
 }

@@ -1,5 +1,13 @@
 {
   "identities": "Корпорация",
   "identities.1": "Луна",
-  "identities.2": "Звезда"
+  "identities.2": "Звезда",
+  "option.handSize": "Карт в руке",
+  "option.handSize.help": "До скольких карт каждый игрок добирает руку в конце хода на протяжении всей игры.",
+  "option.handSize.6": "6 карт",
+  "option.handSize.6.help": "Обычная игра.",
+  "option.handSize.7": "7 карт",
+  "option.handSize.7.help": "Рекомендуется для первой партии.",
+  "option.handSize.0": "Свободно",
+  "option.handSize.0.help": "В начале игры каждый игрок выбирает размер своей руки (6, 7 или 8 карт), чтобы уравнять шансы игроков разного уровня."
 }

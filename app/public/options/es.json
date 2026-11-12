@@ -1,5 +1,13 @@
 {
   "identities": "Corporación",
   "identities.1": "Luna",
-  "identities.2": "Estrella"
+  "identities.2": "Estrella",
+  "option.handSize": "Cartas en mano",
+  "option.handSize.help": "Número de cartas hasta el que se rehace cada mano al final del turno, durante toda la partida.",
+  "option.handSize.6": "6 cartas",
+  "option.handSize.6.help": "El juego normal.",
+  "option.handSize.7": "7 cartas",
+  "option.handSize.7.help": "Recomendado para una primera partida.",
+  "option.handSize.0": "Libre",
+  "option.handSize.0.help": "Cada jugador elige al inicio de la partida el tamaño de su mano (6, 7 u 8 cartas), para equilibrar una partida entre jugadores de distinto nivel."
 }

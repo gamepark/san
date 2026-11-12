@@ -1,5 +1,13 @@
 {
   "identities": "Corporation",
   "identities.1": "Moon",
-  "identities.2": "Star"
+  "identities.2": "Star",
+  "option.handSize": "Cards in hand",
+  "option.handSize.help": "Number of cards each hand is refilled to at the end of the turn, for the whole game.",
+  "option.handSize.6": "6 cards",
+  "option.handSize.6.help": "The normal game.",
+  "option.handSize.7": "7 cards",
+  "option.handSize.7.help": "Recommended for a first game.",
+  "option.handSize.0": "Free",
+  "option.handSize.0.help": "Each player chooses their hand size (6, 7 or 8 cards) at the start of the game, to balance a game between players of different skill levels."
 }
