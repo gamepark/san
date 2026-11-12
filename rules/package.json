@@ -18,22 +18,17 @@
     "test": "vitest",
     "build": "tsc",
     "prepack": "yarn build",
-    "publish": "yarn version ${0:-patch} && yarn npm publish ${OTP:+--otp $OTP} && git commit -am v$(node -p \"require('./package.json').version\") && git tag v$(node -p \"require('./package.json').version\") && git push --follow-tags",
-    "lint": "eslint --fix"
+    "publish": "yarn version ${0:-patch} && yarn npm publish ${OTP:+--otp $OTP} && git commit -am v$(node -p \"require('./package.json').version\") && git tag v$(node -p \"require('./package.json').version\") && git push --follow-tags"
   },
   "peerDependencies": {
     "@gamepark/rules-api": ">=7.7",
     "es-toolkit": "^1.45.1"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@gamepark/rules-api": "~7.8.0",
-    "@typescript/native": "npm:typescript@^7.0.2",
-    "es-toolkit": "^1.52.0",
-    "eslint": "^10.10.0",
-    "globals": "^17.12.0",
-    "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "typescript-eslint": "^8.70.0",
-    "vitest": "^5.0.1"
+    "@gamepark/rules-api": "~7.10.0",
+    "es-toolkit": "^1.53.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
   }
 }

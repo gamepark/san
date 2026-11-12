@@ -7,16 +7,9 @@
   "author": "Romain Fromi <romain@game-park.com> (https://game-park.com/)",
   "license": "ISC",
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@typescript/native": "npm:typescript@^7.0.2",
-    "eslint": "^10.10.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.6",
-    "globals": "^17.12.0",
-    "prettier": "^3.9.7",
-    "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "typescript-eslint": "^8.70.0",
-    "vitest": "^5.0.1"
+    "oxlint": "^1.93.0",
+    "prettier": "^3.10.0",
+    "typescript": "^7.0.2"
   },
   "scripts": {
     "dev": "yarn workspace @gamepark/san-app run dev",
@@ -25,9 +18,9 @@
     "build": "yarn workspace @gamepark/san-app run build",
     "deploy": "yarn workspace @gamepark/san-app run deploy",
     "publish": "yarn workspace @gamepark/san run publish",
-    "lint": "yarn workspace @gamepark/san run lint && yarn workspace @gamepark/san-app run lint",
+    "lint": "oxlint",
     "linkgp": "yarn link ../rules-api ../react-client ../react-game -r && git update-index --skip-worktree package.json yarn.lock",
     "unlinkgp": "git update-index --no-skip-worktree package.json yarn.lock && yarn unlink ../react-game ../react-client ../rules-api"
   },
-  "packageManager": "yarn@4.18.0"
+  "packageManager": "yarn@4.18.1"
 }
