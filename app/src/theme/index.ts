@@ -224,6 +224,39 @@ const menuPanel = css`
   }
 `
 
+/**
+ * The framework draws the menu's buttons from the palette's `onSurface` (ink), made for a light
+ * surface: on this dark panel they were ink on near-black. Outlined in paper instead, filled on hover.
+ * No !important: inside a dialog the same buttons also get `dialog.buttons`, which must keep winning.
+ */
+const menuButton = css`
+  color: ${colors.paper};
+  border-color: rgba(247, 247, 245, 0.5);
+  font-family: ${fontDisplay};
+  transition:
+    background 150ms ease,
+    color 150ms ease,
+    border-color 150ms ease;
+
+  &:focus,
+  &:hover {
+    background: ${colors.paper};
+    color: ${colors.ink};
+    border-color: ${colors.paper};
+  }
+
+  &:active {
+    background: ${colors.corruptionLight};
+    border-color: ${colors.corruptionLight};
+  }
+
+  &:disabled {
+    background: transparent;
+    color: ${colors.equipment};
+    border-color: ${colors.equipmentDark};
+  }
+`
+
 const menuMainButton = css`
   background: ${colors.corruptionLight} !important;
   color: ${colors.ink} !important;
@@ -284,6 +317,7 @@ export const theme: GameTheme = {
   },
   menu: {
     panel: menuPanel,
+    button: menuButton,
     mainButton: menuMainButton
   },
   playerPanel: {
